@@ -181,6 +181,17 @@ def make_handler(app, role, allow_from=None):
                     self.send_header('Location', path + '/')
                     self.end_headers()
                     return
+                if method == 'GET' and m.group(2) in ('/manifest.json', '/sw.js', '/icon.png'):
+                    if m.group(2) == '/sw.js':
+                        return self._send(200, _read('sw.js'), 'application/javascript; charset=utf-8')
+                    if m.group(2) == '/icon.png':
+                        return self._send(200, ICON, 'image/png')
+                    manifest = {'name': 'Pligter – forælder', 'short_name': parent['name'][:12] or 'Pligter',
+                                'start_url': './', 'scope': './', 'display': 'standalone',
+                                'background_color': '#FFF6E9', 'theme_color': '#0B7A70',
+                                'icons': [{'src': 'icon.png', 'sizes': '192x192', 'type': 'image/png',
+                                           'purpose': 'any'}]}
+                    return self._send(200, json.dumps(manifest).encode('utf-8'), 'application/manifest+json')
                 self.via_parent = parent
                 return self._admin(method, m.group(2))
             m = KID_PAGE.match(path)

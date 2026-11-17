@@ -1214,6 +1214,15 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(state['parents'], [])
         self.assertTrue(any(t['title'] == 'Fej løv' for t in state['tasks']))
 
+    def test_parent_page_can_be_installed_as_an_app(self):
+        status, state = self.call(self.adm, '/api/parents', {'name': 'Mormor'})
+        token = state['parents'][-1]['token']
+        status, manifest = self.call(self.kid, '/p/%s/manifest.json' % token)
+        self.assertEqual(status, 200)
+        self.assertIn('Mormor', manifest)
+        self.assertEqual(self.call(self.kid, '/p/%s/sw.js' % token)[0], 200)
+        self.assertEqual(self.call(self.kid, '/p/%s/icon.png' % token)[0], 200)
+
     def test_parent_link_cannot_manage_parents_or_download_backup(self):
         status, state = self.call(self.adm, '/api/parents', {'name': 'Far'})
         token = state['parents'][-1]['token']

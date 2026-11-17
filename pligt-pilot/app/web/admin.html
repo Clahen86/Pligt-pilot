@@ -159,6 +159,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     fetch('api/i18n').then(function (r) { return r.json(); }).then(function (d) { i18nSetup(d); }).catch(function () {})
       .then(function () { I18N.loading = false; render(); });
   }
+  // Forældreside med eget link (/p/...): kan lægges på hjemmeskærmen som en app
+  if (/^\/p\/[^/]+\//.test(location.pathname)) {
+    ['manifest', 'apple-touch-icon'].forEach(function (rel) {
+      var l = document.createElement('link'); l.rel = rel; l.href = rel === 'manifest' ? 'manifest.json' : 'icon.png'; document.head.appendChild(l);
+    });
+    if ('serviceWorker' in navigator && window.isSecureContext) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
+  }
   var REPEAT = { daily: 'Hver dag', weekly: 'Hver uge', once: 'Én gang' };
   var CHECK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"></path></svg>';
   var CROSS = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C73A30" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>';
