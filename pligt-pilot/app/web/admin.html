@@ -62,7 +62,7 @@ h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; disp
 .sw[aria-checked="true"] span { background: var(--accent); }
 .sw[aria-checked="true"] span::after { left: 25px; }
 label { font-size: 13px; font-weight: 800; color: var(--muted); display: block; margin-bottom: 4px; }
-input[type=text], input[type=number], select { width: 100%; height: 44px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 0 12px; font-size: 16px; font-weight: 700; color: var(--ink); background: #fff; }
+input[type=text], input[type=number], input[type=date], input[type=time], select { width: 100%; height: 44px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 0 12px; font-size: 16px; font-weight: 700; color: var(--ink); background: #fff; }
 .two { display: flex; gap: 10px; }
 .two > div { flex: 1; min-width: 0; }
 .check { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: var(--ink); margin: 0; }
@@ -79,6 +79,12 @@ nav button[aria-current="page"] { background: color-mix(in srgb, var(--accent) 1
 nav .dot { position: absolute; top: 4px; right: 18%; background: var(--red); color: #fff; border-radius: 999px; font-size: 11px; min-width: 18px; padding: 1px 5px; }
 .toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 14px; font-size: 14px; font-weight: 700; z-index: 9; max-width: 90vw; }
 .toast[hidden] { display: none; }
+.meter { height: 14px; border-radius: 999px; background: #E8DFD0; overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: 999px; background: var(--accent); min-width: 6px; }
+.shot { width: 100%; max-height: 260px; object-fit: contain; border-radius: 14px; background: #EFE7D8; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { background: #F1E8D6; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 800; color: var(--ink); }
+nav button { font-size: 13px; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 </style>
 </head>
@@ -88,8 +94,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 <div class="toast" id="toast" hidden role="status"></div>
 <script>
 (function () {
-  var state = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
-  var draft = { task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [] }, kid: { name: '', age: '' } };
+  var state = null, entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
+  var draft = { rule: { preset: 'Vaskemaskine', entity: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false }, kid: { name: '', age: '', birthday: '' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
   var REPEAT = { daily: 'Hver dag', weekly: 'Hver uge', once: 'Én gang' };
   var CHECK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"></path></svg>';
@@ -146,14 +152,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<div><label for="' + key + '-r">Hvor tit</label><select id="' + key + '-r">' +
       ['daily', 'weekly', 'once'].map(function (x) { return '<option value="' + x + '"' + (r.repeat === x ? ' selected' : '') + '>' + REPEAT[x] + '</option>'; }).join('') + '</select></div></div>' +
       '<div><label for="' + key + '-n">Hvor mange gange pr. periode</label>' + timesSelect(key + '-n', r.times || 1) + '</div>' +
-      (withKids ? kidBoxes('edit', editKids) : '') +
+      (withKids ? kidBoxes('edit', editKids) + '<label class="check"><input type="checkbox" id="' + key + '-ph"' + (r.photo ? ' checked' : '') + '> Barnet skal tage et billede som bevis</label>' : '') +
       '<div class="row"><button class="btn small" data-save="' + key + '">Gem</button><button class="btn small ghost" data-cancel="1">Annullér</button></div>';
   }
   function readForm(key) {
     var f = { title: document.getElementById(key + '-t').value, price: document.getElementById(key + '-p').value,
       age_min: document.getElementById(key + '-a').value, repeat: document.getElementById(key + '-r').value,
       times: document.getElementById(key + '-n').value };
-    if (key.charAt(0) === 't') { f.kids = editKids.slice(); }
+    if (key.charAt(0) === 't') { f.kids = editKids.slice(); f.photo = document.getElementById(key + '-ph').checked; }
     return f;
   }
   function kidTask(id) { return state.tasks.filter(function (t) { return t.id === id; })[0] || {}; }
@@ -194,11 +200,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     out += '<h2>Til godkendelse' + (s.pending.length ? ' <span class="count">' + s.pending.length + '</span>' : '') + '</h2><div class="list">';
     if (!s.pending.length) { out += '<div class="empty">Alt er godkendt. Godt gået!</div>'; }
     s.pending.forEach(function (p) {
-      out += '<div class="row card"><div class="avatar" style="background:' + esc(p.color) + '" aria-hidden="true">' + esc(p.name.charAt(0).toUpperCase()) + '</div>' +
+      out += '<div class="card"><div class="row"><div class="avatar" style="background:' + esc(p.color) + '" aria-hidden="true">' + esc(p.name.charAt(0).toUpperCase()) + '</div>' +
         '<div class="grow t"><b>' + esc(p.title) + '</b><span>' + esc(p.name) + ' · ' + p.price + ' kr</span></div>' +
         '<button class="icon no" data-reject="' + p.id + '" aria-label="Afvis ' + esc(p.title) + '">' + CROSS + '</button>' +
-        '<button class="icon yes" data-approve="' + p.id + '" aria-label="Godkend ' + esc(p.title) + '">' + CHECK + '</button></div>';
+        '<button class="icon yes" data-approve="' + p.id + '" aria-label="Godkend ' + esc(p.title) + '">' + CHECK + '</button></div>' +
+        (p.has_photo ? '<img class="shot" src="photo/' + p.id + '" alt="Billede af ' + esc(p.title) + '">' : '') + '</div>';
     });
+    if (s.perfect && s.perfect.length) {
+      out += '<h2>Perfekt uge</h2><div class="list">';
+      s.perfect.forEach(function (c) {
+        out += '<div class="row card"><div class="avatar" style="background:' + esc(c.color) + '" aria-hidden="true">' + esc(c.name.charAt(0).toUpperCase()) + '</div>' +
+          '<div class="grow t"><b>' + esc(c.name) + ' klarede alt i uge ' + esc(c.week) + '</b><span>Alle opgaver godkendt</span></div>' +
+          '<button class="btn small sun" data-perfect="' + c.kid_id + '">Giv ' + c.amount + ' kr</button></div>';
+      });
+      out += '</div>';
+    }
     out += '</div><h2>Børnene</h2><div class="list">';
     s.kids.forEach(function (k) {
       out += '<div class="card"><div class="kid-top"><div class="avatar big" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' +
@@ -210,14 +226,29 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       if (k.balance > 0) { acts += '<button class="btn small" data-payout="' + k.id + '">Udbetal ' + k.balance + ' kr</button>'; }
       if (k.is_hero && !s.hero_paid) { acts += '<button class="btn small sun" data-bonus="1">Giv ' + s.hero_bonus + ' kr i bonus</button>'; }
       if (acts) { out += '<div class="row" style="flex-wrap:wrap">' + acts + '</div>'; }
+      if (k.badges && k.badges.length) {
+        out += '<div class="chips">' + k.badges.map(function (b) { return '<span class="chip">' + esc(b.title) + '</span>'; }).join('') + '</div>';
+      }
       out += '</div>';
     });
     out += '</div><div class="total"><div><small>I alt at udbetale</small><b>' + s.total + ' kr</b></div>' +
       '<small style="max-width:150px;text-align:right">Ugens helt får ' + s.hero_bonus + ' kr</small></div>';
+    if (s.family) {
+      out += '<h2>Familiemål</h2><div class="card"><div class="row"><div class="grow t"><b>' + esc(s.family.title) + '</b><span>' + s.family.saved + ' af ' + s.family.amount + ' kr' + (s.family.reached ? ' – nået!' : '') + '</span></div></div>' +
+        '<div class="meter"><i style="width:' + Math.round(100 * s.family.saved / s.family.amount) + '%"></i></div></div>';
+    }
+    if (s.months && s.months.some(function (m) { return m.total > 0; })) {
+      out += '<h2>Pr. måned</h2><div class="list">';
+      s.months.forEach(function (m) {
+        out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(m.label) + '</b><span>' +
+          m.kids.map(function (k) { return esc(k.name) + ' ' + k.amount + ' kr'; }).join(' · ') + '</span></div><div class="price">' + m.total + ' kr</div></div></div>';
+      });
+      out += '</div>';
+    }
     if (s.history && s.history.length) {
       out += '<h2>Seneste</h2><div class="list">';
       s.history.slice(0, 12).forEach(function (h) {
-        var label = h.kind === 'task' ? h.note : h.kind === 'payout' ? 'Udbetalt' : h.note || 'Bonus';
+        var label = h.kind === 'task' ? h.note : h.kind === 'payout' ? 'Udbetalt' : h.kind === 'allowance' ? 'Lommepenge' : h.kind === 'penalty' ? 'Træk: ' + h.note : h.note || 'Bonus';
         var when = new Date(h.at);
         var day = isNaN(when) ? '' : when.toLocaleDateString('da-DK', { weekday: 'short', day: 'numeric', month: 'short' });
         out += '<div class="row card"><div class="avatar" style="background:' + esc(h.color) + '" aria-hidden="true">' + esc(h.name.charAt(0).toUpperCase()) + '</div>' +
@@ -268,7 +299,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       out += '<div class="group">' + esc(room) + '</div><div class="list">';
       s.tasks.forEach(function (t) {
         if ((t.room || 'Andet') !== room) { return; }
-        out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
+        out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.photo ? ' · med foto' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
           '<div class="price">' + t.price + ' kr</div>' +
           '<button class="sw" role="switch" aria-checked="' + (t.active ? 'true' : 'false') + '" aria-label="' + esc(t.title) + ' er slået til" data-active="' + t.id + '"><span></span></button>' +
           '<button class="icon no" style="width:40px;height:40px" data-deltask="' + t.id + '" aria-label="Slet ' + esc(t.title) + '">' + CROSS + '</button></div>' +
@@ -285,6 +316,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       ['daily', 'weekly', 'once'].map(function (r) { return '<option value="' + r + '"' + (d.repeat === r ? ' selected' : '') + '>' + REPEAT[r] + '</option>'; }).join('') + '</select></div>' +
       '<div><label for="t-times">Hvor mange gange pr. periode</label>' + timesSelect('t-times', d.times).replace('<select ', '<select data-draft="task.times" ') + '</div>' +
       kidBoxes('draft', d.kids) +
+      '<label class="check"><input type="checkbox" data-draft="task.photo"' + (d.photo ? ' checked' : '') + '> Barnet skal tage et billede som bevis</label>' +
       '<label class="check"><input type="checkbox" data-draft="task.open"' + (d.open ? ' checked' : '') + '> Ledig opgave: den første, der tager den, får den</label>' +
       '<button class="btn" data-addtask="1">Tilføj opgave</button></div>';
     return out;
@@ -301,29 +333,93 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         '<div class="note">Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren.</div>' +
         '<div class="row"><div class="grow t"><b>På pause</b><span>Ferie eller syg: ingen opgaver, og ugen tæller ikke som misset</span></div>' +
         '<button class="sw" role="switch" aria-checked="' + (k.paused ? 'true' : 'false') + '" aria-label="' + esc(k.name) + ' er på pause" data-pause="' + k.id + '"><span></span></button></div>' +
+        '<div class="two"><div><label for="b-' + k.id + '">Fødselsdato</label><input id="b-' + k.id + '" type="date" value="' + esc(k.birthday) + '"></div>' +
+        '<div><label for="al-' + k.id + '">Lommepenge pr. uge (kr.)</label><input id="al-' + k.id + '" type="number" inputmode="numeric" min="0" max="1000" value="' + k.allowance + '"></div></div>' +
+        '<div><label for="n-' + k.id + '">Barnets notifikationstjeneste (valgfri)</label><input id="n-' + k.id + '" type="text" placeholder="Fx mobile_app_emmas_tlf" value="' + esc(k.notify) + '"></div>' +
+        '<div class="note">' + (k.birthday ? 'Alderen (' + k.age + ' år) følger fødselsdatoen.' : 'Skriv fødselsdato, så skifter alderen af sig selv.') + '</div>' +
+        '<button class="btn small" data-savekid="' + k.id + '">Gem oplysninger</button>' +
         goalBox(k) +
         '<div class="row" style="flex-wrap:wrap"><button class="btn small ghost" data-newlink="' + k.id + '">Nyt link</button>' +
         '<button class="btn small danger" data-delkid="' + k.id + '">Fjern barn</button></div></div>';
     });
     var d = draft.kid;
-    out += '<h2>Tilføj barn</h2><div class="card"><div class="two">' +
+    out += '<h2>Tilføj barn</h2><div class="card">' +
       '<div><label for="k-name">Navn</label><input id="k-name" type="text" data-draft="kid.name" value="' + esc(d.name) + '"></div>' +
-      '<div><label for="k-age">Alder</label><input id="k-age" type="number" inputmode="numeric" min="1" max="25" data-draft="kid.age" value="' + esc(d.age) + '"></div></div>' +
+      '<div class="two"><div><label for="k-bd">Fødselsdato</label><input id="k-bd" type="date" data-draft="kid.birthday" value="' + esc(d.birthday) + '"></div>' +
+      '<div><label for="k-age">eller alder</label><input id="k-age" type="number" inputmode="numeric" min="1" max="25" data-draft="kid.age" value="' + esc(d.age) + '"></div></div>' +
       '<button class="btn" data-addkid="1">Tilføj</button></div>';
+    var cfg = s.settings || {}, fam = s.family;
+    var lights = entityList.filter(function (e) { return e[0].indexOf('light.') === 0; });
     out += '<h2>Indstillinger</h2><div class="card"><div class="two">' +
       '<div><label for="s-goal">Ugens mål (opgaver)</label><input id="s-goal" type="number" min="1" max="50" value="' + s.goal + '"></div>' +
       '<div><label for="s-bonus">Bonus til ugens helt (kr.)</label><input id="s-bonus" type="number" min="0" max="1000" value="' + s.hero_bonus + '"></div></div>' +
+      '<div class="two"><div><label for="s-perfect">Bonus for perfekt uge (kr.)</label><input id="s-perfect" type="number" min="0" max="1000" value="' + (cfg.perfect_bonus || 0) + '"></div>' +
+      '<div><label for="s-penalty">Træk pr. glemt opgave (kr.)</label><input id="s-penalty" type="number" min="0" max="1000" value="' + (cfg.penalty || 0) + '"></div></div>' +
+      '<div class="note">0 betyder slået fra. Træk tager aldrig mere end barnets saldo.</div>' +
+      '<div><label for="s-remind">Påmind børnene kl.</label><input id="s-remind" type="time" value="' + esc(cfg.reminder_time || '') + '"></div>' +
+      '<div><label for="s-light">Lampe, der blinker grønt ved godkendelse</label><input id="s-light" type="text" list="lights" placeholder="Fx light.stue" value="' + esc(cfg.celebrate_light || '') + '">' +
+      '<datalist id="lights">' + lights.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[1]) + '</option>'; }).join('') + '</datalist></div>' +
+      '<div class="two"><div><label for="s-ft">Familiemål</label><input id="s-ft" type="text" placeholder="Fx Tivoli" value="' + (fam ? esc(fam.title) : '') + '"></div>' +
+      '<div><label for="s-fa">Beløb (kr.)</label><input id="s-fa" type="number" min="1" max="1000" value="' + (fam ? fam.amount : '') + '"></div></div>' +
       '<button class="btn ghost" data-savesettings="1">Gem indstillinger</button></div>';
     return out;
   }
 
+  var PRESETS = {
+    'Vaskemaskine': { title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5', words: ['vaskemaskine', 'washing', 'washer'], not: ['opvask', 'dishwasher'] },
+    'Tørretumbler': { title: 'Tag tøj ud af tørretumbleren og fold det', price: '8', words: ['tørretumbler', 'tumbler', 'dryer'], not: ['hair', 'hår'] },
+    'Opvaskemaskine': { title: 'Tøm opvaskemaskinen', price: '5', words: ['opvask', 'dishwasher'], not: [] },
+    'Andet': { title: '', price: '5', words: [], not: [] }
+  };
+  function candidates(preset) {
+    var p = PRESETS[preset] || PRESETS.Andet, okDomain = /^(sensor|switch|binary_sensor|input_boolean|select)\./;
+    var all = entityList.filter(function (e) { return okDomain.test(e[0]); });
+    var hit = all.filter(function (e) {
+      var t = (e[0] + ' ' + e[1]).toLowerCase();
+      return p.words.some(function (w) { return t.indexOf(w) >= 0; }) && !p.not.some(function (w) { return t.indexOf(w) >= 0; });
+    });
+    return (hit.length ? hit : all).slice(0, 300);
+  }
+  function house() {
+    var s = state, d = draft.rule;
+    var out = '<div class="head"><div><h1>Huset</h1><div class="sub">Opgaver, der opstår af sig selv</div></div></div>';
+    out += '<div class="empty">Når en maskine er færdig, får børnene en ledig opgave og en besked, hvis de har en notifikationstjeneste. Den første, der tager den, får den.</div>';
+    if (s.rules && s.rules.length) {
+      out += '<div class="list">';
+      s.rules.forEach(function (r) {
+        out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(r.name) + '</b><span>' + esc(r.entity) + '</span></div>' +
+          '<button class="sw" role="switch" aria-checked="' + (r.active ? 'true' : 'false') + '" aria-label="' + esc(r.name) + ' er slået til" data-ruleactive="' + r.id + '"><span></span></button>' +
+          '<button class="icon no" style="width:40px;height:40px" data-delrule="' + r.id + '" aria-label="Slet ' + esc(r.name) + '">' + CROSS + '</button></div>' +
+          '<div class="note">Når den er færdig: ' + esc(r.title) + ' (' + r.price + ' kr)</div></div>';
+      });
+      out += '</div>';
+    }
+    out += '<h2>Tilføj regel</h2><div class="card">' +
+      '<div><label for="r-preset">Hvilken maskine?</label><select id="r-preset" data-draft="rule.preset">' +
+      Object.keys(PRESETS).map(function (k) { return '<option' + (d.preset === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></div>' +
+      '<div><label for="r-ent">Måler eller kontakt, der viser, om den kører</label><input id="r-ent" type="text" list="ents" data-draft="rule.entity" placeholder="Fx sensor.vaskemaskine_effekt" value="' + esc(d.entity) + '">' +
+      '<datalist id="ents">' + candidates(d.preset).map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[1]) + '</option>'; }).join('') + '</datalist></div>' +
+      '<div class="note">' + (entitiesOn === false ? 'Appen kan ikke se Home Assistant lige nu. Skriv enhedens id selv.' : 'Vælg fra listen, eller skriv selv. Bedst er en stikkontakt med effektmåling (watt).') + '</div>' +
+      '<div class="two"><div><label for="r-title">Opgave</label><input id="r-title" type="text" data-draft="rule.title" value="' + esc(d.title) + '"></div>' +
+      '<div><label for="r-price">Pris (kr.)</label><input id="r-price" type="number" inputmode="numeric" min="0" max="1000" data-draft="rule.price" value="' + esc(d.price) + '"></div></div>' +
+      '<button class="btn" data-addrule="1">Tilføj regel</button></div>';
+    return out;
+  }
+
+  function loadEntities() {
+    return call('api/entities').then(function (r) { entityList = r.entities || []; entitiesOn = !!r.on && entityList.length > 0; render(); })
+      .catch(function () { entitiesOn = false; });
+  }
+
   function render() {
     if (!state) { return; }
-    app.innerHTML = tab === 'home' ? home() : tab === 'tasks' ? tasks() : kids();
+    if (!state) { return; }
+    app.innerHTML = tab === 'home' ? home() : tab === 'tasks' ? tasks() : tab === 'house' ? house() : kids();
     var pend = state.pending.length;
     nav.innerHTML =
       '<button data-tab="home"' + (tab === 'home' ? ' aria-current="page"' : '') + '>Oversigt' + (pend ? '<span class="dot">' + pend + '</span>' : '') + '</button>' +
       '<button data-tab="tasks"' + (tab === 'tasks' ? ' aria-current="page"' : '') + '>Opgaver</button>' +
+      '<button data-tab="house"' + (tab === 'house' ? ' aria-current="page"' : '') + '>Huset</button>' +
       '<button data-tab="kids"' + (tab === 'kids' ? ' aria-current="page"' : '') + '>Børn</button>';
   }
 
@@ -342,13 +438,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       if (t.checked && at < 0) { list.push(t.value); } else if (!t.checked && at >= 0) { list.splice(at, 1); }
       return;
     }
-    if (t.dataset && t.dataset.draft) { setDraft(t.dataset.draft, t.type === 'checkbox' ? t.checked : t.value); }
+    if (t.dataset && t.dataset.draft) {
+      setDraft(t.dataset.draft, t.type === 'checkbox' ? t.checked : t.value);
+      if (t.dataset.draft === 'rule.preset') { var pr = PRESETS[t.value]; draft.rule.title = pr.title; draft.rule.price = pr.price; draft.rule.entity = ''; render(); }
+    }
   });
   document.addEventListener('click', function (e) {
     var b = e.target.closest('button');
     if (!b) { return; }
     var d = b.dataset;
-    if (d.tab) { tab = d.tab; render(); window.scrollTo(0, 0); }
+    if (d.tab) { tab = d.tab; render(); window.scrollTo(0, 0); if ((d.tab === 'house' || d.tab === 'kids') && entitiesOn === null) { loadEntities(); } }
     else if (d.approve) { post('api/items/' + d.approve + '/approve', {}, 'Godkendt'); }
     else if (d.reject) { post('api/items/' + d.reject + '/reject', {}, 'Afvist. Barnet kan prøve igen.'); }
     else if (d.payout) { post('api/kids/' + d.payout + '/payout', {}, 'Udbetalt'); }
@@ -386,13 +485,31 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     else if (d.deltask) { if (confirm('Slette opgaven?')) { post('api/tasks/' + d.deltask + '/delete', {}, 'Slettet'); } }
     else if (d.addtask) {
       var x = draft.task;
-      post('api/tasks', { title: x.title, price: x.price, room: x.room, repeat: x.repeat, open: x.open, times: x.times, kids: x.kids }, 'Opgaven er tilføjet')
-        .then(function () { draft.task = { title: '', price: x.price, room: x.room, repeat: x.repeat, open: false, times: '1', kids: [] }; render(); }).catch(function () {});
+      post('api/tasks', { title: x.title, price: x.price, room: x.room, repeat: x.repeat, open: x.open, times: x.times, kids: x.kids, photo: x.photo }, 'Opgaven er tilføjet')
+        .then(function () { draft.task = { title: '', price: x.price, room: x.room, repeat: x.repeat, open: false, times: '1', kids: [], photo: false }; render(); }).catch(function () {});
     }
     else if (d.addkid) {
       var y = draft.kid;
-      post('api/kids', { name: y.name, age: y.age }, 'Barnet er tilføjet')
-        .then(function () { draft.kid = { name: '', age: '' }; render(); }).catch(function () {});
+      post('api/kids', { name: y.name, age: y.age, birthday: y.birthday }, 'Barnet er tilføjet')
+        .then(function () { draft.kid = { name: '', age: '', birthday: '' }; render(); }).catch(function () {});
+    }
+    else if (d.perfect) { post('api/perfect/' + d.perfect, {}, 'Bonus givet'); }
+    else if (d.ruleactive) {
+      var rl = state.rules.filter(function (x) { return x.id === d.ruleactive; })[0];
+      post('api/rules/' + d.ruleactive, { active: !rl.active });
+    }
+    else if (d.delrule) { if (confirm('Slette reglen?')) { post('api/rules/' + d.delrule + '/delete', {}, 'Reglen er slettet'); } }
+    else if (d.addrule) {
+      var r = draft.rule;
+      post('api/rules', { name: r.preset, entity: r.entity, title: r.title, price: r.price }, 'Reglen er tilføjet')
+        .then(function () { draft.rule.entity = ''; render(); }).catch(function () {});
+    }
+    else if (d.savekid) {
+      post('api/kids/' + d.savekid, {
+        birthday: document.getElementById('b-' + d.savekid).value,
+        notify: document.getElementById('n-' + d.savekid).value,
+        allowance: document.getElementById('al-' + d.savekid).value
+      }, 'Gemt');
     }
     else if (d.pause) {
       var pk = kidById(d.pause);
@@ -412,7 +529,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     else if (d.newlink) { if (confirm('Det gamle link holder op med at virke. Fortsæt?')) { post('api/kids/' + d.newlink + '/newlink', {}, 'Nyt link er lavet'); } }
     else if (d.delkid) { if (confirm('Fjerne barnet og alle dets opgaver og penge?')) { post('api/kids/' + d.delkid + '/delete', {}, 'Barnet er fjernet'); } }
     else if (d.savesettings) {
-      post('api/settings', { goal: document.getElementById('s-goal').value, hero_bonus: document.getElementById('s-bonus').value }, 'Gemt');
+      var body = {
+        goal: document.getElementById('s-goal').value, hero_bonus: document.getElementById('s-bonus').value,
+        perfect_bonus: document.getElementById('s-perfect').value, penalty: document.getElementById('s-penalty').value,
+        reminder_time: document.getElementById('s-remind').value, celebrate_light: document.getElementById('s-light').value
+      };
+      var ft = document.getElementById('s-ft').value, fa = document.getElementById('s-fa').value, fam = state.family;
+      if (!fam ? (ft || fa) : (ft !== fam.title || String(fa) !== String(fam.amount))) { body.family_title = ft; body.family_amount = fa; }
+      post('api/settings', body, 'Gemt');
     }
   });
   setInterval(function () { if (!document.hidden && !typing()) { load(); } }, 20000);

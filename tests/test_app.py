@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pligt-pilot', 
 
 from ha import HomeAssistant  # noqa: E402
 from server import App, serve  # noqa: E402
+from house import Automation, step  # noqa: E402
 from store import Problem, Store  # noqa: E402
 
 
@@ -279,6 +280,156 @@ class StoreTests(unittest.TestCase):
         with self.assertRaises(Problem):
             self.store.set_goal(self.emil['id'], 'Cykel', 0)
 
+    def finish(self, kid, title=None):
+        for i in self.kid_items(kid):
+            if i['status'] == 'todo' and (title is None or i['title'] == title):
+                self.store.mark_done(kid['token'], i['id'])
+                self.store.decide(i['id'], True)
+                return i
+
+    def test_birthday_sets_age_and_unlocks_tasks(self):
+        kid = self.store.add_kid('Ida', birthday='2017-11-20')  # 8 år i dag
+        self.assertEqual(kid['age'], 8)
+        self.store.add_task('Støvsug', 10, age_min=9)
+        self.assertEqual(self.kid_items(kid), [])
+        self.clock.advance(days=4)  # 20. nov. bliver hun 9
+        self.assertEqual(len(self.kid_items(kid)), 1)
+        self.assertEqual(self.store.admin_state()['kids'][-1]['age'], 9)
+        self.assertTrue(self.store.kid_view(kid['token'])['birthday_today'])
+        self.clock.advance(days=1)
+        self.assertFalse(self.store.kid_view(kid['token'])['birthday_today'])
+        with self.assertRaises(Problem):
+            self.store.add_kid('Fremtid', birthday='2999-01-01')
+
+    def test_birthday_notice_only_once_the_evening_before(self):
+        self.store.add_kid('Ida', birthday='2017-11-17')
+        self.assertEqual(self.store.birthday_notices(), [])        # kl. 08
+        self.clock.advance(hours=9)
+        notices = self.store.birthday_notices()
+        self.assertEqual([(k['name'], a) for k, a in notices], [('Ida', 9)])
+        self.assertEqual(self.store.birthday_notices(), [])
+
+    def test_streak_counts_days_in_a_row_and_gives_badges(self):
+        self.store.add_task('Dæk bord', 3)
+        for _ in range(3):
+            self.finish(self.emil)
+            self.clock.advance(days=1)
+        item = self.kid_items(self.emil)[0]
+        self.assertEqual(item['streak'], 3)
+        titles = {b['title'] for b in self.store.kid_view(self.emil['token'])['badges']}
+        self.assertTrue({'Første opgave', '3 i træk'} <= titles)
+        self.clock.advance(days=2)   # en dag sprunget over
+        self.assertEqual(self.kid_items(self.emil)[0]['streak'], 0)
+
+    def test_allowance_is_paid_once_a_week(self):
+        self.store.update_kid(self.emil['id'], allowance=20)
+        self.assertEqual(self.store.balance(self.emil['id']), 0)
+        self.clock.advance(days=7)
+        self.store.admin_state()
+        self.store.admin_state()
+        self.assertEqual(self.store.balance(self.emil['id']), 20)
+
+    def test_penalty_for_missed_task_never_below_zero(self):
+        self.store.set_setting('penalty', 5)
+        self.store.add_task('Dæk bord', 3)
+        self.finish(self.emil)                      # +3 kr
+        self.clock.advance(days=1)
+        self.store.admin_state()                    # dag 2 oprettes
+        self.assertEqual(self.store.balance(self.emil['id']), 3)
+        self.clock.advance(days=1)
+        self.store.admin_state()                    # dag 2 blev ikke lavet: træk, højst saldoen
+        self.assertEqual(self.store.balance(self.emil['id']), 0)
+        self.assertEqual(self.store.balance(self.maja['id']), 0)
+
+    def test_perfect_week_bonus(self):
+        self.store.set_setting('perfect_bonus', 10)
+        self.store.add_task('Dæk bord', 3)
+        for _ in range(7):
+            self.finish(self.emil)
+            self.clock.advance(days=1)
+        names = [c['name'] for c in self.store.admin_state()['perfect']]
+        self.assertEqual(names, ['Emil'])    # Maja lavede ingenting
+        before = self.store.balance(self.emil['id'])
+        self.store.pay_perfect(self.emil['id'])
+        self.assertEqual(self.store.balance(self.emil['id']), before + 10)
+        self.assertEqual(self.store.admin_state()['perfect'], [])
+        with self.assertRaises(Problem):
+            self.store.pay_perfect(self.emil['id'])
+
+    def test_family_goal_and_monthly_overview(self):
+        self.store.set_family_goal('Tivoli', 100)
+        self.store.add_task('Dæk bord', 3)
+        self.finish(self.emil)
+        self.finish(self.maja)
+        goal = self.store.kid_view(self.emil['token'])['family']
+        self.assertEqual((goal['saved'], goal['amount']), (6, 100))
+        month = self.store.admin_state()['months'][0]
+        self.assertEqual(month['label'], 'november')
+        self.assertEqual(month['total'], 6)
+        self.store.set_family_goal('', '')
+        self.assertIsNone(self.store.kid_view(self.emil['token'])['family'])
+
+    def test_photo_is_required_and_deleted_after_decision(self):
+        self.store.add_task('Ryd værelset', 10, photo=True)
+        item = self.kid_items(self.emil)[0]
+        self.assertTrue(item['need_photo'])
+        with self.assertRaises(Problem):
+            self.store.mark_done(self.emil['token'], item['id'])
+        with self.assertRaises(Problem):
+            self.store.mark_done(self.emil['token'], item['id'], b'ikke et billede')
+        self.store.mark_done(self.emil['token'], item['id'], b'\xff\xd8\xff' + b'x' * 100)
+        self.assertTrue(self.store.admin_state()['pending'][0]['has_photo'])
+        self.assertIsNotNone(self.store.photo(item['id']))
+        self.store.decide(item['id'], True)
+        self.assertIsNone(self.store.photo(item['id']))
+
+    def test_house_rule_creates_one_open_job_that_cleans_itself_up(self):
+        rule = self.store.add_rule('Vaskemaskine', 'sensor.vaskemaskine_effekt',
+                                   'Flyt tøj til tørretumbleren', 5)
+        task = self.store.fire_rule(rule['id'])
+        self.assertTrue(task['open'])
+        self.assertIsNone(self.store.fire_rule(rule['id']))     # ingen dubletter
+        jobs = self.store.kid_view(self.emil['token'])['jobs']
+        self.assertEqual([j['title'] for j in jobs], ['Flyt tøj til tørretumbleren'])
+        self.store.claim(self.emil['token'], task['id'])
+        self.assertEqual(self.store.kid_view(self.maja['token'])['jobs'], [])
+        self.finish(self.emil, 'Flyt tøj til tørretumbleren')
+        self.store.admin_state()
+        self.assertEqual(self.store.data['tasks'], [])
+        self.assertIsNotNone(self.store.fire_rule(rule['id']))  # næste vask
+        with self.assertRaises(Problem):
+            self.store.add_rule('X', 'ikke et id', 'T', 1)
+
+    def test_machine_is_done_after_it_has_been_quiet_for_a_while(self):
+        t0 = dt.datetime(2026, 11, 16, 12, 0)
+        state, done = step(None, '1200', t0)           # watt
+        self.assertFalse(done)
+        state, done = step(state, '0.2', t0 + dt.timedelta(minutes=1))
+        self.assertFalse(done)                          # kan være en pause
+        state, done = step(state, '900', t0 + dt.timedelta(minutes=2))
+        state, done = step(state, '0.2', t0 + dt.timedelta(minutes=3))
+        state, done = step(state, '0.3', t0 + dt.timedelta(minutes=7))
+        self.assertTrue(done)
+        state, done = step(state, '0.3', t0 + dt.timedelta(minutes=20))
+        self.assertFalse(done)                          # kun én gang
+        state, _ = step(None, 'washing', t0)
+        state, done = step(state, 'finished', t0 + dt.timedelta(minutes=5))
+        state, done = step(state, 'finished', t0 + dt.timedelta(minutes=6))
+        self.assertTrue(done)
+        _, done = step(None, 'off', t0)                 # aldrig kørt: ikke færdig
+        self.assertFalse(done)
+
+    def test_reminder_is_sent_once_a_day(self):
+        self.store.add_task('Dæk bord', 3)
+        self.store.set_setting('reminder_time', '17:00')
+        self.assertEqual(self.store.due_reminders(), [])
+        self.clock.advance(hours=10)
+        got = self.store.due_reminders()
+        self.assertEqual(sorted(k['name'] for k, n in got), ['Emil', 'Maja'])
+        self.assertEqual(self.store.due_reminders(), [])
+        with self.assertRaises(Problem):
+            self.store.set_setting('reminder_time', '25:99')
+
     def test_data_survives_restart(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, 'pligt.json')
@@ -298,6 +449,68 @@ class StoreTests(unittest.TestCase):
             self.store.kid_view(self.emil['token'])
 
 
+class StubHA:
+    """Samler det, appen ville sende til Home Assistant."""
+    enabled = True
+    notify_service = 'mobile_app_far'
+
+    def __init__(self):
+        self.value = '0'
+        self.sent = []
+
+    def states(self, ids):
+        return {i: self.value for i in ids}
+
+    def notify_to(self, service, title, message, open_app=False):
+        self.sent.append((service, title, message))
+
+    def notify(self, title, message):
+        self.sent.append((self.notify_service, title, message))
+
+    def celebrate(self, entity):
+        self.sent.append(('light', entity))
+
+
+class AutomationTests(unittest.TestCase):
+    def test_finished_washer_creates_job_and_tells_children(self):
+        clock = Clock(monday())
+        store = Store(None, clock)
+        store.add_kid('Emil', 8)
+        kid = store.add_kid('Maja', 12)
+        store.update_kid(kid['id'], notify='mobile_app_maja')
+        store.add_rule('Vaskemaskine', 'sensor.vask_effekt', 'Flyt tøj til tørretumbleren', 5)
+        ha = StubHA()
+        auto = Automation(store, ha, clock)
+        ha.value = '1500'
+        auto.tick()
+        self.assertEqual(store.data['tasks'], [])
+        ha.value = '0.5'
+        for _ in range(10):
+            clock.advance(minutes=1)
+            auto.tick()
+        self.assertEqual(len(store.data['tasks']), 1)
+        self.assertEqual([m[0] for m in ha.sent], ['mobile_app_maja'])
+        self.assertIn('Flyt tøj til tørretumbleren', ha.sent[0][2])
+
+    def test_reminders_and_birthday_go_to_the_right_people(self):
+        clock = Clock(monday())
+        store = Store(None, clock)
+        kid = store.add_kid('Maja', birthday='2014-11-17')
+        store.update_kid(kid['id'], notify='mobile_app_maja')
+        store.add_task('Dæk bord', 3)
+        store.set_setting('reminder_time', '17:00')
+        ha = StubHA()
+        auto = Automation(store, ha, clock)
+        auto.tick()
+        self.assertEqual(ha.sent, [])
+        clock.advance(hours=10)
+        auto.tick()
+        auto.tick()
+        self.assertEqual([(m[0], m[1]) for m in ha.sent],
+                         [('mobile_app_maja', 'Husk dine pligter'),
+                          ('mobile_app_far', 'Fødselsdag i morgen')])
+
+
 class FakeHA(BaseHTTPRequestHandler):
     calls = []
 
@@ -308,7 +521,8 @@ class FakeHA(BaseHTTPRequestHandler):
         body = self.rfile.read(int(self.headers.get('Content-Length') or 0)).decode()
         FakeHA.calls.append((self.path, self.headers.get('Authorization'), body))
         if self.path == '/template' and 'entity_id' in body:
-            out = json.dumps(['sensor.vaskemaskine_effekt', 'Tørretumbler', 'light.stue']).encode()
+            out = json.dumps([['sensor.vaskemaskine_effekt', 'Vaskemaskine effekt'],
+                              ['switch.tumbler', 'Tørretumbler'], ['light.stue', 'Stue']]).encode()
         elif self.path == '/template':
             out = json.dumps(['Køkken', 'Bryggers', 'Have']).encode()
         else:

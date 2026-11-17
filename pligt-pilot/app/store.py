@@ -11,6 +11,7 @@ Begreber
 import datetime as dt
 import json
 import os
+import re
 import secrets
 import threading
 import uuid
@@ -18,6 +19,19 @@ import uuid
 COLORS = ['#0B7A70', '#C73A30', '#6C4AB6', '#B05A00', '#1F6FB2', '#B03A83']
 DAYS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
 REPEATS = ('daily', 'weekly', 'once')
+MONTHS = ['januar', 'februar', 'marts', 'april', 'maj', 'juni', 'juli', 'august',
+          'september', 'oktober', 'november', 'december']
+ENTITY = re.compile(r'^[a-z_]+\.[a-z0-9_]+$')
+SERVICE = re.compile(r'^(notify\.)?[a-z0-9_]+$')
+MAX_PHOTO = 450 * 1024
+
+
+def age_on(birth, today):
+    return today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+
+
+def step_back(repeat, d):
+    return d - dt.timedelta(days=7 if repeat == 'weekly' else 1)
 
 
 class Problem(Exception):
@@ -58,8 +72,14 @@ class Store:
         self.lock = threading.RLock()
         self.data = {
             'kids': [], 'tasks': [], 'items': [], 'ledger': [],
-            'settings': {'goal': 8, 'hero_bonus': 20, 'hero_paid_week': ''},
+            'rules': [],
+            'settings': {'goal': 8, 'hero_bonus': 20, 'hero_paid_week': '',
+                         'penalty': 0, 'perfect_bonus': 0, 'reminder_time': '',
+                         'reminder_sent': '', 'celebrate_light': '',
+                         'family_goal': None, 'hero_wins': {}, 'perfect_paid': {}},
         }
+        self._photos = {}
+        self.photo_dir = os.path.join(os.path.dirname(path) or '.', 'photos') if path else None
         if path and os.path.exists(path):
             with open(path, 'r', encoding='utf-8') as f:
                 loaded = json.load(f)
@@ -149,30 +169,63 @@ class Store:
         return age
 
     # ---- børn ----------------------------------------------------------
-    def add_kid(self, name, age, color=None):
+    @staticmethod
+    def _parse_birthday(value, today):
+        try:
+            birth = dt.date.fromisoformat(str(value).strip())
+        except ValueError:
+            raise Problem('Fødselsdatoen skal være en dato')
+        age = age_on(birth, today)
+        if birth > today or age < 1 or age > 25:
+            raise Problem('Alderen skal være mellem 1 og 25 år')
+        return birth.isoformat(), age
+
+    @staticmethod
+    def _clean_service(value):
+        text = (value or '').strip()
+        if text and not SERVICE.match(text):
+            raise Problem('Notifikationstjenesten må kun indeholde bogstaver, tal og _')
+        return text
+
+    def add_kid(self, name, age=None, color=None, birthday=None):
         with self.lock:
             kid = {
                 'id': _id(),
                 'name': self._clean_text(name, 'Navn', 30),
-                'age': self._clean_age(age),
                 'color': color or COLORS[len(self.data['kids']) % len(COLORS)],
                 'token': secrets.token_urlsafe(12),
             }
+            if str(birthday or '').strip():
+                kid['birthday'], kid['age'] = self._parse_birthday(birthday, self._now().date())
+            else:
+                kid['age'] = self._clean_age(age)
             self.data['kids'].append(kid)
             self._save()
             return kid
 
-    def update_kid(self, kid_id, name=None, age=None, color=None, paused=None):
+    def update_kid(self, kid_id, name=None, age=None, color=None, paused=None,
+                   birthday=None, notify=None, allowance=None):
         with self.lock:
             kid = self._kid(kid_id)
             if name is not None:
                 kid['name'] = self._clean_text(name, 'Navn', 30)
-            if age is not None:
+            if birthday is not None:
+                if str(birthday).strip():
+                    kid['birthday'], kid['age'] = self._parse_birthday(birthday, self._now().date())
+                else:
+                    kid.pop('birthday', None)
+            if age is not None and 'birthday' not in kid:
                 kid['age'] = self._clean_age(age)
             if color:
                 kid['color'] = color
             if paused is not None:
                 kid['paused'] = bool(paused)
+            if notify is not None:
+                kid['notify'] = self._clean_service(notify)
+            if allowance is not None:
+                amount = self._clean_price(allowance or 0)
+                kid['allowance'] = amount
+                kid['allowance_week'] = week_key(self._now())
             self._save()
             return kid
 
@@ -194,16 +247,39 @@ class Store:
             self._save()
             return kid
 
+    def _earned_since(self, since, kid_id=None):
+        return sum(e['amount'] for e in self.data['ledger']
+                   if (kid_id is None or e['kid_id'] == kid_id)
+                   and e['kind'] in ('task', 'bonus', 'allowance') and e['at'] >= since)
+
     def _saving(self, kid):
         goal = kid.get('saving')
         if not goal:
             return None
-        saved = sum(e['amount'] for e in self.data['ledger']
-                    if e['kid_id'] == kid['id'] and e['kind'] in ('task', 'bonus')
-                    and e['at'] >= goal['since'])
-        saved = max(0, saved)
+        saved = max(0, self._earned_since(goal['since'], kid['id']))
         return {'title': goal['title'], 'amount': goal['amount'], 'saved': min(saved, goal['amount']),
                 'reached': saved >= goal['amount']}
+
+    def set_family_goal(self, title, amount):
+        with self.lock:
+            if not (title or '').strip() and not str(amount or '').strip():
+                self.data['settings']['family_goal'] = None
+            else:
+                price = self._clean_price(amount)
+                if price < 1:
+                    raise Problem('Beløbet skal være mindst 1 kr.')
+                self.data['settings']['family_goal'] = {
+                    'title': self._clean_text(title, 'Navn på familiemålet', 40),
+                    'amount': price, 'since': self._now().isoformat(timespec='seconds')}
+            self._save()
+
+    def _family(self):
+        goal = self.data['settings'].get('family_goal')
+        if not goal:
+            return None
+        saved = max(0, self._earned_since(goal['since']))
+        return {'title': goal['title'], 'amount': goal['amount'],
+                'saved': min(saved, goal['amount']), 'reached': saved >= goal['amount']}
 
     def new_token(self, kid_id):
         with self.lock:
@@ -217,6 +293,9 @@ class Store:
             self._kid(kid_id)
             d = self.data
             d['kids'] = [k for k in d['kids'] if k['id'] != kid_id]
+            for i in d['items']:
+                if i['kid_id'] == kid_id:
+                    self.delete_photo(i['id'])
             d['items'] = [i for i in d['items'] if i['kid_id'] != kid_id]
             d['ledger'] = [e for e in d['ledger'] if e['kid_id'] != kid_id]
             for t in d['tasks']:
@@ -226,7 +305,7 @@ class Store:
 
     # ---- opgaver -------------------------------------------------------
     def add_task(self, title, price, room='', repeat='daily', open_job=False,
-                 kids=None, age_min=0, age_max=99, times=1):
+                 kids=None, age_min=0, age_max=99, times=1, photo=False, auto_rule=None):
         with self.lock:
             if repeat not in REPEATS:
                 raise Problem('Ukendt gentagelse')
@@ -241,8 +320,12 @@ class Store:
                 'age_min': int(age_min or 0),
                 'age_max': int(age_max or 99),
                 'times': self._clean_times(times),
+                'photo': bool(photo),
+                'created': self._now().isoformat(timespec='seconds'),
                 'active': True,
             }
+            if auto_rule:
+                task['auto_rule'] = auto_rule
             self.data['tasks'].append(task)
             self._save()
             return task
@@ -268,6 +351,8 @@ class Store:
                 task['kids'] = list(fields['kids'] or [])
             if 'times' in fields:
                 task['times'] = self._clean_times(fields['times'])
+            if 'photo' in fields:
+                task['photo'] = bool(fields['photo'])
             if 'age_min' in fields:
                 try:
                     task['age_min'] = max(0, min(25, int(fields['age_min'] or 0)))
@@ -315,18 +400,52 @@ class Store:
     def _refresh(self):
         """Opretter dagens opgaver og lukker gamle. Kaldes før alt, der læser."""
         d = self._now()
-        tasks = {t['id']: t for t in self.data['tasks']}
         changed = False
+        # alder følger fødselsdatoen
+        for kid in self.data['kids']:
+            if kid.get('birthday'):
+                age = age_on(dt.date.fromisoformat(kid['birthday']), d.date())
+                if age != kid['age']:
+                    kid['age'] = age
+                    changed = True
+        # lommepenge: én gang pr. uge
+        wk = week_key(d)
+        for kid in self.data['kids']:
+            if kid.get('allowance', 0) > 0 and kid.get('allowance_week') != wk:
+                self._credit(kid['id'], kid['allowance'], 'allowance', 'Lommepenge')
+                kid['allowance_week'] = wk
+                changed = True
+        # ryd huset-opgaver, der er klaret eller har ligget for længe
+        for t in list(self.data['tasks']):
+            if not t.get('auto_rule'):
+                continue
+            mine = [i for i in self.data['items'] if i['task_id'] == t['id']]
+            finished = any(i['status'] == 'done' for i in mine) and not any(
+                i['status'] in ('todo', 'wait') for i in mine)
+            age = d - dt.datetime.fromisoformat(t.get('created') or d.isoformat())
+            if finished or (not mine and age > dt.timedelta(days=2)):
+                self.data['tasks'].remove(t)
+                changed = True
+        tasks = {t['id']: t for t in self.data['tasks']}
+        kids = {k['id']: k for k in self.data['kids']}
+        penalty = int(self.data['settings'].get('penalty') or 0)
         for it in self.data['items']:
             if it['status'] != 'todo':
                 continue
             t = tasks.get(it['task_id'])
-            paused = any(k['id'] == it['kid_id'] and k.get('paused') for k in self.data['kids'])
-            stale = (t is None or not t['active'] or paused or
-                     (t['repeat'] != 'once' and it['period'] != period_key(t['repeat'], d)))
+            kid = kids.get(it['kid_id'])
+            paused = bool(kid and kid.get('paused'))
+            expired = (t is not None and t['repeat'] != 'once' and
+                       it['period'] != period_key(t['repeat'], d))
+            stale = t is None or not t['active'] or paused or expired
             if stale:
                 it['status'] = 'missed'
+                self.delete_photo(it['id'])
                 changed = True
+                if penalty and expired and t['active'] and not paused and not t.get('open'):
+                    cut = min(penalty, max(0, self.balance(it['kid_id'])))
+                    if cut:
+                        self._credit(it['kid_id'], -cut, 'penalty', it['title'])
         existing = {}
         for i in self.data['items']:
             if i['status'] != 'missed':
@@ -346,6 +465,10 @@ class Store:
         if changed:
             self._save()
 
+    def housekeeping(self):
+        with self.lock:
+            self._refresh()
+
     def _open_jobs_for(self, kid):
         d = self._now()
         jobs = []
@@ -360,6 +483,78 @@ class Store:
             if taken < t.get('times', 1):
                 jobs.append(t)
         return jobs
+
+    # ---- billeder ------------------------------------------------------
+    def _photo_file(self, item_id):
+        return os.path.join(self.photo_dir, item_id + '.jpg') if self.photo_dir else None
+
+    def save_photo(self, item_id, data):
+        if len(data) > MAX_PHOTO:
+            raise Problem('Billedet er for stort')
+        if data[:3] != b'\xff\xd8\xff':
+            raise Problem('Billedet skal være et JPEG-billede')
+        if self.photo_dir:
+            os.makedirs(self.photo_dir, exist_ok=True)
+            with open(self._photo_file(item_id), 'wb') as f:
+                f.write(data)
+        else:
+            self._photos[item_id] = data
+
+    def photo(self, item_id):
+        if self.photo_dir:
+            try:
+                with open(self._photo_file(item_id), 'rb') as f:
+                    return f.read()
+            except OSError:
+                return None
+        return self._photos.get(item_id)
+
+    def delete_photo(self, item_id):
+        self._photos.pop(item_id, None)
+        if self.photo_dir:
+            try:
+                os.remove(self._photo_file(item_id))
+            except OSError:
+                pass
+
+    # ---- serier og mærker ---------------------------------------------
+    def _streak(self, kid_id, task):
+        """Hvor mange perioder i træk (før den nuværende), opgaven er godkendt."""
+        if task['repeat'] == 'once':
+            return 0
+        done = {i['period'] for i in self.data['items']
+                if i['task_id'] == task['id'] and i['kid_id'] == kid_id and i['status'] == 'done'}
+        d = step_back(task['repeat'], self._now())
+        n = 0
+        while period_key(task['repeat'], d) in done:
+            n += 1
+            d = step_back(task['repeat'], d)
+        return n
+
+    def _best_streak(self, kid_id):
+        best = 0
+        for t in self.data['tasks']:
+            best = max(best, self._streak(kid_id, t))
+        return best
+
+    def _badges(self, kid):
+        approved = sum(1 for e in self.data['ledger']
+                       if e['kid_id'] == kid['id'] and e['kind'] == 'task')
+        wins = (self.data['settings'].get('hero_wins') or {}).get(kid['id'], 0)
+        out = []
+        for need, title in ((1, 'Første opgave'), (10, '10 opgaver'), (25, '25 opgaver'),
+                            (50, '50 opgaver'), (100, '100 opgaver')):
+            if approved >= need:
+                out.append({'id': 'n%d' % need, 'title': title})
+        streak = self._best_streak(kid['id'])
+        for need, title in ((3, '3 i træk'), (7, '7 i træk'), (30, '30 i træk')):
+            if streak >= need:
+                out.append({'id': 's%d' % need, 'title': title})
+        if wins:
+            out.append({'id': 'hero', 'title': 'Ugens helt' + (' x%d' % wins if wins > 1 else '')})
+        if kid.get('saving') and self._saving(kid)['reached']:
+            out.append({'id': 'goal', 'title': 'Sparemål nået'})
+        return out
 
     # ---- penge ---------------------------------------------------------
     def balance(self, kid_id):
@@ -430,6 +625,9 @@ class Store:
                         'color': kid['color']},
                 'paused': bool(kid.get('paused')),
                 'saving': self._saving(kid),
+                'family': self._family(),
+                'badges': self._badges(kid),
+                'birthday_today': self._birthday_today(kid),
                 'balance': self.balance(kid['id']),
                 'waiting': sum(i['price'] for i in self.data['items']
                                if i['kid_id'] == kid['id'] and i['status'] == 'wait'),
@@ -440,12 +638,29 @@ class Store:
                 'items': [{'id': i['id'], 'title': i['title'], 'room': i['room'],
                            'price': i['price'], 'status': i['status'],
                            'rejected': i['rejected'], 'slot': i.get('slot', 1),
-                           'of': i.get('of', 1)} for i in items],
+                           'of': i.get('of', 1),
+                           'need_photo': i['status'] == 'todo' and self._needs_photo(i),
+                           'streak': self._item_streak(kid['id'], i)} for i in items],
                 'jobs': [{'task_id': t['id'], 'title': t['title'], 'room': t['room'],
                           'price': t['price']} for t in self._open_jobs_for(kid)],
             }
 
-    def mark_done(self, token, item_id):
+    def _needs_photo(self, item):
+        task = next((t for t in self.data['tasks'] if t['id'] == item['task_id']), None)
+        return bool(task and task.get('photo'))
+
+    def _item_streak(self, kid_id, item):
+        task = next((t for t in self.data['tasks'] if t['id'] == item['task_id']), None)
+        return self._streak(kid_id, task) if task and item['status'] != 'missed' else 0
+
+    def _birthday_today(self, kid):
+        b = kid.get('birthday')
+        if not b:
+            return False
+        born, today = dt.date.fromisoformat(b), self._now().date()
+        return (born.month, born.day) == (today.month, today.day) and born.year != today.year
+
+    def mark_done(self, token, item_id, photo=None):
         with self.lock:
             kid = self.kid_by_token(token)
             if not kid:
@@ -456,6 +671,12 @@ class Store:
                 raise Problem('Det er ikke din opgave', 403)
             if item['status'] != 'todo':
                 raise Problem('Opgaven er allerede meldt færdig')
+            task = next((t for t in self.data['tasks'] if t['id'] == item['task_id']), None)
+            if task and task.get('photo') and not photo:
+                raise Problem('Tag et billede af opgaven først')
+            if photo:
+                self.save_photo(item['id'], photo)
+                item['photo'] = True
             item['status'] = 'wait'
             item['done_at'] = self._now().isoformat(timespec='seconds')
             self._save()
@@ -496,6 +717,11 @@ class Store:
                     'is_hero': k['id'] == hero,
                     'paused': bool(k.get('paused')),
                     'saving': self._saving(k),
+                    'birthday': k.get('birthday', ''),
+                    'notify': k.get('notify', ''),
+                    'allowance': k.get('allowance', 0),
+                    'badges': self._badges(k),
+                    'streak': self._best_streak(k['id']),
                 })
             kid_names = {k['id']: k for k in self.data['kids']}
             pending = []
@@ -504,12 +730,19 @@ class Store:
                     kid = kid_names[i['kid_id']]
                     pending.append({'id': i['id'], 'title': i['title'], 'price': i['price'],
                                     'kid_id': kid['id'], 'name': kid['name'],
-                                    'color': kid['color'], 'done_at': i['done_at']})
+                                    'color': kid['color'], 'done_at': i['done_at'],
+                                    'has_photo': bool(i.get('photo'))})
             pending.sort(key=lambda p: p['done_at'] or '')
             settings = self.data['settings']
             return {
                 'kids': kids,
                 'history': self._history(kid_names),
+                'months': self._months(),
+                'perfect': self._perfect_candidates(),
+                'family': self._family(),
+                'rules': [dict(r) for r in self.data['rules']],
+                'settings': {k: settings.get(k) for k in
+                             ('penalty', 'perfect_bonus', 'reminder_time', 'celebrate_light')},
                 'pending': pending,
                 'tasks': [dict(t) for t in self.data['tasks']],
                 'total': sum(k['balance'] for k in kids),
@@ -556,6 +789,151 @@ class Store:
             self._save()
             return item
 
+    def _months(self, count=3):
+        today = self._now()
+        keys = []
+        y, m = today.year, today.month
+        for _ in range(count):
+            keys.append((y, m))
+            m -= 1
+            if m == 0:
+                y, m = y - 1, 12
+        out = []
+        for y, m in keys:
+            prefix = '%04d-%02d' % (y, m)
+            per = []
+            for k in self.data['kids']:
+                amount = sum(e['amount'] for e in self.data['ledger']
+                             if e['kid_id'] == k['id'] and e['kind'] in ('task', 'bonus', 'allowance')
+                             and e['at'].startswith(prefix))
+                per.append({'name': k['name'], 'color': k['color'], 'amount': amount})
+            out.append({'label': MONTHS[m - 1] + (' %d' % y if y != today.year else ''),
+                        'kids': per, 'total': sum(p['amount'] for p in per)})
+        return out
+
+    def _perfect_candidates(self):
+        bonus = int(self.data['settings'].get('perfect_bonus') or 0)
+        if bonus <= 0:
+            return []
+        prev = week_key(self._now() - dt.timedelta(days=7))
+        paid = self.data['settings'].get('perfect_paid', {}).get(prev, [])
+        out = []
+        for k in self.data['kids']:
+            if k['id'] in paid:
+                continue
+            mine = [i for i in self.data['items'] if i['kid_id'] == k['id']
+                    and week_key(dt.datetime.fromisoformat(i['created'])) == prev]
+            if len(mine) >= 3 and all(i['status'] == 'done' for i in mine):
+                out.append({'kid_id': k['id'], 'name': k['name'], 'color': k['color'],
+                            'amount': bonus, 'week': prev[-2:].lstrip('0')})
+        return out
+
+    def pay_perfect(self, kid_id):
+        with self.lock:
+            self._refresh()
+            kid = self._kid(kid_id)
+            cand = [c for c in self._perfect_candidates() if c['kid_id'] == kid_id]
+            if not cand:
+                raise Problem('Ingen perfekt uge at give bonus for')
+            prev = week_key(self._now() - dt.timedelta(days=7))
+            paid = self.data['settings'].setdefault('perfect_paid', {})
+            paid.setdefault(prev, []).append(kid_id)
+            # gem kun de seneste uger
+            for key in sorted(paid)[:-6]:
+                paid.pop(key)
+            self._credit(kid_id, cand[0]['amount'], 'bonus', 'Perfekt uge')
+            self._save()
+            return kid, cand[0]['amount']
+
+    # ---- huset-regler --------------------------------------------------
+    def add_rule(self, name, entity, title, price):
+        with self.lock:
+            entity = (entity or '').strip().lower()
+            if not ENTITY.match(entity):
+                raise Problem('Enhedens id skal ligne sensor.vaskemaskine')
+            rule = {'id': _id(), 'name': self._clean_text(name, 'Navn', 40), 'entity': entity,
+                    'title': self._clean_text(title, 'Navn på opgaven'),
+                    'price': self._clean_price(price), 'active': True}
+            self.data['rules'].append(rule)
+            self._save()
+            return rule
+
+    def update_rule(self, rule_id, active=None):
+        with self.lock:
+            rule = self._rule(rule_id)
+            if active is not None:
+                rule['active'] = bool(active)
+            self._save()
+            return rule
+
+    def delete_rule(self, rule_id):
+        with self.lock:
+            self._rule(rule_id)
+            self.data['rules'] = [r for r in self.data['rules'] if r['id'] != rule_id]
+            self.data['tasks'] = [t for t in self.data['tasks'] if t.get('auto_rule') != rule_id]
+            self._save()
+
+    def _rule(self, rule_id):
+        for r in self.data['rules']:
+            if r['id'] == rule_id:
+                return r
+        raise Problem('Reglen findes ikke', 404)
+
+    def fire_rule(self, rule_id):
+        """Huset melder 'færdig': opretter en ledig opgave. None, hvis den allerede ligger."""
+        with self.lock:
+            self._refresh()
+            rule = self._rule(rule_id)
+            if not rule['active']:
+                return None
+            if any(t.get('auto_rule') == rule_id for t in self.data['tasks']):
+                return None
+            task = self.add_task(rule['title'], rule['price'], 'Fra huset', 'once', True,
+                                 auto_rule=rule_id)
+            return task
+
+    # ---- automatik: påmindelser og fødselsdage ------------------------
+    def due_reminders(self):
+        """[(kid, antal)] for børn med åbne opgaver, når påmindelsestiden er nået."""
+        with self.lock:
+            self._refresh()
+            st = self.data['settings']
+            at = st.get('reminder_time') or ''
+            now = self._now()
+            if not at or st.get('reminder_sent') == now.strftime('%Y-%m-%d'):
+                return []
+            if now.strftime('%H:%M') < at:
+                return []
+            st['reminder_sent'] = now.strftime('%Y-%m-%d')
+            self._save()
+            out = []
+            for k in self.data['kids']:
+                n = sum(1 for i in self.data['items']
+                        if i['kid_id'] == k['id'] and i['status'] == 'todo')
+                if n and not k.get('paused'):
+                    out.append((k, n))
+            return out
+
+    def birthday_notices(self):
+        """Børn, der fylder år i morgen (kun efter kl. 16, én gang pr. år)."""
+        with self.lock:
+            now = self._now()
+            if now.hour < 16:
+                return []
+            tomorrow = now.date() + dt.timedelta(days=1)
+            out = []
+            for k in self.data['kids']:
+                b = k.get('birthday')
+                if not b or k.get('bday_notice') == now.year:
+                    continue
+                born = dt.date.fromisoformat(b)
+                if (born.month, born.day) == (tomorrow.month, tomorrow.day):
+                    k['bday_notice'] = now.year
+                    out.append((k, age_on(born, tomorrow)))
+            if out:
+                self._save()
+            return out
+
     def decide(self, item_id, approve):
         with self.lock:
             item = self._item(item_id)
@@ -569,6 +947,8 @@ class Store:
                 item['status'] = 'todo'
                 item['done_at'] = None
                 item['rejected'] += 1
+            item.pop('photo', None)
+            self.delete_photo(item_id)
             self._save()
             return item
 
@@ -593,6 +973,8 @@ class Store:
                 raise Problem('Der er ingen ugens helt endnu')
             amount = int(self.data['settings']['hero_bonus'])
             self._credit(hero, amount, 'bonus', 'Ugens helt')
+            wins = self.data['settings'].setdefault('hero_wins', {})
+            wins[hero] = wins.get(hero, 0) + 1
             self.data['settings']['hero_paid_week'] = week
             self._save()
             return hero, amount
@@ -603,8 +985,16 @@ class Store:
                 value = int(value)
                 if value < 1 or value > 50:
                     raise Problem('Målet skal være mellem 1 og 50')
-            elif key == 'hero_bonus':
-                value = self._clean_price(value)
+            elif key in ('hero_bonus', 'penalty', 'perfect_bonus'):
+                value = self._clean_price(value or 0)
+            elif key == 'reminder_time':
+                value = (value or '').strip()
+                if value and not re.match(r'^([01]\d|2[0-3]):[0-5]\d$', value):
+                    raise Problem('Tidspunktet skal være som 17:00')
+            elif key == 'celebrate_light':
+                value = (value or '').strip().lower()
+                if value and not (ENTITY.match(value) and value.startswith('light.')):
+                    raise Problem('Vælg en lampe, fx light.stue')
             else:
                 raise Problem('Ukendt indstilling')
             self.data['settings'][key] = value

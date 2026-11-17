@@ -4,6 +4,8 @@
 - forældreserveren (port 8100): hele appen. Nås kun gennem Home Assistants
   indbyggede panel (ingress), så HA's egen login beskytter den.
 """
+import base64
+import binascii
 import json
 import logging
 import os
@@ -17,6 +19,7 @@ from suggestions import suggest
 log = logging.getLogger('pligt')
 WEB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'web')
 MAX_BODY = 64 * 1024
+MAX_PHOTO_BODY = 700 * 1024
 
 KID_PAGE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/?$')
 KID_STATE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/state$')
@@ -67,9 +70,9 @@ def make_handler(app, role, allow_from=None):
         def _problem(self, err):
             self._json({'error': err.message}, err.status)
 
-        def _body(self):
+        def _body(self, limit=MAX_BODY):
             length = int(self.headers.get('Content-Length') or 0)
-            if length > MAX_BODY:
+            if length > limit:
                 raise Problem('For stor forespørgsel', 413)
             if not length:
                 return {}
@@ -127,8 +130,14 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.kid_view(m.group(1)))
             m = KID_DONE.match(path)
             if m and method == 'POST':
-                self._body()
-                kid, item = store.mark_done(m.group(1), m.group(2))
+                body = self._body(MAX_PHOTO_BODY)
+                photo = None
+                if body.get('image'):
+                    try:
+                        photo = base64.b64decode(str(body['image']), validate=True)
+                    except (binascii.Error, ValueError):
+                        raise Problem('Billedet kunne ikke læses')
+                kid, item = store.mark_done(m.group(1), m.group(2), photo)
                 app.ha.notify(
                     'Pligt-pilot',
                     '%s er færdig med: %s (%d kr.). Åbn Pligter for at godkende.'
@@ -155,6 +164,14 @@ def make_handler(app, role, allow_from=None):
                     state['public_url'] = app.options.get('public_url', '')
                     state['notify_on'] = bool(app.ha.enabled and app.ha.notify_service)
                     return self._json(state)
+                m = re.match(r'^/photo/' + ID + r'$', path)
+                if m:
+                    data = store.photo(m.group(1))
+                    if not data:
+                        return self._json({'error': 'Findes ikke'}, 404)
+                    return self._send(200, data, 'image/jpeg')
+                if path == '/api/entities':
+                    return self._json({'entities': app.ha.entities(), 'on': app.ha.enabled})
                 if path == '/api/suggestions':
                     s = store.admin_state()
                     rows = suggest(app.ha.areas(), [k['age'] for k in s['kids']],
@@ -164,12 +181,13 @@ def make_handler(app, role, allow_from=None):
 
             body = self._body()
             if path == '/api/kids':
-                store.add_kid(body.get('name'), body.get('age'), body.get('color'))
+                store.add_kid(body.get('name'), body.get('age'), body.get('color'), body.get('birthday'))
                 return self._json(store.admin_state())
             m = re.match(r'^/api/kids/' + ID + r'$', path)
             if m:
                 store.update_kid(m.group(1), body.get('name'), body.get('age'),
-                                 body.get('color'), body.get('paused'))
+                                 body.get('color'), body.get('paused'), body.get('birthday'),
+                                 body.get('notify'), body.get('allowance'))
                 return self._json(store.admin_state())
             m = re.match(r'^/api/kids/' + ID + r'/goal$', path)
             if m:
@@ -193,11 +211,18 @@ def make_handler(app, role, allow_from=None):
                 store.add_task(body.get('title'), body.get('price', 0), body.get('room', ''),
                                body.get('repeat', 'daily'), body.get('open', False),
                                body.get('kids'), body.get('age_min', 0),
-                               body.get('age_max', 99), body.get('times', 1))
+                               body.get('age_max', 99), body.get('times', 1),
+                               body.get('photo', False))
+                if body.get('open'):
+                    task = store.data['tasks'][-1]
+                    for kid in store.data['kids']:
+                        if kid.get('notify') and not kid.get('paused') and store._in_scope(task, kid):
+                            app.ha.notify_to(kid['notify'], 'Ny opgave',
+                                             '%s (%d kr.). Først til mølle!' % (task['title'], task['price']))
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'$', path)
             if m:
-                allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids', 'age_min', 'times')
+                allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids', 'age_min', 'times', 'photo')
                 store.update_task(m.group(1), **{k: v for k, v in body.items() if k in allowed})
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'/delete$', path)
@@ -206,15 +231,42 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.admin_state())
             m = re.match(r'^/api/items/' + ID + r'/(approve|reject)$', path)
             if m:
-                store.decide(m.group(1), m.group(2) == 'approve')
+                approve = m.group(2) == 'approve'
+                item = store.decide(m.group(1), approve)
+                kid = next((k for k in store.data['kids'] if k['id'] == item['kid_id']), None)
+                if kid and kid.get('notify'):
+                    app.ha.notify_to(kid['notify'], 'Pligt-pilot',
+                                     'Godkendt: %s. Du fik %d kr.!' % (item['title'], item['price'])
+                                     if approve else 'Prøv igen: %s' % item['title'])
+                if approve:
+                    app.ha.celebrate(store.data['settings'].get('celebrate_light'))
                 return self._json(store.admin_state())
             if path == '/api/hero_bonus':
                 store.pay_hero_bonus()
                 return self._json(store.admin_state())
             if path == '/api/settings':
-                for key in ('goal', 'hero_bonus'):
+                for key in ('goal', 'hero_bonus', 'penalty', 'perfect_bonus',
+                            'reminder_time', 'celebrate_light'):
                     if key in body:
                         store.set_setting(key, body[key])
+                if 'family_title' in body or 'family_amount' in body:
+                    store.set_family_goal(body.get('family_title'), body.get('family_amount'))
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/perfect/' + ID + r'$', path)
+            if m:
+                store.pay_perfect(m.group(1))
+                return self._json(store.admin_state())
+            if path == '/api/rules':
+                store.add_rule(body.get('name'), body.get('entity'), body.get('title'),
+                               body.get('price', 0))
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/rules/' + ID + r'$', path)
+            if m:
+                store.update_rule(m.group(1), body.get('active'))
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/rules/' + ID + r'/delete$', path)
+            if m:
+                store.delete_rule(m.group(1))
                 return self._json(store.admin_state())
             if path == '/api/setup':
                 rows = body.get('rows')

@@ -12,6 +12,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from ha import HomeAssistant  # noqa: E402
+from house import Automation  # noqa: E402
 from server import App, serve  # noqa: E402
 from store import Store  # noqa: E402
 
@@ -37,6 +38,7 @@ def main():
     ha = HomeAssistant(base, token or os.environ.get('PP_HA_TOKEN', ''),
                        options.get('notify_service', ''))
     app = App(store, ha, options)
+    Automation(store, ha).run()
 
     kid_port = int(os.environ.get('PP_KID_PORT', '8099'))
     admin_port = int(os.environ.get('PP_ADMIN_PORT', '8100'))
