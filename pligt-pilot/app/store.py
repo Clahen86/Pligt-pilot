@@ -284,6 +284,32 @@ class Store:
         return {'title': goal['title'], 'amount': goal['amount'],
                 'saved': min(saved, goal['amount']), 'reached': saved >= goal['amount']}
 
+    def add_push(self, token, sub):
+        """Gemmer barnets telefon som modtager af web-push. Højst 3 enheder pr. barn."""
+        with self.lock:
+            kid = self.kid_by_token(token)
+            if not kid:
+                raise Problem('Linket passer ikke', 404)
+            try:
+                endpoint = str(sub['endpoint'])
+                keys = {'p256dh': str(sub['keys']['p256dh']), 'auth': str(sub['keys']['auth'])}
+            except (KeyError, TypeError):
+                raise Problem('Tilmeldingen er ugyldig')
+            if not endpoint.startswith('https://') or len(endpoint) > 600 or \
+                    not all(re.match(r'^[A-Za-z0-9_-]{8,200}$', v) for v in keys.values()):
+                raise Problem('Tilmeldingen er ugyldig')
+            subs = [x for x in kid.get('push', []) if x['endpoint'] != endpoint]
+            subs.append({'endpoint': endpoint, 'keys': keys})
+            kid['push'] = subs[-3:]
+            self._save()
+            return kid
+
+    def remove_push(self, kid_id, endpoint):
+        with self.lock:
+            kid = self._kid(kid_id)
+            kid['push'] = [x for x in kid.get('push', []) if x['endpoint'] != endpoint]
+            self._save()
+
     def new_token(self, kid_id):
         with self.lock:
             kid = self._kid(kid_id)
@@ -727,6 +753,7 @@ class Store:
                     'birthday': k.get('birthday', ''),
                     'notify': k.get('notify', ''),
                     'ntfy': k.get('ntfy', ''), 'ntfy_on': bool(k.get('ntfy_on')),
+                    'push': len(k.get('push') or []),
                     'allowance': k.get('allowance', 0),
                     'badges': self._badges(k),
                     'streak': self._best_streak(k['id']),

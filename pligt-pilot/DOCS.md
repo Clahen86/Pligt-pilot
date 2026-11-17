@@ -13,9 +13,35 @@ Under fanen **Huset** vælger du en maskine (fx vaskemaskine) og den måler elle
 
 Lav fx to regler: vaskemaskinen giver "Flyt tøj til tørretumbleren", og tørretumbleren giver "Tag tøj ud og fold det".
 
+## Beskeder direkte fra linket (uden app)
+
+Når børnenes side kører med https, kan barnet trykke **Slå beskeder til** på sin side. Så kommer beskederne som almindelige notifikationer på telefonen, uden ntfy og uden Home Assistant-appen. Det kræver et gyldigt certifikat. Det kan du få gratis og uden at åbne porte på routeren:
+
+1. Gå til duckdns.org, log ind og opret et navn, fx `familien-hansen`. Gem din token.
+2. Installér add-onen **Duck DNS** i Home Assistant og skriv:
+   ```
+   lets_encrypt:
+     accept_terms: true
+   domains:
+     - familien-hansen.duckdns.org
+   token: DIN-TOKEN
+   ipv4: 192.168.1.50
+   ```
+   Skriv Home Assistants adresse hjemme i stedet for 192.168.1.50. Du finder den under Indstillinger → System → Netværk. Vis skjulte valgmuligheder, hvis `ipv4` ikke står der. Navnet peger så på dit hjem og ikke på internettet.
+3. Start Duck DNS. Loggen skal vise, at certifikatet er lavet. Det lægges i mappen `/ssl`.
+4. I Pligt-pilot skriver du `public_url: https://familien-hansen.duckdns.org:8099` og genstarter. Loggen skal sige "Børnesiden bruger https".
+5. Send børnene de nye links (de starter med https). Barnet åbner linket hjemme på wifi og trykker **Slå beskeder til**.
+   - iPhone: Åbn linket i Safari, tryk på del-knappen, vælg Føj til hjemmeskærm, og åbn siden derfra. Kræver iOS 16.4 eller nyere.
+   - Android: Virker direkte i Chrome.
+
+Hjælper det ikke:
+- Åbner linket ikke derhjemme, skyldes det ofte routerens beskyttelse mod DNS-omdirigering. Tilføj `duckdns.org` som undtagelse. I en FRITZ!Box findes den under Hjemmenetværk → Netværk → Netværksindstillinger.
+- Beskeden dukker op overalt, hvor telefonen har internet. Men et tryk på den åbner kun siden, når barnet er på hjemmets wifi.
+- Certifikatet fornyes af Duck DNS cirka hvert andet måned. Appen læser det nye certifikat af sig selv.
+
 ## Beskeder til børnene
 
-Under hvert barn slår du **Beskeder til barnets telefon** til. Så får barnet et hemmeligt emne. Barnet installerer den gratis app **ntfy** (App Store eller Google Play), trykker på + og skriver emnet. Det virker uden Home Assistant-appen og uden https.
+Hvis du ikke vil have https, kan du i stedet bruge ntfy. Under hvert barn slår du **Beskeder til barnets telefon** til. Så får barnet et hemmeligt emne. Barnet installerer den gratis app **ntfy** (App Store eller Google Play), trykker på + og skriver emnet. Det virker uden Home Assistant-appen og uden https.
 
 Beskeder sendes, når der er en ny ledig opgave, når du godkender eller afviser, og til den tid, du har valgt til påmindelse. Er `public_url` udfyldt, åbner et tryk på beskeden barnets side.
 

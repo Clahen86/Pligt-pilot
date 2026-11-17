@@ -1,6 +1,8 @@
 import datetime as dt
 import json
 import os
+import socket
+import ssl
 import sys
 import tempfile
 import threading
@@ -12,7 +14,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pligt-pilot', 'app'))
 
 from ha import HomeAssistant  # noqa: E402
-from server import App, serve  # noqa: E402
+from server import App, make_tls, serve  # noqa: E402
+import push  # noqa: E402
 from house import Automation, find_sensors, step  # noqa: E402
 from store import Problem, Store  # noqa: E402
 
@@ -482,6 +485,111 @@ class FindSensorTests(unittest.TestCase):
         self.assertEqual(find_sensors([['light.stue', 'Stue', '', '']]), [])
 
 
+class PushTests(unittest.TestCase):
+    def test_encryption_matches_the_example_in_rfc_8291(self):
+        from cryptography.hazmat.primitives.asymmetric import ec
+        eph = ec.derive_private_key(
+            int.from_bytes(push.unb64u('yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw'), 'big'),
+            ec.SECP256R1())
+        body = push.encrypt(
+            b'When I grow up, I want to be a watermelon',
+            'BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4',
+            'BTBZMqHH6r4Tts7J_aSIgg', salt=push.unb64u('DGv6ra1nlYgDCS1FRnbzlw'), ephemeral=eph)
+        self.assertEqual(push.b64u(body), (
+            'DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocIn'
+            'mYWAmS6TlzAC8wEqKK6PBru3jl7A_yl95bQpu6cVPTpK4Mqgkf1CXztLVBSt2Ks3oZwbuwXPXLWyouBWLVWGNWQe'
+            'xSgSxsj_Qulcy4a-fN'))
+
+    def test_phone_can_decrypt_what_we_send(self):
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import ec
+        phone = ec.generate_private_key(ec.SECP256R1())
+        public = push.b64u(phone.public_key().public_bytes(
+            serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint))
+        auth = push.b64u(os.urandom(16))
+        text = json.dumps({'title': 'Ny opgave', 'body': 'Støvsug (15 kr.)'}, ensure_ascii=False)
+        body = push.encrypt(text.encode('utf-8'), public, auth)
+        self.assertEqual(push.decrypt(body, phone, auth).decode('utf-8'), text)
+        with self.assertRaises(ValueError):
+            push.encrypt(b'x' * 5000, public, auth)
+
+    def test_vapid_header_is_a_valid_signed_token(self):
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.asymmetric import ec
+        from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
+        v = push.Vapid()
+        head = v.header('https://fcm.googleapis.com/fcm/send/abc', now=1_000_000)
+        token = head.split('t=')[1].split(',')[0]
+        h, c, sig = token.split('.')
+        claims = json.loads(push.unb64u(c))
+        self.assertEqual((claims['aud'], claims['exp']), ('https://fcm.googleapis.com', 1_043_200))
+        raw = push.unb64u(sig)
+        der = encode_dss_signature(int.from_bytes(raw[:32], 'big'), int.from_bytes(raw[32:], 'big'))
+        pub = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), push.unb64u(v.public))
+        pub.verify(der, (h + '.' + c).encode(), ec.ECDSA(hashes.SHA256()))   # kaster ved fejl
+
+    def test_vapid_key_survives_restart(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, 'vapid.pem')
+            self.assertEqual(push.Vapid(path).public, push.Vapid(path).public)
+            self.assertEqual(oct(os.stat(path).st_mode & 0o777), '0o600')
+
+    def test_subscriptions_are_validated_limited_and_cleaned_up(self):
+        store = Store(None, Clock(monday()))
+        kid = store.add_kid('Emma', 9)
+        good = {'endpoint': 'https://push.example/abc', 'keys': {'p256dh': 'A' * 87, 'auth': 'B' * 22}}
+        store.add_push(kid['token'], good)
+        store.add_push(kid['token'], good)                       # samme telefon to gange
+        self.assertEqual(store.admin_state()['kids'][0]['push'], 1)
+        for bad in ({}, {'endpoint': 'http://usikker/x', 'keys': good['keys']},
+                    {'endpoint': good['endpoint'], 'keys': {'p256dh': '!', 'auth': 'x'}}):
+            with self.assertRaises(Problem):
+                store.add_push(kid['token'], bad)
+        with self.assertRaises(Problem):
+            store.add_push('forkert-token', good)
+        for n in range(5):
+            store.add_push(kid['token'], dict(good, endpoint='https://push.example/%d' % n))
+        self.assertEqual(len(kid['push']), 3)
+        store.remove_push(kid['id'], 'https://push.example/4')
+        self.assertEqual(len(kid['push']), 2)
+
+    def test_dead_subscription_is_removed_after_410(self):
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import ec
+        seen = []
+
+        class Gone(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_POST(self):
+                seen.append((self.headers['Content-Encoding'], self.headers['Authorization'][:6]))
+                self.rfile.read(int(self.headers['Content-Length']))
+                self.send_response(410)
+                self.send_header('Content-Length', '0')
+                self.end_headers()
+
+        srv = HTTPServer(('127.0.0.1', 0), Gone)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        store = Store(None, Clock(monday()))
+        kid = store.add_kid('Emma', 9)
+        phone = ec.generate_private_key(ec.SECP256R1())
+        pub = push.b64u(phone.public_key().public_bytes(
+            serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint))
+        kid['push'] = [{'endpoint': 'http://127.0.0.1:%d/p' % srv.server_address[1],
+                        'keys': {'p256dh': pub, 'auth': push.b64u(os.urandom(16))}}]
+        pusher = push.Pusher(store, push.Vapid())
+        self.assertEqual(pusher.send_kid(kid, 'Hej', 'Test'), 1)
+        for _ in range(50):
+            if not kid['push']:
+                break
+            threading.Event().wait(0.1)
+        srv.shutdown()
+        self.assertEqual(seen, [('aes128gcm', 'vapid ')])
+        self.assertEqual(kid['push'], [])
+        self.assertEqual(pusher.send_kid(kid, 'Hej', 'Test'), 0)
+
+
 class StubHA:
     """Samler det, appen ville sende til Home Assistant."""
     enabled = True
@@ -579,6 +687,81 @@ class NtfyTests(unittest.TestCase):
         self.assertEqual(got[0]['click'], 'http://hjem:8099/k/abcdefgh/')
         self.assertFalse(ha.notify_kid(dict(kid, ntfy_on=False), 'x', 'y'))
         self.assertFalse(ha.ntfy('../../ond', 'x', 'y'))
+
+
+class TlsPushTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import datetime
+        from cryptography import x509
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import ec
+        from cryptography.x509.oid import NameOID
+        cls.dir = tempfile.mkdtemp()
+        key = ec.generate_private_key(ec.SECP256R1())
+        name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'localhost')])
+        now = datetime.datetime.now(datetime.timezone.utc)
+        cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name)
+                .public_key(key.public_key()).serial_number(x509.random_serial_number())
+                .not_valid_before(now).not_valid_after(now + datetime.timedelta(days=1))
+                .sign(key, hashes.SHA256()))
+        cls.cert, cls.key = os.path.join(cls.dir, 'c.pem'), os.path.join(cls.dir, 'k.pem')
+        with open(cls.cert, 'wb') as f:
+            f.write(cert.public_bytes(serialization.Encoding.PEM))
+        with open(cls.key, 'wb') as f:
+            f.write(key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                      serialization.NoEncryption()))
+        s = socket.socket()
+        s.bind(('127.0.0.1', 0))
+        cls.port = s.getsockname()[1]
+        s.close()
+        cls.store = Store(None, Clock(monday()))
+        cls.kid = cls.store.add_kid('Emma', 9)
+        app = App(cls.store, HomeAssistant())
+        app.vapid = push.Vapid()
+        cls.vapid = app.vapid
+        cls.srv, _ = serve(app, 'kid', cls.port, host='127.0.0.1', tls=make_tls(cls.cert, cls.key))
+        cls.ctx = ssl._create_unverified_context()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.srv.shutdown()
+
+    def get(self, path):
+        try:
+            r = urllib.request.urlopen('https://127.0.0.1:%d%s' % (self.port, path), context=self.ctx)
+            return r.status, r.headers.get('Content-Type'), r.read()
+        except urllib.error.HTTPError as err:
+            return err.code, None, b''
+
+    def test_child_site_works_over_https_with_files_needed_for_push(self):
+        base = '/k/%s/' % self.kid['token']
+        self.assertEqual(self.get(base)[0], 200)
+        status, ctype, body = self.get(base + 'sw.js')
+        self.assertEqual((status, ctype.split(';')[0]), (200, 'application/javascript'))
+        self.assertIn(b'showNotification', body)
+        manifest = json.loads(self.get(base + 'manifest.json')[2])
+        self.assertEqual((manifest['display'], manifest['short_name']), ('standalone', 'Emma'))
+        status, ctype, icon = self.get(base + 'icon.png')
+        self.assertEqual((status, ctype, icon[:4]), (200, 'image/png', b'\x89PNG'))
+        self.assertEqual(json.loads(self.get(base + 'api/push_key')[2])['key'], self.vapid.public)
+        for path in ('sw.js', 'manifest.json', 'icon.png', 'api/push_key'):
+            self.assertEqual(self.get('/k/forkerttoken123/' + path)[0], 404)
+
+    def test_phone_can_register_for_push_but_not_with_rubbish(self):
+        url = 'https://127.0.0.1:%d/k/%s/api/push' % (self.port, self.kid['token'])
+
+        def post(sub):
+            req = urllib.request.Request(url, json.dumps({'subscription': sub}).encode(),
+                                         {'Content-Type': 'application/json'})
+            try:
+                return urllib.request.urlopen(req, context=self.ctx).status
+            except urllib.error.HTTPError as err:
+                return err.code
+        good = {'endpoint': 'https://push.example/abc', 'keys': {'p256dh': 'A' * 87, 'auth': 'B' * 22}}
+        self.assertEqual(post(good), 200)
+        self.assertEqual(len(self.kid['push']), 1)
+        self.assertEqual(post({'endpoint': 'http://x', 'keys': {}}), 400)
 
 
 class FakeHA(BaseHTTPRequestHandler):

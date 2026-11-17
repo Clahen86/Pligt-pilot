@@ -10,7 +10,10 @@ import json
 import logging
 import os
 import re
+import ssl
+import struct
 import threading
+import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from house import find_sensors
@@ -27,7 +30,43 @@ KID_STATE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/state$')
 KID_DONE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/items/([a-f0-9]{10})/done$')
 KID_CLAIM = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/tasks/([a-f0-9]{10})/claim$')
 
+KID_FILE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/(sw\.js|manifest\.json|icon\.png)$')
+KID_PUSH_KEY = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/push_key$')
+KID_PUSH = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/push$')
+
 ID = r'([a-f0-9]{10})'
+
+
+def _icon_png(size=192):
+    """Et lille ikon (gul flade med et flueben), lavet uden eksterne pakker."""
+    sun, ink = (255, 194, 71), (34, 48, 74)
+    pts = [(0.27, 0.53), (0.43, 0.69), (0.74, 0.33)]
+    width = 0.075
+
+    def dist(px, py, a, b):
+        ax, ay, bx, by = a[0], a[1], b[0], b[1]
+        dx, dy = bx - ax, by - ay
+        t = max(0, min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)))
+        return ((px - ax - t * dx) ** 2 + (py - ay - t * dy) ** 2) ** 0.5
+
+    rows = []
+    for y in range(size):
+        row = bytearray([0])
+        for x in range(size):
+            px, py = (x + 0.5) / size, (y + 0.5) / size
+            hit = min(dist(px, py, pts[0], pts[1]), dist(px, py, pts[1], pts[2])) < width
+            row += bytes(ink if hit else sun)
+        rows.append(bytes(row))
+
+    def chunk(kind, data):
+        body = kind + data
+        return struct.pack('>I', len(data)) + body + struct.pack('>I', zlib.crc32(body) & 0xffffffff)
+
+    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 2, 0, 0, 0)) +
+            chunk(b'IDAT', zlib.compress(b''.join(rows), 9)) + chunk(b'IEND', b''))
+
+
+ICON = _icon_png()
 
 
 class App:
@@ -35,6 +74,7 @@ class App:
         self.store = store
         self.ha = ha
         self.options = options or {}
+        self.vapid = None
 
 
 def _read(name):
@@ -46,6 +86,7 @@ def make_handler(app, role, allow_from=None):
     class Handler(BaseHTTPRequestHandler):
         server_version = 'PligtPilot'
         sys_version = ''
+        timeout = 20      # en hængende forbindelse må ikke blokere de andre
 
         def log_message(self, fmt, *args):
             log.debug('%s %s', role, fmt % args)
@@ -126,6 +167,35 @@ def make_handler(app, role, allow_from=None):
                     self.end_headers()
                     return
                 return self._page('kid.html')
+            m = KID_FILE.match(path)
+            if m and method == 'GET':
+                kid = store.kid_by_token(m.group(1))
+                if not kid:
+                    return self._json({'error': 'Linket passer ikke'}, 404)
+                name = m.group(2)
+                if name == 'sw.js':
+                    return self._send(200, _read('sw.js'), 'application/javascript; charset=utf-8')
+                if name == 'icon.png':
+                    return self._send(200, ICON, 'image/png')
+                manifest = {'name': 'Pligter', 'short_name': kid['name'][:12], 'start_url': './',
+                            'scope': './', 'display': 'standalone', 'lang': 'da',
+                            'background_color': '#FFF6E9', 'theme_color': kid['color'],
+                            'icons': [{'src': 'icon.png', 'sizes': '192x192', 'type': 'image/png',
+                                       'purpose': 'any'}]}
+                return self._send(200, json.dumps(manifest).encode('utf-8'),
+                                  'application/manifest+json')
+            m = KID_PUSH_KEY.match(path)
+            if m and method == 'GET':
+                if not store.kid_by_token(m.group(1)):
+                    return self._json({'error': 'Linket passer ikke'}, 404)
+                if not app.vapid:
+                    return self._json({'error': 'Beskeder er ikke slået til'}, 404)
+                return self._json({'key': app.vapid.public})
+            m = KID_PUSH.match(path)
+            if m and method == 'POST':
+                body = self._body()
+                store.add_push(m.group(1), body.get('subscription'))
+                return self._json({'ok': True})
             m = KID_STATE.match(path)
             if m and method == 'GET':
                 return self._json(store.kid_view(m.group(1)))
@@ -164,6 +234,8 @@ def make_handler(app, role, allow_from=None):
                     state = store.admin_state()
                     state['public_url'] = app.options.get('public_url', '')
                     state['notify_on'] = bool(app.ha.enabled and app.ha.notify_service)
+                    state['kid_https'] = bool(app.options.get('https'))
+                    state['push_on'] = bool(app.vapid)
                     return self._json(state)
                 m = re.match(r'^/photo/' + ID + r'$', path)
                 if m:
@@ -295,10 +367,24 @@ def make_handler(app, role, allow_from=None):
     return Handler
 
 
-def serve(app, role, port, allow_from=None, host='0.0.0.0'):
-    """Starter en server i en baggrundstråd. Returnerer (server, tråd)."""
+def make_tls(certfile, keyfile):
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    ctx.load_cert_chain(certfile, keyfile)
+    return ctx
+
+
+def serve(app, role, port, allow_from=None, host='0.0.0.0', tls=None):
+    """Starter en server i en baggrundstråd. Returnerer (server, tråd).
+
+    Med `tls` (en SSLContext) tales der https. Håndtrykket sker i den enkelte
+    forbindelses egen tråd, så en hængende klient ikke blokerer de andre.
+    """
     server = ThreadingHTTPServer((host, port), make_handler(app, role, allow_from))
     server.daemon_threads = True
+    if tls is not None:
+        server.socket = tls.wrap_socket(server.socket, server_side=True,
+                                        do_handshake_on_connect=False)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server, thread

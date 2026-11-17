@@ -25,6 +25,11 @@ Se `pligt-pilot/DOCS.md` for indstillinger.
 - **Rigtige kroner.** Pris pr. opgave, saldo pr. barn og ugegraf.
 - **Ugens helt.** Konkurrence med point efter alder og en bonus.
 
+## Nyt i 0.4
+
+- Beskeder direkte fra børnenes link, uden app: web-push over https med et gratis DuckDNS-certifikat (ingen åbne porte). Se `pligt-pilot/DOCS.md`.
+- Appen finder selv måleren til vaskemaskine, tørretumbler og opvaskemaskine.
+
 ## Nyt i 0.3
 
 - Fødselsdato i stedet for alder. Alderen følger med, og opgaver låses op af sig selv.
