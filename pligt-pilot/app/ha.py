@@ -52,6 +52,19 @@ class HomeAssistant:
         threading.Thread(target=work, daemon=True).start()
         return True
 
+    def devices(self):
+        """Navne og id'er på husets enheder, fx ['sensor.vaskemaskine_effekt']."""
+        if not self.enabled:
+            return []
+        try:
+            raw = self._post('/template', {'template':
+                "{{ ((states | map(attribute='entity_id') | list) + "
+                "(states | map(attribute='name') | list)) | tojson }}"})
+            return [str(n) for n in json.loads(raw) if n]
+        except Exception as err:  # noqa: BLE001
+            log.warning('Kunne ikke hente enheder fra Home Assistant: %s', err)
+            return []
+
     def areas(self):
         """Husets rum, fx ['Køkken', 'Stue']. Tom liste, hvis HA ikke svarer."""
         if not self.enabled:

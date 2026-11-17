@@ -307,7 +307,9 @@ class FakeHA(BaseHTTPRequestHandler):
     def do_POST(self):
         body = self.rfile.read(int(self.headers.get('Content-Length') or 0)).decode()
         FakeHA.calls.append((self.path, self.headers.get('Authorization'), body))
-        if self.path == '/template':
+        if self.path == '/template' and 'entity_id' in body:
+            out = json.dumps(['sensor.vaskemaskine_effekt', 'Tørretumbler', 'light.stue']).encode()
+        elif self.path == '/template':
             out = json.dumps(['Køkken', 'Bryggers', 'Have']).encode()
         else:
             out = b'[]'
@@ -418,7 +420,11 @@ class ServerTests(unittest.TestCase):
         status, data = self.call(self.adm, '/api/suggestions')
         self.assertEqual(status, 200)
         rooms = {r['room'] for r in data['rows']}
-        self.assertEqual(rooms, {'Køkken', 'Bryggers', 'Have', 'Hele huset'})
+        self.assertEqual(rooms, {'Køkken', 'Bryggers', 'Have', 'Vaskemaskine', 'Tørretumbler',
+                                 'Hele huset'})
+        titles = {r['title'] for r in data['rows']}
+        self.assertIn('Hæng vasketøjet op', titles)
+        self.assertNotIn('Tøm opvaskemaskinen', titles)
         self.assertTrue(any(r['found'] for r in data['rows']))
 
     def test_setup_creates_chosen_tasks_once(self):

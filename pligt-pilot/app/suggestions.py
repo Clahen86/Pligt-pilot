@@ -1,8 +1,8 @@
-"""Forslag til opgaver ud fra husets rum.
+"""Forslag til opgaver ud fra husets rum og apparater.
 
 Hvert rum har en liste af (titel, pris i kr., laveste alder, gentagelse).
-Rum fra Home Assistant matches på ord i navnet. Uden Home Assistant vises
-alle forslag.
+Rum og apparater fra Home Assistant matches på ord i navnet. Uden svar fra
+Home Assistant vises alle forslag.
 """
 
 CATALOG = [
@@ -10,7 +10,6 @@ CATALOG = [
         'room': 'Køkken',
         'words': ['køkken', 'kitchen', 'spisestue', 'madrum'],
         'tasks': [
-            ('Tøm opvaskemaskinen', 5, 6, 'daily'),
             ('Dæk bord', 3, 5, 'daily'),
             ('Tør køkkenbordet af', 3, 7, 'daily'),
             ('Tag madpakker ud af tasken', 2, 6, 'daily'),
@@ -20,8 +19,6 @@ CATALOG = [
         'room': 'Bryggers',
         'words': ['bryggers', 'vaskerum', 'utility', 'laundry', 'vaskeri', 'teknikrum'],
         'tasks': [
-            ('Hæng vasketøjet op', 8, 8, 'daily'),
-            ('Fold vasketøj', 8, 9, 'weekly'),
             ('Læg rent tøj på plads', 5, 7, 'weekly'),
         ],
     },
@@ -70,6 +67,51 @@ CATALOG = [
     },
 ]
 
+# Apparater. Forslagene vises kun, hvis Home Assistant har en enhed med et af ordene.
+DEVICES = [
+    {
+        'room': 'Vaskemaskine',
+        'words': ['vaskemaskine', 'washing_machine', 'washer'],
+        'not': ['opvask', 'dishwasher'],
+        'tasks': [
+            ('Tag vasketøj ud af vaskemaskinen', 5, 7, 'daily'),
+            ('Hæng vasketøjet op', 8, 8, 'daily'),
+        ],
+    },
+    {
+        'room': 'Tørretumbler',
+        'words': ['tørretumbler', 'toerretumbler', 'tumbler', 'dryer', 'tumble'],
+        'not': ['hair', 'hår'],
+        'tasks': [
+            ('Tag tøj ud af tørretumbleren', 5, 7, 'daily'),
+            ('Fold vasketøj', 8, 9, 'weekly'),
+        ],
+    },
+    {
+        'room': 'Opvaskemaskine',
+        'words': ['opvaskemaskine', 'dishwasher', 'opvasker'],
+        'tasks': [
+            ('Tøm opvaskemaskinen', 5, 6, 'daily'),
+            ('Fyld opvaskemaskinen', 5, 6, 'daily'),
+        ],
+    },
+    {
+        'room': 'Støvsugerrobot',
+        'words': ['støvsuger', 'stovsuger', 'vacuum', 'roborock', 'roomba', 'dreame'],
+        'tasks': [
+            ('Ryd gulvet, så robotten kan køre', 3, 5, 'daily'),
+            ('Tøm støvsugerrobotten', 5, 8, 'weekly'),
+        ],
+    },
+    {
+        'room': 'Plæneklipper',
+        'words': ['plæneklipper', 'plaeneklipper', 'lawn_mower', 'mower', 'automower'],
+        'tasks': [
+            ('Ryd haven for ting, før plæneklipperen kører', 5, 7, 'weekly'),
+        ],
+    },
+]
+
 WHOLE_HOUSE = {
     'room': 'Hele huset',
     'tasks': [
@@ -85,14 +127,21 @@ def _rows(group, found):
              'repeat': r, 'found': found} for (t, p, a, r) in group['tasks']]
 
 
-def suggest(areas, kid_ages, existing_titles):
+def suggest(areas, kid_ages, existing_titles, devices=None):
     """Returnerer forslag. 'on' er sand, når mindst ét barn er gammelt nok."""
     names = [str(a).lower() for a in (areas or [])]
+    things = [str(d).lower() for d in (devices or [])]
     oldest = max(kid_ages) if kid_ages else 99
     rows = []
     for group in CATALOG:
         found = any(w in n for w in group['words'] for n in names)
         if names and not found:
+            continue
+        rows += _rows(group, found)
+    for group in DEVICES:
+        found = any(w in n for w in group['words'] for n in things
+                    if not any(x in n for x in group.get('not', ())))
+        if things and not found:
             continue
         rows += _rows(group, found)
     rows += _rows(WHOLE_HOUSE, False)

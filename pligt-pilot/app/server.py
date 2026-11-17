@@ -158,7 +158,7 @@ def make_handler(app, role, allow_from=None):
                 if path == '/api/suggestions':
                     s = store.admin_state()
                     rows = suggest(app.ha.areas(), [k['age'] for k in s['kids']],
-                                   [t['title'] for t in s['tasks']])
+                                   [t['title'] for t in s['tasks']], app.ha.devices())
                     return self._json({'rows': rows})
                 return self._json({'error': 'Findes ikke'}, 404)
 
