@@ -17,6 +17,7 @@ import threading
 import uuid
 
 import i18n
+import icons
 
 COLORS = ['#0B7A70', '#C73A30', '#6C4AB6', '#B05A00', '#1F6FB2', '#B03A83']
 DAYS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
@@ -416,7 +417,7 @@ class Store:
     # ---- opgaver -------------------------------------------------------
     def add_task(self, title, price, room='', repeat='daily', open_job=False,
                  kids=None, age_min=0, age_max=99, times=1, photo=False, auto_rule=None,
-                 season='', surprise=False):
+                 season='', surprise=False, icon=''):
         with self.lock:
             if repeat not in REPEATS:
                 raise Problem('Ukendt gentagelse')
@@ -432,7 +433,7 @@ class Store:
                 'age_max': int(age_max or 99),
                 'times': self._clean_times(times),
                 'photo': bool(photo),
-                'season': self._clean_season(season),
+                'season': self._clean_season(season), 'icon': icons.valid(icon),
                 'surprise': bool(surprise),
                 'created': self._now().isoformat(timespec='seconds'),
                 'active': True,
@@ -470,6 +471,8 @@ class Store:
                 task['season'] = self._clean_season(fields['season'])
             if 'surprise' in fields:
                 task['surprise'] = bool(fields['surprise'])
+            if 'icon' in fields:
+                task['icon'] = icons.valid(fields['icon'])
             if 'age_min' in fields:
                 try:
                     task['age_min'] = max(0, min(25, int(fields['age_min'] or 0)))
@@ -992,11 +995,17 @@ class Store:
                            'rejected': i['rejected'], 'slot': i.get('slot', 1),
                            'of': i.get('of', 1),
                            'need_photo': i['status'] == 'todo' and self._needs_photo(i),
+                           'icon': self._icon_for(i['task_id'], i['title'], i['room']),
                            'streak': self._item_streak(kid['id'], i)} for i in items],
                 'jobs': [{'task_id': t['id'], 'title': t['title'], 'room': t['room'],
+                          'icon': t.get('icon') or icons.guess(t['title'], t['room']),
                           'price': t['price'], 'expires': t.get('expires', '')}
                          for t in self._open_jobs_for(kid)],
             }
+
+    def _icon_for(self, task_id, title, room):
+        task = next((t for t in self.data['tasks'] if t['id'] == task_id), None)
+        return (task or {}).get('icon') or icons.guess(title, room)
 
     def _boss_view(self):
         boss = self._boss()
@@ -1121,7 +1130,9 @@ class Store:
                                    'boss_hp', 'boss_bonus', 'trading', 'streak_bonus')},
                                  weekly_summary=bool(settings.get('weekly_summary', True))),
                 'pending': pending,
-                'tasks': [dict(t, fair=self.fairness(t['price'], t['repeat'], t.get('times', 1), t['id']))
+                'icons': icons.ICONS,
+                'tasks': [dict(t, icon_shown=t.get('icon') or icons.guess(t['title'], t['room']),
+                               fair=self.fairness(t['price'], t['repeat'], t.get('times', 1), t['id']))
                           for t in self.data['tasks']],
                 'total': sum(k['balance'] for k in kids),
                 'goal': settings['goal'],

@@ -68,6 +68,7 @@ button { font: inherit; cursor: pointer; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .bar.today small { font-weight: 900; color: var(--ink); }
 h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; display: flex; align-items: center; gap: 8px; }
+.ico { flex: none; width: 44px; height: 44px; border-radius: 14px; background: #FFF1CF; display: flex; align-items: center; justify-content: center; font-size: 26px; line-height: 1; }
 .jobs { background: #FFC247; border-radius: 22px; padding: 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 0 0 4px rgba(255, 194, 71, .35); }
 .jobshead b { display: block; font-size: 19px; font-weight: 900; color: #22304A; }
 .jobshead span { font-size: 14px; font-weight: 700; color: #4A3A0F; }
@@ -227,12 +228,12 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
           : '<div class="state done">' + CHECK + 'Godkendt</div>';
       var swap = i.status === 'todo' && s.trading && s.siblings.length && !i.need_photo
         ? '<button class="btn ghost small" data-trade="' + i.id + '" aria-label="Byt: ' + esc(i.title) + '">Byt</button>' : '';
-      return '<div class="task"><div class="t"><b>' + esc(i.title) + '</b><span>' + esc(sub) +
+      return '<div class="task"><span class="ico" aria-hidden="true">' + esc(i.icon || '⭐') + '</span><div class="t"><b>' + esc(i.title) + '</b><span>' + esc(sub) +
         '</span></div><div class="price">' + i.price + ' kr</div>' + swap + right + '</div>' +
         (tradeOpen === i.id ? tradeForm(i, s) : '');
     }).join('');
     var jobs = s.jobs.map(function (j) {
-      return '<div class="job' + (j.expires ? ' surprise' : '') + '"><div class="t"><b>' + esc(j.title) + '</b><span>' +
+      return '<div class="job' + (j.expires ? ' surprise' : '') + '"><span class="ico" aria-hidden="true">' + esc(j.icon || '⭐') + '</span><div class="t"><b>' + esc(j.title) + '</b><span>' +
         esc(j.expires ? 'Overraskelse! Slutter kl. ' + j.expires.slice(11, 16) : (j.room || 'Først til mølle')) + '</span></div><div class="price">' + j.price +
         ' kr</div><button class="btn grab" data-claim="' + j.task_id + '">Tag den</button></div>';
     }).join('');

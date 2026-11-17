@@ -19,6 +19,7 @@ import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import i18n
+import icons
 from house import find_sensors
 from store import Problem
 from suggestions import suggest
@@ -370,6 +371,7 @@ def make_handler(app, role, allow_from=None):
                     for r in rows:
                         r['title'] = i18n.translate(lang, r['title'])
                         r['room'] = i18n.translate(lang, r.get('room', ''))
+                        r['icon'] = icons.guess(r['title'], r['room'])
                         if store.has_task_titled(r['title']):
                             r['exists'], r['on'] = True, False
                     return self._json({'rows': rows})
@@ -416,7 +418,7 @@ def make_handler(app, role, allow_from=None):
                                body.get('kids'), body.get('age_min', 0),
                                body.get('age_max', 99), body.get('times', 1),
                                body.get('photo', False), None, body.get('season', ''),
-                               body.get('surprise', False))
+                               body.get('surprise', False), body.get('icon', ''))
                 if body.get('open'):
                     task = store.data['tasks'][-1]
                     for kid in store.data['kids']:
@@ -427,7 +429,7 @@ def make_handler(app, role, allow_from=None):
             m = re.match(r'^/api/tasks/' + ID + r'$', path)
             if m:
                 allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids', 'age_min', 'times', 'photo', 'season',
-                           'surprise')
+                           'surprise', 'icon')
                 store.update_task(m.group(1), **{k: v for k, v in body.items() if k in allowed})
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'/delete$', path)

@@ -54,6 +54,9 @@ Under Børn → Forældre kan du lave et personligt link til hver forælder (op 
 
 Linket er som en adgangskode. Del det kun med voksne, og brug **Nyt link** eller **Fjern forælder**, hvis det kommer til at ligge forkert. Forældre med et link kan ikke hente backup eller se og ændre andre forældres links.
 
+## Billeder på opgaverne
+Appen gætter et ikon ud fra opgavens navn (på dansk, engelsk, tysk, svensk og norsk). Vil du vælge selv, trykker du Rediger på opgaven og vælger et billede, eller vælger det, når du skriver en ny opgave. "Automatisk" går tilbage til appens gæt.
+
 ## Sprog
 Dansk, engelsk, tysk, svensk og norsk. Husets sprog vælges under Indstillinger (Sprog), og hvert barn kan få sit eget under Børn. Beskeder sendes på modtagerens sprog. Startpakken og forslagene oprettes på husets sprog. Opgaver, du selv har skrevet, oversættes ikke.
 

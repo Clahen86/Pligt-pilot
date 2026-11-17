@@ -25,6 +25,10 @@ Se `pligt-pilot/DOCS.md` for indstillinger.
 - **Rigtige kroner.** Pris pr. opgave, saldo pr. barn og ugegraf.
 - **Ugens helt.** Konkurrence med point efter alder og en bonus.
 
+## Nyt i 0.10
+- **Billeder på opgaverne:** hver opgave får et ikon (fx 🍴 til at dække bord og 🗑️ til skraldespanden), så de mindste kan se, hvad opgaven er. Appen gætter ikonet, og du kan vælge et andet.
+- **Ledige opgaver** står øverst på børnesiden og er svære at overse.
+
 ## Nyt i 0.9
 - **Forældreside med eget link:** hver forælder kan få et personligt link og styre alt det samme som i Home Assistant, direkte fra sin telefon uden at logge ind.
 

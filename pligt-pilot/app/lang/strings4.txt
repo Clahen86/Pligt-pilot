@@ -20,3 +20,5 @@ Der er || There are || Es gibt || Det finns || Det er
 ledige opgaver! || open chores! || freie Aufgaben! || lediga uppgifter! || ledige oppgaver!
 Først til mølle. Tag den, før en anden gør. || First come, first served. Grab it before someone else does. || Wer zuerst kommt, mahlt zuerst. Schnapp sie dir, bevor es ein anderer tut. || Först till kvarn. Ta den innan någon annan gör det. || Først til mølla. Ta den før en annen gjør det.
 Ledige opgaver || Open chores || Freie Aufgaben || Lediga uppgifter || Ledige oppgaver
+Billede || Picture || Bild || Bild || Bilde
+Automatisk || Automatic || Automatisch || Automatiskt || Automatisk

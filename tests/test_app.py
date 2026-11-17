@@ -614,6 +614,19 @@ class StoreTests(unittest.TestCase):
         self.assertTrue(any('ikke åbnet' in a for a in self.store.advice()))
         self.assertIn(b'"kids"', self.store.backup())
 
+    def test_tasks_get_a_picture_from_their_name_or_a_chosen_one(self):
+        import icons
+        self.assertEqual(icons.guess('Dæk bord'), '🍴')
+        self.assertEqual(icons.guess('Empty the dishwasher'), '🍽️')
+        self.assertEqual(icons.guess('Noget helt andet'), '⭐')
+        task = self.store.add_task('Dæk bord', 5)
+        view = self.store.kid_view(self.emil['token'])
+        self.assertEqual(view['items'][0]['icon'], '🍴')
+        self.store.update_task(task['id'], icon='🧸')
+        self.assertEqual(self.store.kid_view(self.emil['token'])['items'][0]['icon'], '🧸')
+        self.store.update_task(task['id'], icon='<script>')              # ugyldigt ikon ignoreres
+        self.assertEqual(self.store.kid_view(self.emil['token'])['items'][0]['icon'], '🍴')
+
     def test_surprise_day_can_be_a_quiet_day(self):
         import random
 
