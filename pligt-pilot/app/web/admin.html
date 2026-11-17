@@ -70,7 +70,7 @@ input[type=text], input[type=number], input[type=date], input[type=time], select
 .linkbtn { display: flex; align-items: center; justify-content: center; text-decoration: none; margin-top: 8px; }
 .ico { flex: none; width: 40px; height: 40px; border-radius: 12px; background: #FFF1CF; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1; }
 .icons { display: flex; flex-wrap: wrap; gap: 6px; }
-.ic { min-width: 42px; height: 42px; border-radius: 12px; border: 2px solid #D9CFBE; background: #fff; font-size: 22px; padding: 0 6px; }
+.ic { display: inline-flex; align-items: center; justify-content: center; min-width: 42px; height: 42px; border-radius: 12px; border: 2px solid #D9CFBE; background: #fff; font-size: 22px; padding: 0 6px; }
 .ic.auto { font-size: 14px; font-weight: 800; color: var(--ink); }
 .ic.on { border-color: var(--accent); background: #E1F2EF; }
 .two { display: flex; gap: 10px; }
@@ -176,6 +176,42 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   var CROSS = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C73A30" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>';
   var CROWN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#22304A" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"></path></svg>';
 
+  var ICO = {
+    '🍴': ['#E0701B', '<path d="M7 3v7M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 21V3c-2.5 1.5-3.5 4.5-3.5 8H17"/>'],
+    '🍽️': ['#E0701B', '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/>'],
+    '🍳': ['#E0701B', '<circle cx="10" cy="13" r="6.5"/><path d="M16.5 13H22M7 11a3.5 3.5 0 0 1 3-2"/>'],
+    '🗑️': ['#5B6B86', '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>'],
+    '🧹': ['#0B7A70', '<path d="M15 3l-3.5 10M6.5 13h9l2.5 8H4z"/>'],
+    '🧺': ['#3A6FD8', '<path d="M3 10h18l-2 10H5zM8 10l3-6M16 10l-3-6M9 14v3M15 14v3"/>'],
+    '🛏️': ['#3A6FD8', '<path d="M3 19V6M3 15h18v4M21 15v-2.5A3.5 3.5 0 0 0 17.5 9H11v6"/><circle cx="7" cy="11.5" r="2"/>'],
+    '🧸': ['#D8508A', '<circle cx="12" cy="13.5" r="6.5"/><circle cx="6.5" cy="7" r="2.2"/><circle cx="17.5" cy="7" r="2.2"/><path d="M10 15.5q2 1.6 4 0"/><path d="M9.8 12h.01M14.2 12h.01"/>'],
+    '🐶': ['#D8508A', '<ellipse cx="12" cy="16" rx="4.5" ry="3.6"/><circle cx="5.5" cy="11" r="1.8"/><circle cx="9.5" cy="6.5" r="1.8"/><circle cx="14.5" cy="6.5" r="1.8"/><circle cx="18.5" cy="11" r="1.8"/>'],
+    '🚿': ['#2A9BC4', '<path d="M4 11a8 8 0 0 1 16 0zM8 15v2M12 15v4M16 15v2"/>'],
+    '🪟': ['#2A9BC4', '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18M4 12h16"/>'],
+    '🌱': ['#2E9E4F', '<path d="M12 21v-9M12 12c0-4-3-6-7-6 0 4 3 6 7 6zM12 15c0-3 2-5 6-5 0 3-2 5-6 5z"/>'],
+    '🌸': ['#D8508A', '<circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="12" r="3"/>'],
+    '🍂': ['#C7771B', '<path d="M5 19C5 9 11 4 20 4c0 9-5 15-15 15zM5 19l8-8"/>'],
+    '❄️': ['#2A9BC4', '<path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5"/>'],
+    '📬': ['#3A6FD8', '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 8l9 6 9-6"/>'],
+    '👟': ['#3A6FD8', '<path d="M3 17v-7l5 3 3-3 4 3h3a3 3 0 0 1 3 3v1H3zM3 20.5h18"/>'],
+    '🚗': ['#5B6B86', '<path d="M5 16v-4l2-5h10l2 5v4M3 16h18M5 16v3M19 16v3M5 12h14"/><circle cx="8" cy="16" r="1.4"/><circle cx="16" cy="16" r="1.4"/>'],
+    '🤖': ['#0B7A70', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5"/>'],
+    '🧼': ['#2A9BC4', '<rect x="3" y="11" width="14" height="9" rx="3"/><circle cx="17" cy="7" r="3"/><circle cx="10.5" cy="6" r="2"/><circle cx="20" cy="13" r="1.3"/>'],
+    '📚': ['#7B5BD8', '<path d="M5 4h4v16H5zM11 4h4v16h-4zM17.3 5.2l3.2.9-3.6 13.8-3.2-.9z"/>'],
+    '🧽': ['#C7A21B', '<rect x="3" y="9" width="18" height="9" rx="2.5"/><path d="M8 13.5h.01M12 14.5h.01M16 13h.01M8 6l1 3M12 5v4M16 6l-1 3"/>'],
+    '🛒': ['#0B7A70', '<path d="M3 4h3l2.2 11h10.2L20.5 7H7"/><circle cx="9.5" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/>'],
+    '🪴': ['#2E9E4F', '<path d="M6 14h12l-1.5 7h-9zM12 14V9M12 9c0-3 2-4.5 5-4.5 0 3-2 4.5-5 4.5zM12 11.5c0-2.5-2-3.5-5-3.5 0 2.5 2 3.5 5 3.5z"/>'],
+    '⭐': ['#E0A21B', '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'],
+    '✅': ['#2E9E4F', '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>']
+  };
+  function icoSvg(e, size) {
+    var d = ICO[e] || ICO['⭐'];
+    return '<svg viewBox="0 0 24 24" width="' + (size || 26) + '" height="' + (size || 26) + '" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:' + d[0] + '">' + d[1] + '</svg>';
+  }
+  function icoSpan(e) {
+    var d = ICO[e] || ICO['⭐'];
+    return '<span class="ico" aria-hidden="true" style="background:' + d[0] + '22">' + icoSvg(e) + '</span>';
+  }
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -239,7 +275,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var out = '<div class="icons" role="group" aria-label="Billede"><input type="hidden" id="' + id + '" value="' + esc(value || '') + '"' + (draftKey ? ' data-draft="' + draftKey + '"' : '') + '>' +
       '<button type="button" class="ic auto' + (value ? '' : ' on') + '" data-pickicon="" data-for="' + id + '">Automatisk</button>';
     state.icons.forEach(function (ic) {
-      out += '<button type="button" class="ic' + (value === ic ? ' on' : '') + '" data-pickicon="' + ic + '" data-for="' + id + '" aria-label="' + ic + '">' + ic + '</button>';
+      out += '<button type="button" class="ic' + (value === ic ? ' on' : '') + '" data-pickicon="' + ic + '" data-for="' + id + '" aria-label="Billede">' + icoSvg(ic, 24) + '</button>';
     });
     return out + '</div>';
   }
@@ -582,7 +618,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
             out += '<div class="row card"><div class="grow t"><b>' + esc(r.title) + '</b><span>Findes allerede</span></div></div>';
             return;
           }
-          out += '<div class="card"><div class="row"><span class="ico" aria-hidden="true">' + esc(r.icon || '⭐') + '</span><div class="grow t"><b>' + esc(r.title) + '</b><span>' + esc(REPEAT[r.repeat]) + (r.times > 1 ? ' · ' + r.times + ' gange' : '') + (r.season ? ' · ' + SEASON_SHORT[r.season] : '') + ' · fra ' + r.age_min + ' år</span></div>' +
+          out += '<div class="card"><div class="row">' + icoSpan(r.icon) + '<div class="grow t"><b>' + esc(r.title) + '</b><span>' + esc(REPEAT[r.repeat]) + (r.times > 1 ? ' · ' + r.times + ' gange' : '') + (r.season ? ' · ' + SEASON_SHORT[r.season] : '') + ' · fra ' + r.age_min + ' år</span></div>' +
             '<div class="price">' + r.price + ' kr</div>' +
             '<button class="sw" role="switch" aria-checked="' + (sugOn[i] ? 'true' : 'false') + '" aria-label="' + esc(r.title) + '" data-sug="' + i + '"><span></span></button></div>' +
             (sugEdit === i ? editForm('s' + i, r) : '<button class="btn small ghost" data-sugedit="' + i + '">Rediger</button>') + '</div>';
@@ -598,7 +634,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       out += '<div class="group">' + esc(room) + '</div><div class="list">';
       s.tasks.forEach(function (t) {
         if ((t.room || 'Andet') !== room) { return; }
-        out += '<div class="card"><div class="row"><span class="ico" aria-hidden="true">' + esc(t.icon_shown || '⭐') + '</span><div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.photo ? ' · med foto' : '') + (t.season ? ' · ' + SEASON_SHORT[t.season] : '') + (t.surprise ? ' · overraskelse' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
+        out += '<div class="card"><div class="row">' + icoSpan(t.icon_shown) + '<div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.photo ? ' · med foto' : '') + (t.season ? ' · ' + SEASON_SHORT[t.season] : '') + (t.surprise ? ' · overraskelse' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
           '<div class="price" ' + (t.fair && t.fair.level !== 'ok' ? 'title="' + esc(t.fair.text) + '" style="color:' + (t.fair.level === 'high' ? '#C73A30' : '#B05A00') + '"' : '') + '>' + t.price + ' kr' + (t.fair && t.fair.level !== 'ok' ? ' ' + (t.fair.level === 'high' ? '▲' : '▼') : '') + '</div>' +
           '<button class="sw" role="switch" aria-checked="' + (t.active ? 'true' : 'false') + '" aria-label="' + esc(t.title) + ' er slået til" data-active="' + t.id + '"><span></span></button>' +
           '<button class="btn small ghost" data-duptask="' + t.id + '" aria-label="Lav en kopi af ' + esc(t.title) + '">Kopi</button>' +
