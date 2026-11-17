@@ -25,6 +25,14 @@ Se `pligt-pilot/DOCS.md` for indstillinger.
 - **Rigtige kroner.** Pris pr. opgave, saldo pr. barn og ugegraf.
 - **Ugens helt.** Konkurrence med point efter alder og en bonus.
 
+## Nyt i 0.2
+
+- Pauseknap pr. barn (ferie eller sygdom).
+- Opgaver kun til bestemte børn.
+- Fortryd en godkendelse, og en historik over penge ind og ud.
+- Sparemål pr. barn med en bjælke på barnets skærm.
+- Opgaver, der kan laves flere gange pr. dag eller uge.
+
 ## Første version (v1)
 
 1. Personligt link pr. barn (ingen HA-login).

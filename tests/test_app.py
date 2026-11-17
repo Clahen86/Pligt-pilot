@@ -210,6 +210,75 @@ class StoreTests(unittest.TestCase):
         with self.assertRaises(Problem):
             self.store.add_kid('Ole', 99)
 
+    def test_paused_child_gets_no_tasks_until_back(self):
+        self.store.add_task('Dæk bord', 3)
+        self.store.add_task('Støvsug', 10, open_job=True)
+        self.assertEqual(len(self.kid_items(self.emil)), 1)
+        self.store.update_kid(self.emil['id'], paused=True)
+        view = self.store.kid_view(self.emil['token'])
+        self.assertTrue(view['paused'])
+        self.assertEqual(view['items'], [])
+        self.assertEqual(view['jobs'], [])
+        self.assertEqual(len(self.kid_items(self.maja)), 1)
+        self.store.update_kid(self.emil['id'], paused=False)
+        self.assertEqual(len(self.kid_items(self.emil)), 1)
+
+    def test_undo_takes_money_back_unless_paid_out(self):
+        self.store.add_task('Dæk bord', 3)
+        item = self.kid_items(self.emil)[0]
+        self.store.mark_done(self.emil['token'], item['id'])
+        self.store.decide(item['id'], True)
+        hist = self.store.admin_state()['history']
+        self.assertTrue(hist[0]['can_undo'])
+        self.store.undo(item['id'])
+        self.assertEqual(self.store.balance(self.emil['id']), 0)
+        self.assertEqual(self.store.admin_state()['pending'][0]['id'], item['id'])
+        self.store.decide(item['id'], True)
+        self.store.payout(self.emil['id'])
+        self.assertFalse(self.store.admin_state()['history'][0]['can_undo'])
+        with self.assertRaises(Problem):
+            self.store.undo(item['id'])
+
+    def test_task_can_be_done_several_times_a_day(self):
+        self.store.add_task('Børst tænder', 2, times=2)
+        items = self.kid_items(self.emil)
+        self.assertEqual([(i['slot'], i['of']) for i in items], [(1, 2), (2, 2)])
+        self.store.mark_done(self.emil['token'], items[0]['id'])
+        self.assertEqual(len(self.kid_items(self.emil)), 2)
+        self.store.update_task(self.store.data['tasks'][0]['id'], times=3)
+        self.assertEqual(len(self.kid_items(self.emil)), 3)
+        with self.assertRaises(Problem):
+            self.store.update_task(self.store.data['tasks'][0]['id'], times=9)
+
+    def test_open_job_with_two_slots_can_be_taken_twice(self):
+        task = self.store.add_task('Vask bil', 20, open_job=True, times=2)
+        self.store.claim(self.emil['token'], task['id'])
+        self.assertEqual(len(self.store.kid_view(self.maja['token'])['jobs']), 1)
+        self.store.claim(self.maja['token'], task['id'])
+        self.assertEqual(self.store.kid_view(self.maja['token'])['jobs'], [])
+        with self.assertRaises(Problem):
+            self.store.claim(self.emil['token'], task['id'])
+
+    def test_saving_goal_counts_earnings_after_it_is_set(self):
+        self.store.add_task('Dæk bord', 3)
+        first = self.kid_items(self.emil)[0]
+        self.store.mark_done(self.emil['token'], first['id'])
+        self.store.decide(first['id'], True)
+        self.clock.advance(minutes=1)
+        self.store.set_goal(self.emil['id'], 'Cykel', 10)
+        self.assertEqual(self.store.kid_view(self.emil['token'])['saving']['saved'], 0)
+        self.clock.advance(days=1)
+        item = [i for i in self.kid_items(self.emil) if i['status'] == 'todo'][0]
+        self.store.mark_done(self.emil['token'], item['id'])
+        self.store.decide(item['id'], True)
+        self.store.payout(self.emil['id'])
+        saving = self.store.kid_view(self.emil['token'])['saving']
+        self.assertEqual((saving['saved'], saving['amount'], saving['reached']), (3, 10, False))
+        self.store.set_goal(self.emil['id'], '', '')
+        self.assertIsNone(self.store.kid_view(self.emil['token'])['saving'])
+        with self.assertRaises(Problem):
+            self.store.set_goal(self.emil['id'], 'Cykel', 0)
+
     def test_data_survives_restart(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, 'pligt.json')

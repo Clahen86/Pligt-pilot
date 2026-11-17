@@ -129,6 +129,16 @@ class Store:
         return price
 
     @staticmethod
+    def _clean_times(value):
+        try:
+            times = int(value or 1)
+        except (TypeError, ValueError):
+            raise Problem('Antal gange skal være et tal')
+        if times < 1 or times > 5:
+            raise Problem('Antal gange skal være mellem 1 og 5')
+        return times
+
+    @staticmethod
     def _clean_age(value):
         try:
             age = int(value)
@@ -152,7 +162,7 @@ class Store:
             self._save()
             return kid
 
-    def update_kid(self, kid_id, name=None, age=None, color=None):
+    def update_kid(self, kid_id, name=None, age=None, color=None, paused=None):
         with self.lock:
             kid = self._kid(kid_id)
             if name is not None:
@@ -161,8 +171,39 @@ class Store:
                 kid['age'] = self._clean_age(age)
             if color:
                 kid['color'] = color
+            if paused is not None:
+                kid['paused'] = bool(paused)
             self._save()
             return kid
+
+    def set_goal(self, kid_id, title, amount):
+        """Sparemål. Tæller det, barnet tjener fra nu af, uanset udbetalinger."""
+        with self.lock:
+            kid = self._kid(kid_id)
+            if not (title or '').strip() and not str(amount or '').strip():
+                kid.pop('saving', None)
+            else:
+                price = self._clean_price(amount)
+                if price < 1:
+                    raise Problem('Beløbet skal være mindst 1 kr.')
+                kid['saving'] = {
+                    'title': self._clean_text(title, 'Navn på sparemålet', 40),
+                    'amount': price,
+                    'since': self._now().isoformat(timespec='seconds'),
+                }
+            self._save()
+            return kid
+
+    def _saving(self, kid):
+        goal = kid.get('saving')
+        if not goal:
+            return None
+        saved = sum(e['amount'] for e in self.data['ledger']
+                    if e['kid_id'] == kid['id'] and e['kind'] in ('task', 'bonus')
+                    and e['at'] >= goal['since'])
+        saved = max(0, saved)
+        return {'title': goal['title'], 'amount': goal['amount'], 'saved': min(saved, goal['amount']),
+                'reached': saved >= goal['amount']}
 
     def new_token(self, kid_id):
         with self.lock:
@@ -185,7 +226,7 @@ class Store:
 
     # ---- opgaver -------------------------------------------------------
     def add_task(self, title, price, room='', repeat='daily', open_job=False,
-                 kids=None, age_min=0, age_max=99):
+                 kids=None, age_min=0, age_max=99, times=1):
         with self.lock:
             if repeat not in REPEATS:
                 raise Problem('Ukendt gentagelse')
@@ -199,6 +240,7 @@ class Store:
                 'kids': list(kids or []),
                 'age_min': int(age_min or 0),
                 'age_max': int(age_max or 99),
+                'times': self._clean_times(times),
                 'active': True,
             }
             self.data['tasks'].append(task)
@@ -224,6 +266,8 @@ class Store:
                 task['active'] = bool(fields['active'])
             if 'kids' in fields:
                 task['kids'] = list(fields['kids'] or [])
+            if 'times' in fields:
+                task['times'] = self._clean_times(fields['times'])
             if 'age_min' in fields:
                 try:
                     task['age_min'] = max(0, min(25, int(fields['age_min'] or 0)))
@@ -248,8 +292,10 @@ class Store:
             return False
         return task.get('age_min', 0) <= kid['age'] <= task.get('age_max', 99)
 
-    def _new_item(self, task, kid, d, status='todo'):
+    def _new_item(self, task, kid, d, status='todo', slot=1):
         item = {
+            'slot': slot,
+            'of': task.get('times', 1),
             'id': _id(),
             'task_id': task['id'],
             'kid_id': kid['id'],
@@ -275,38 +321,43 @@ class Store:
             if it['status'] != 'todo':
                 continue
             t = tasks.get(it['task_id'])
-            stale = (t is None or not t['active'] or
+            paused = any(k['id'] == it['kid_id'] and k.get('paused') for k in self.data['kids'])
+            stale = (t is None or not t['active'] or paused or
                      (t['repeat'] != 'once' and it['period'] != period_key(t['repeat'], d)))
             if stale:
                 it['status'] = 'missed'
                 changed = True
-        existing = {(i['task_id'], i['kid_id'], i['period'])
-                    for i in self.data['items'] if i['status'] != 'missed'}
+        existing = {}
+        for i in self.data['items']:
+            if i['status'] != 'missed':
+                key = (i['task_id'], i['kid_id'], i['period'])
+                existing[key] = existing.get(key, 0) + 1
         for t in self.data['tasks']:
             if not t['active'] or t['open']:
                 continue
             period = period_key(t['repeat'], d)
             for kid in self.data['kids']:
-                if not self._in_scope(t, kid):
+                if kid.get('paused') or not self._in_scope(t, kid):
                     continue
-                if (t['id'], kid['id'], period) in existing:
-                    continue
-                self._new_item(t, kid, d)
-                existing.add((t['id'], kid['id'], period))
-                changed = True
+                have = existing.get((t['id'], kid['id'], period), 0)
+                for slot in range(have + 1, t.get('times', 1) + 1):
+                    self._new_item(t, kid, d, slot=slot)
+                    changed = True
         if changed:
             self._save()
 
     def _open_jobs_for(self, kid):
         d = self._now()
         jobs = []
+        if kid.get('paused'):
+            return jobs
         for t in self.data['tasks']:
             if not t['active'] or not t['open'] or not self._in_scope(t, kid):
                 continue
             period = period_key(t['repeat'], d)
-            taken = any(i['task_id'] == t['id'] and i['period'] == period and
-                        i['status'] != 'missed' for i in self.data['items'])
-            if not taken:
+            taken = sum(1 for i in self.data['items'] if i['task_id'] == t['id']
+                        and i['period'] == period and i['status'] != 'missed')
+            if taken < t.get('times', 1):
                 jobs.append(t)
         return jobs
 
@@ -377,6 +428,8 @@ class Store:
             return {
                 'kid': {'id': kid['id'], 'name': kid['name'], 'age': kid['age'],
                         'color': kid['color']},
+                'paused': bool(kid.get('paused')),
+                'saving': self._saving(kid),
                 'balance': self.balance(kid['id']),
                 'waiting': sum(i['price'] for i in self.data['items']
                                if i['kid_id'] == kid['id'] and i['status'] == 'wait'),
@@ -386,7 +439,8 @@ class Store:
                 'week_label': 'Uge %d' % self._now().isocalendar()[1],
                 'items': [{'id': i['id'], 'title': i['title'], 'room': i['room'],
                            'price': i['price'], 'status': i['status'],
-                           'rejected': i['rejected']} for i in items],
+                           'rejected': i['rejected'], 'slot': i.get('slot', 1),
+                           'of': i.get('of', 1)} for i in items],
                 'jobs': [{'task_id': t['id'], 'title': t['title'], 'room': t['room'],
                           'price': t['price']} for t in self._open_jobs_for(kid)],
             }
@@ -416,7 +470,10 @@ class Store:
             task = self._task(task_id)
             if task not in self._open_jobs_for(kid):
                 raise Problem('Opgaven er allerede taget')
-            item = self._new_item(task, kid, self._now())
+            period = period_key(task['repeat'], self._now())
+            taken = sum(1 for i in self.data['items'] if i['task_id'] == task['id']
+                        and i['period'] == period and i['status'] != 'missed')
+            item = self._new_item(task, kid, self._now(), slot=taken + 1)
             self._save()
             return kid, item
 
@@ -437,6 +494,8 @@ class Store:
                     'bars': self._bars(k['id']),
                     'score': self._score(k),
                     'is_hero': k['id'] == hero,
+                    'paused': bool(k.get('paused')),
+                    'saving': self._saving(k),
                 })
             kid_names = {k['id']: k for k in self.data['kids']}
             pending = []
@@ -450,6 +509,7 @@ class Store:
             settings = self.data['settings']
             return {
                 'kids': kids,
+                'history': self._history(kid_names),
                 'pending': pending,
                 'tasks': [dict(t) for t in self.data['tasks']],
                 'total': sum(k['balance'] for k in kids),
@@ -458,6 +518,43 @@ class Store:
                 'hero_paid': settings.get('hero_paid_week') == week,
                 'week_label': 'Uge %d' % self._now().isocalendar()[1],
             }
+
+    def _history(self, kid_names, limit=30):
+        paid_after = {}
+        out = []
+        for e in reversed(self.data['ledger']):
+            kid = kid_names.get(e['kid_id'])
+            if not kid:
+                continue
+            can_undo = False
+            if e['kind'] == 'task' and e.get('item_id'):
+                it = next((i for i in self.data['items'] if i['id'] == e['item_id']), None)
+                can_undo = bool(it and it['status'] == 'done' and
+                                self.balance(kid['id']) >= e['amount'])
+            out.append({'id': e['id'], 'kid_id': kid['id'], 'name': kid['name'],
+                        'color': kid['color'], 'amount': e['amount'], 'kind': e['kind'],
+                        'note': e.get('note', ''), 'at': e['at'], 'item_id': e.get('item_id'),
+                        'can_undo': can_undo})
+            if len(out) >= limit:
+                break
+        return out
+
+    def undo(self, item_id):
+        """Fortryder en godkendelse: pengene trækkes tilbage, og opgaven venter igen."""
+        with self.lock:
+            item = self._item(item_id)
+            if item['status'] != 'done':
+                raise Problem('Opgaven er ikke godkendt')
+            entry = next((e for e in self.data['ledger']
+                          if e.get('item_id') == item_id and e['kind'] == 'task'), None)
+            if entry and self.balance(item['kid_id']) < entry['amount']:
+                raise Problem('Pengene er allerede udbetalt, så det kan ikke fortrydes')
+            if entry:
+                self.data['ledger'].remove(entry)
+            item['status'] = 'wait'
+            item['decided_at'] = None
+            self._save()
+            return item
 
     def decide(self, item_id, approve):
         with self.lock:

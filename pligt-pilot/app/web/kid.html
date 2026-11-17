@@ -45,6 +45,8 @@ button { font: inherit; cursor: pointer; }
 .bar { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 32px; }
 .bar i { display: block; width: 100%; border-radius: 8px; }
 .bar small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.meter { height: 14px; border-radius: 999px; background: #E8DFD0; overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: 999px; background: var(--accent); min-width: 6px; }
 .bar.today small { font-weight: 900; color: var(--ink); }
 h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; display: flex; align-items: center; gap: 8px; }
 .new { background: #C73A30; color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 900; }
@@ -123,6 +125,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     }).join('');
     var items = s.items.map(function (i) {
       var sub = i.rejected && i.status === 'todo' ? 'Prøv igen' : i.room;
+      if (i.of > 1) { sub = (sub ? sub + ' · ' : '') + i.slot + ' af ' + i.of; }
       var right = i.status === 'todo'
         ? '<button class="btn" data-done="' + i.id + '" aria-label="Færdig: ' + esc(i.title) + '">Færdig</button>'
         : i.status === 'wait'
@@ -146,11 +149,22 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       '<circle cx="48" cy="48" r="38" fill="none" stroke="#FFC247" stroke-width="10" stroke-linecap="round" ' +
       'stroke-dasharray="' + (circ * frac).toFixed(1) + ' ' + circ + '" transform="rotate(-90 48 48)"></circle></svg>' +
       '<div class="mid"><b>' + s.completed + '/' + s.goal + '</b><span>i ugen</span></div></div></div>' +
+      (s.paused ? '<div class="card"><b>Du har pause</b><div class="sub">Ingen opgaver lige nu. God fornøjelse!</div></div>' : '') +
+      saving(s) +
       '<div class="card"><div class="row"><b>Din uge</b><span>Mål: ' + s.goal + ' opgaver</span></div>' +
       '<div class="bars">' + bars + '</div></div>' +
       '<h2>Dine opgaver</h2><div class="list">' +
       (items || '<div class="empty">Ingen opgaver lige nu. Godt gået!</div>') + '</div>' +
       (jobs ? '<h2>Ledige nu <span class="new">Ny</span></h2><div class="list">' + jobs + '</div>' : '');
+  }
+
+  function saving(s) {
+    var g = s.saving;
+    if (!g) { return ''; }
+    var pct = Math.round(100 * g.saved / g.amount);
+    return '<div class="card"><div class="row"><b>' + esc(g.title) + '</b><span>' + g.saved + ' af ' + g.amount + ' kr</span></div>' +
+      '<div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="' + g.amount + '" aria-valuenow="' + g.saved + '"><i style="width:' + pct + '%"></i></div>' +
+      (g.reached ? '<div class="sub" style="margin-top:6px">Du har sparet nok! Sig det til mor eller far.</div>' : '') + '</div>';
   }
 
   app.addEventListener('click', function (e) {

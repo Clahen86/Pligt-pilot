@@ -88,8 +88,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 <div class="toast" id="toast" hidden role="status"></div>
 <script>
 (function () {
-  var state = null, sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
-  var draft = { task: { title: '', price: '5', room: '', repeat: 'daily', open: false }, kid: { name: '', age: '' } };
+  var state = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
+  var draft = { task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [] }, kid: { name: '', age: '' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
   var REPEAT = { daily: 'Hver dag', weekly: 'Hver uge', once: 'Én gang' };
   var CHECK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"></path></svg>';
@@ -125,17 +125,48 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var a = document.activeElement;
     return a && (a.tagName === 'INPUT' || a.tagName === 'SELECT');
   }
-  function editForm(key, r) {
+  function timesSelect(id, val) {
+    return '<select id="' + id + '">' + [1, 2, 3, 4, 5].map(function (n) {
+      return '<option value="' + n + '"' + (+val === n ? ' selected' : '') + '>' + (n === 1 ? '1 gang' : n + ' gange') + '</option>';
+    }).join('') + '</select>';
+  }
+  function kidBoxes(group, chosen) {
+    if (state.kids.length < 2) { return ''; }
+    return '<div><label>Hvem skal have den?</label>' +
+      '<div class="note" style="margin-bottom:6px">' + (chosen.length ? 'Kun de valgte børn' : 'Alle børn (vælg for at begrænse)') + '</div>' +
+      state.kids.map(function (k) {
+        return '<label class="check" style="margin:0 0 6px"><input type="checkbox" data-kidbox="' + group + '" value="' + k.id + '"' +
+          (chosen.indexOf(k.id) >= 0 ? ' checked' : '') + '> ' + esc(k.name) + '</label>';
+      }).join('') + '</div>';
+  }
+  function editForm(key, r, withKids) {
     return '<div class="two"><div><label for="' + key + '-t">Navn</label><input id="' + key + '-t" type="text" value="' + esc(r.title) + '"></div>' +
       '<div><label for="' + key + '-p">Pris (kr.)</label><input id="' + key + '-p" type="number" inputmode="numeric" min="0" max="1000" value="' + esc(r.price) + '"></div></div>' +
       '<div class="two"><div><label for="' + key + '-a">Fra alder</label><input id="' + key + '-a" type="number" inputmode="numeric" min="0" max="25" value="' + esc(r.age_min || 0) + '"></div>' +
       '<div><label for="' + key + '-r">Hvor tit</label><select id="' + key + '-r">' +
       ['daily', 'weekly', 'once'].map(function (x) { return '<option value="' + x + '"' + (r.repeat === x ? ' selected' : '') + '>' + REPEAT[x] + '</option>'; }).join('') + '</select></div></div>' +
+      '<div><label for="' + key + '-n">Hvor mange gange pr. periode</label>' + timesSelect(key + '-n', r.times || 1) + '</div>' +
+      (withKids ? kidBoxes('edit', editKids) : '') +
       '<div class="row"><button class="btn small" data-save="' + key + '">Gem</button><button class="btn small ghost" data-cancel="1">Annullér</button></div>';
   }
   function readForm(key) {
-    return { title: document.getElementById(key + '-t').value, price: document.getElementById(key + '-p').value,
-      age_min: document.getElementById(key + '-a').value, repeat: document.getElementById(key + '-r').value };
+    var f = { title: document.getElementById(key + '-t').value, price: document.getElementById(key + '-p').value,
+      age_min: document.getElementById(key + '-a').value, repeat: document.getElementById(key + '-r').value,
+      times: document.getElementById(key + '-n').value };
+    if (key.charAt(0) === 't') { f.kids = editKids.slice(); }
+    return f;
+  }
+  function kidTask(id) { return state.tasks.filter(function (t) { return t.id === id; })[0] || {}; }
+  function goalBox(k) {
+    var g = k.saving, out = '<div><label>Sparemål</label>';
+    if (g) {
+      out += '<div class="note" style="margin-bottom:6px">' + esc(g.title) + ': ' + g.saved + ' af ' + g.amount + ' kr' + (g.reached ? ' – nået!' : '') + '</div>';
+    }
+    out += '<div class="two"><div><input id="g-t-' + k.id + '" type="text" aria-label="Hvad sparer ' + esc(k.name) + ' op til?" placeholder="Fx Cykel" value="' + (g ? esc(g.title) : '') + '"></div>' +
+      '<div><input id="g-a-' + k.id + '" type="number" inputmode="numeric" min="1" max="1000" aria-label="Beløb i kroner" placeholder="Kr." value="' + (g ? g.amount : '') + '"></div></div>' +
+      '<div class="row" style="margin-top:8px"><button class="btn small ghost" data-savegoal="' + k.id + '">' + (g ? 'Opdatér mål' : 'Sæt mål') + '</button>' +
+      (g ? '<button class="btn small danger" data-cleargoal="' + k.id + '">Fjern mål</button>' : '') + '</div></div>';
+    return out;
   }
   function kidById(id) { return state.kids.filter(function (k) { return k.id === id; })[0]; }
   function linkFor(k) {
@@ -171,7 +202,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     out += '</div><h2>Børnene</h2><div class="list">';
     s.kids.forEach(function (k) {
       out += '<div class="card"><div class="kid-top"><div class="avatar big" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' +
-        '<div class="grow"><div class="name">' + esc(k.name) + '</div><div class="sub">' + k.age + ' år · ' + k.tasks_week + (k.tasks_week === 1 ? ' opgave' : ' opgaver') + ' i ugen</div></div>' +
+        '<div class="grow"><div class="name">' + esc(k.name) + (k.paused ? ' <span class="badge" style="font-size:12px;padding:3px 8px">På pause</span>' : '') + '</div><div class="sub">' + k.age + ' år · ' + k.tasks_week + (k.tasks_week === 1 ? ' opgave' : ' opgaver') + ' i ugen</div></div>' +
         '<div class="money"><b style="color:' + esc(k.color) + '">' + k.balance + ' kr</b><span>at udbetale</span></div></div>' +
         '<div class="between"><div class="mini" aria-hidden="true">' + miniBars(k) + '</div>' +
         (k.is_hero ? '<div class="hero">' + CROWN + 'Ugens helt</div>' : '') + '</div>';
@@ -183,6 +214,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     });
     out += '</div><div class="total"><div><small>I alt at udbetale</small><b>' + s.total + ' kr</b></div>' +
       '<small style="max-width:150px;text-align:right">Ugens helt får ' + s.hero_bonus + ' kr</small></div>';
+    if (s.history && s.history.length) {
+      out += '<h2>Seneste</h2><div class="list">';
+      s.history.slice(0, 12).forEach(function (h) {
+        var label = h.kind === 'task' ? h.note : h.kind === 'payout' ? 'Udbetalt' : h.note || 'Bonus';
+        var when = new Date(h.at);
+        var day = isNaN(when) ? '' : when.toLocaleDateString('da-DK', { weekday: 'short', day: 'numeric', month: 'short' });
+        out += '<div class="row card"><div class="avatar" style="background:' + esc(h.color) + '" aria-hidden="true">' + esc(h.name.charAt(0).toUpperCase()) + '</div>' +
+          '<div class="grow t"><b>' + esc(label) + '</b><span>' + esc(h.name) + ' · ' + esc(day) + '</span></div>' +
+          '<div class="price" style="color:' + (h.amount < 0 ? '#C73A30' : '#0B7A70') + '">' + (h.amount > 0 ? '+' : '') + h.amount + ' kr</div>' +
+          (h.can_undo ? '<button class="btn small ghost" data-undo="' + h.item_id + '">Fortryd</button>' : '') + '</div>';
+      });
+      out += '</div>';
+    }
     if (!s.notify_on) {
       out += '<div class="note">Tip: Skriv din notifikationstjeneste ind i add-onens indstillinger (notify_service), så får du besked, når et barn er færdig.</div>';
     }
@@ -208,7 +252,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
             out += '<div class="row card"><div class="grow t"><b>' + esc(r.title) + '</b><span>Findes allerede</span></div></div>';
             return;
           }
-          out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(r.title) + '</b><span>' + esc(REPEAT[r.repeat]) + ' · fra ' + r.age_min + ' år</span></div>' +
+          out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(r.title) + '</b><span>' + esc(REPEAT[r.repeat]) + (r.times > 1 ? ' · ' + r.times + ' gange' : '') + ' · fra ' + r.age_min + ' år</span></div>' +
             '<div class="price">' + r.price + ' kr</div>' +
             '<button class="sw" role="switch" aria-checked="' + (sugOn[i] ? 'true' : 'false') + '" aria-label="' + esc(r.title) + '" data-sug="' + i + '"><span></span></button></div>' +
             (sugEdit === i ? editForm('s' + i, r) : '<button class="btn small ghost" data-sugedit="' + i + '">Rediger</button>') + '</div>';
@@ -224,11 +268,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       out += '<div class="group">' + esc(room) + '</div><div class="list">';
       s.tasks.forEach(function (t) {
         if ((t.room || 'Andet') !== room) { return; }
-        out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
+        out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
           '<div class="price">' + t.price + ' kr</div>' +
           '<button class="sw" role="switch" aria-checked="' + (t.active ? 'true' : 'false') + '" aria-label="' + esc(t.title) + ' er slået til" data-active="' + t.id + '"><span></span></button>' +
           '<button class="icon no" style="width:40px;height:40px" data-deltask="' + t.id + '" aria-label="Slet ' + esc(t.title) + '">' + CROSS + '</button></div>' +
-          (taskEdit === t.id ? editForm('t' + t.id, t) : '<button class="btn small ghost" data-taskedit="' + t.id + '">Rediger</button>') + '</div>';
+          (taskEdit === t.id ? editForm('t' + t.id, t, true) : '<button class="btn small ghost" data-taskedit="' + t.id + '">Rediger</button>') + '</div>';
       });
       out += '</div>';
     });
@@ -239,6 +283,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<div><label for="t-room">Rum</label><input id="t-room" type="text" data-draft="task.room" value="' + esc(d.room) + '" placeholder="Fx Køkken"></div></div>' +
       '<div><label for="t-repeat">Hvor tit</label><select id="t-repeat" data-draft="task.repeat">' +
       ['daily', 'weekly', 'once'].map(function (r) { return '<option value="' + r + '"' + (d.repeat === r ? ' selected' : '') + '>' + REPEAT[r] + '</option>'; }).join('') + '</select></div>' +
+      '<div><label for="t-times">Hvor mange gange pr. periode</label>' + timesSelect('t-times', d.times).replace('<select ', '<select data-draft="task.times" ') + '</div>' +
+      kidBoxes('draft', d.kids) +
       '<label class="check"><input type="checkbox" data-draft="task.open"' + (d.open ? ' checked' : '') + '> Ledig opgave: den første, der tager den, får den</label>' +
       '<button class="btn" data-addtask="1">Tilføj opgave</button></div>';
     return out;
@@ -253,6 +299,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         '<div><label for="l-' + k.id + '">Personligt link</label><div class="linkbox"><input id="l-' + k.id + '" type="text" readonly value="' + esc(linkFor(k)) + '">' +
         '<button class="btn small" data-copy="' + k.id + '">Kopiér</button></div></div>' +
         '<div class="note">Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren.</div>' +
+        '<div class="row"><div class="grow t"><b>På pause</b><span>Ferie eller syg: ingen opgaver, og ugen tæller ikke som misset</span></div>' +
+        '<button class="sw" role="switch" aria-checked="' + (k.paused ? 'true' : 'false') + '" aria-label="' + esc(k.name) + ' er på pause" data-pause="' + k.id + '"><span></span></button></div>' +
+        goalBox(k) +
         '<div class="row" style="flex-wrap:wrap"><button class="btn small ghost" data-newlink="' + k.id + '">Nyt link</button>' +
         '<button class="btn small danger" data-delkid="' + k.id + '">Fjern barn</button></div></div>';
     });
@@ -288,6 +337,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   });
   document.addEventListener('change', function (e) {
     var t = e.target;
+    if (t.dataset && t.dataset.kidbox) {
+      var list = t.dataset.kidbox === 'draft' ? draft.task.kids : editKids, at = list.indexOf(t.value);
+      if (t.checked && at < 0) { list.push(t.value); } else if (!t.checked && at >= 0) { list.splice(at, 1); }
+      return;
+    }
     if (t.dataset && t.dataset.draft) { setDraft(t.dataset.draft, t.type === 'checkbox' ? t.checked : t.value); }
   });
   document.addEventListener('click', function (e) {
@@ -307,14 +361,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       }).catch(function (err) { say(err.message); });
     }
     else if (d.sugedit) { sugEdit = +d.sugedit; render(); }
-    else if (d.taskedit) { taskEdit = d.taskedit; render(); }
+    else if (d.taskedit) { taskEdit = d.taskedit; editKids = (kidTask(d.taskedit).kids || []).slice(); render(); }
     else if (d.cancel) { sugEdit = -1; taskEdit = ''; render(); }
     else if (d.sugall) { suggestions.forEach(function (r, i) { sugOn[i] = d.sugall === '1' && !r.exists; }); render(); }
     else if (d.save) {
       var f = readForm(d.save);
       if (d.save.charAt(0) === 's') {
         var row = suggestions[+d.save.slice(1)];
-        row.title = f.title; row.price = f.price; row.age_min = f.age_min; row.repeat = f.repeat;
+        row.title = f.title; row.price = f.price; row.age_min = f.age_min; row.repeat = f.repeat; row.times = f.times;
         sugEdit = -1; render();
       } else {
         post('api/tasks/' + d.save.slice(1), f, 'Gemt').then(function () { taskEdit = ''; render(); }).catch(function () {});
@@ -332,14 +386,23 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     else if (d.deltask) { if (confirm('Slette opgaven?')) { post('api/tasks/' + d.deltask + '/delete', {}, 'Slettet'); } }
     else if (d.addtask) {
       var x = draft.task;
-      post('api/tasks', { title: x.title, price: x.price, room: x.room, repeat: x.repeat, open: x.open }, 'Opgaven er tilføjet')
-        .then(function () { draft.task = { title: '', price: x.price, room: x.room, repeat: x.repeat, open: false }; render(); }).catch(function () {});
+      post('api/tasks', { title: x.title, price: x.price, room: x.room, repeat: x.repeat, open: x.open, times: x.times, kids: x.kids }, 'Opgaven er tilføjet')
+        .then(function () { draft.task = { title: '', price: x.price, room: x.room, repeat: x.repeat, open: false, times: '1', kids: [] }; render(); }).catch(function () {});
     }
     else if (d.addkid) {
       var y = draft.kid;
       post('api/kids', { name: y.name, age: y.age }, 'Barnet er tilføjet')
         .then(function () { draft.kid = { name: '', age: '' }; render(); }).catch(function () {});
     }
+    else if (d.pause) {
+      var pk = kidById(d.pause);
+      post('api/kids/' + d.pause, { paused: !pk.paused }, pk.paused ? pk.name + ' er med igen' : pk.name + ' er sat på pause');
+    }
+    else if (d.savegoal) {
+      post('api/kids/' + d.savegoal + '/goal', { title: document.getElementById('g-t-' + d.savegoal).value, amount: document.getElementById('g-a-' + d.savegoal).value }, 'Sparemål gemt');
+    }
+    else if (d.cleargoal) { post('api/kids/' + d.cleargoal + '/goal', { title: '', amount: '' }, 'Sparemål fjernet'); }
+    else if (d.undo) { if (confirm('Fortryd godkendelsen? Pengene trækkes tilbage.')) { post('api/items/' + d.undo + '/undo', {}, 'Fortrudt. Opgaven venter igen.'); } }
     else if (d.copy) {
       var k = kidById(d.copy), input = document.getElementById('l-' + d.copy);
       if (navigator.clipboard && window.isSecureContext) {

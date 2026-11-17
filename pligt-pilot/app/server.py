@@ -169,7 +169,15 @@ def make_handler(app, role, allow_from=None):
             m = re.match(r'^/api/kids/' + ID + r'$', path)
             if m:
                 store.update_kid(m.group(1), body.get('name'), body.get('age'),
-                                 body.get('color'))
+                                 body.get('color'), body.get('paused'))
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/kids/' + ID + r'/goal$', path)
+            if m:
+                store.set_goal(m.group(1), body.get('title'), body.get('amount'))
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/items/' + ID + r'/undo$', path)
+            if m:
+                store.undo(m.group(1))
                 return self._json(store.admin_state())
             m = re.match(r'^/api/kids/' + ID + r'/(delete|payout|newlink)$', path)
             if m:
@@ -185,11 +193,11 @@ def make_handler(app, role, allow_from=None):
                 store.add_task(body.get('title'), body.get('price', 0), body.get('room', ''),
                                body.get('repeat', 'daily'), body.get('open', False),
                                body.get('kids'), body.get('age_min', 0),
-                               body.get('age_max', 99))
+                               body.get('age_max', 99), body.get('times', 1))
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'$', path)
             if m:
-                allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids', 'age_min')
+                allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids', 'age_min', 'times')
                 store.update_task(m.group(1), **{k: v for k, v in body.items() if k in allowed})
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'/delete$', path)
@@ -217,7 +225,7 @@ def make_handler(app, role, allow_from=None):
                         continue
                     store.add_task(r.get('title'), r.get('price', 0), r.get('room', ''),
                                    r.get('repeat', 'daily'), False, None,
-                                   r.get('age_min', 0), 99)
+                                   r.get('age_min', 0), 99, r.get('times', 1))
                 return self._json(store.admin_state())
             self._json({'error': 'Findes ikke'}, 404)
 
