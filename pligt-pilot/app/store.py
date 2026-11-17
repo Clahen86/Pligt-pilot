@@ -16,6 +16,8 @@ import secrets
 import threading
 import uuid
 
+import i18n
+
 COLORS = ['#0B7A70', '#C73A30', '#6C4AB6', '#B05A00', '#1F6FB2', '#B03A83']
 DAYS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
 REPEATS = ('daily', 'weekly', 'once')
@@ -116,6 +118,13 @@ class Store:
                     self.data[key] = value
 
     # ---- lagring -------------------------------------------------------
+    def lang_of(self, kid=None):
+        """Sprog for et barn (eller for forælderen): barnets eget, ellers husets."""
+        house = i18n.valid(self.data['settings'].get('lang', 'da'))
+        if kid is not None and kid.get('lang'):
+            return i18n.valid(kid['lang'])
+        return house
+
     def _save(self):
         if not self.path:
             return
@@ -243,7 +252,7 @@ class Store:
             return kid
 
     def update_kid(self, kid_id, name=None, age=None, color=None, paused=None,
-                   birthday=None, notify=None, allowance=None, ntfy_on=None):
+                   birthday=None, notify=None, allowance=None, ntfy_on=None, lang=None):
         with self.lock:
             kid = self._kid(kid_id)
             if name is not None:
@@ -263,6 +272,8 @@ class Store:
                 kid['notify'] = self._clean_service(notify)
             if ntfy_on is not None:
                 kid['ntfy_on'] = bool(ntfy_on)
+            if lang is not None:
+                kid['lang'] = i18n.valid(lang) if lang else ''
             if allowance is not None:
                 amount = self._clean_price(allowance or 0)
                 kid['allowance'] = amount
@@ -445,9 +456,11 @@ class Store:
         """Opretter en passende startpakke. Springer opgaver over, der allerede findes."""
         made = 0
         for title, price, room, repeat, times, lo, hi, season in STARTER:
-            if self.has_task_titled(title):
+            if self.has_task_titled(title) or self.has_task_titled(i18n.translate(self.lang_of(), title)):
                 continue
-            self.add_task(title, price, room, repeat, False, None, lo, hi, times, False, None, season)
+            lang = self.lang_of()
+            self.add_task(i18n.translate(lang, title), price, i18n.translate(lang, room), repeat,
+                          False, None, lo, hi, times, False, None, season)
             made += 1
         return made
 
@@ -868,12 +881,13 @@ class Store:
                 out.append((when, i))
         return out
 
-    def _bars(self, kid_id):
+    def _bars(self, kid_id, lang='da'):
         today = self._now().weekday()
         counts = [0] * 7
         for when, _ in self._week_items(kid_id, ('wait', 'done')):
             counts[when.weekday()] += 1
-        return [{'label': DAYS[n], 'n': counts[n], 'today': n == today, 'future': n > today}
+        days = i18n.DAYS[i18n.valid(lang)]
+        return [{'label': days[n], 'n': counts[n], 'today': n == today, 'future': n > today}
                 for n in range(7)]
 
     def _score(self, kid):
@@ -918,6 +932,7 @@ class Store:
                 'badges': self._badges(kid),
                 'level': self._level(kid),
                 'boss': self._boss_view(),
+                'lang': self.lang_of(kid),
                 'streak': self._streak_view(kid),
                 'rewards': [{'id': r['id'], 'title': r['title'], 'price': r['price'],
                              'asked': any(c['kid_id'] == kid['id'] and c['reward_id'] == r['id']
@@ -938,7 +953,7 @@ class Store:
                                if i['kid_id'] == kid['id'] and i['status'] == 'wait'),
                 'goal': self.data['settings']['goal'],
                 'completed': len(week),
-                'bars': self._bars(kid['id']),
+                'bars': self._bars(kid['id'], self.lang_of(kid)),
                 'week_label': 'Uge %d' % self._now().isocalendar()[1],
                 'items': [{'id': i['id'], 'title': i['title'], 'room': i['room'],
                            'price': i['price'], 'status': i['status'],
@@ -1021,10 +1036,10 @@ class Store:
                 done = self._week_items(k['id'], ('done',))
                 kids.append({
                     'id': k['id'], 'name': k['name'], 'age': k['age'],
-                    'color': k['color'], 'token': k['token'],
+                    'color': k['color'], 'token': k['token'], 'lang': k.get('lang', ''),
                     'balance': self.balance(k['id']),
                     'tasks_week': len(done),
-                    'bars': self._bars(k['id']),
+                    'bars': self._bars(k['id'], self.lang_of()),
                     'score': self._score(k),
                     'is_hero': k['id'] == hero,
                     'paused': bool(k.get('paused')),
@@ -1056,6 +1071,9 @@ class Store:
                 'perfect': self._perfect_candidates(),
                 'family': self._family(),
                 'boss': self._boss(),
+                'lang': self.lang_of(),
+                'langs': [[c, i18n.NAMES[c]] for c in i18n.LANGS],
+                'locale': i18n.LOCALES[self.lang_of()],
                 'advice': self.advice(),
                 'rewards': [dict(r) for r in self.data['rewards']],
                 'claims': [dict(c, name=next((k['name'] for k in self.data['kids'] if k['id'] == c['kid_id']), ''),
@@ -1546,6 +1564,8 @@ class Store:
                 value = int(value)
                 if value < 1 or value > 50:
                     raise Problem('Målet skal være mellem 1 og 50')
+            elif key == 'lang':
+                value = i18n.valid(value)
             elif key in ('trading', 'weekly_summary'):
                 value = bool(value)
             elif key == 'boss_hp':

@@ -1,0 +1,220 @@
+Ægget || The Egg || Das Ei || Ägget || Egget
+Ungen || The Chick || Das Küken || Ungen || Ungen
+Pligtfuglen || The Chore Bird || Der Pflichtvogel || Syssefågeln || Pliktfuglen
+Pligtfuglen med kasket || The Chore Bird with a cap || Der Pflichtvogel mit Mütze || Syssefågeln med keps || Pliktfuglen med caps
+Pligtmesteren || The Chore Master || Der Pflichtmeister || Sysslemästaren || Pliktmesteren
+Pligtkongen || The Chore King || Der Pflichtkönig || Syssekungen || Pliktkongen
+Pligtlegenden || The Chore Legend || Die Pflichtlegende || Sysselegenden || Pliktlegenden
+Støvdragen || The Dust Dragon || Der Staubdrache || Dammdraken || Støvdragen
+Opvaskemonsteret || The Dishwashing Monster || Das Abwaschmonster || Diskmonstret || Oppvaskmonsteret
+Vasketøjstrolden || The Laundry Troll || Der Wäschetroll || Tvättroll || Vaskekurvtrollet
+Rodebunke-Rasmus || Messy Max || Chaos-Carlo || Stökiga Stina || Rotete Rasmus
+Snavsedjævelen || The Dirt Devil || Der Dreckteufel || Smutsdjävulen || Skittendjevelen
+Krummeuhyret || The Crumb Beast || Das Krümelmonster || Smulmonstret || Smuleuhyret
+Sokkespøgelset || The Sock Ghost || Das Sockengespenst || Strumpspöket || Sokkespøkelset
+Skraldegiganten || The Garbage Giant || Der Müllriese || Soptrollet || Søppelkjempen
+Første opgave || First chore || Erste Aufgabe || Första uppgiften || Første oppgave
+10 opgaver || 10 chores || 10 Aufgaben || 10 uppgifter || 10 oppgaver
+25 opgaver || 25 chores || 25 Aufgaben || 25 uppgifter || 25 oppgaver
+50 opgaver || 50 chores || 50 Aufgaben || 50 uppgifter || 50 oppgaver
+100 opgaver || 100 chores || 100 Aufgaben || 100 uppgifter || 100 oppgaver
+3 i træk || 3 in a row || 3 in Folge || 3 i rad || 3 på rad
+7 i træk || 7 in a row || 7 in Folge || 7 i rad || 7 på rad
+30 i træk || 30 in a row || 30 in Folge || 30 i rad || 30 på rad
+Sparemål nået || Saving goal reached || Sparziel erreicht || Sparmål nått || Sparemål nådd
+Barnet findes ikke || The child does not exist || Das Kind existiert nicht || Barnet finns inte || Barnet finnes ikke
+Opgaven findes ikke || The chore does not exist || Die Aufgabe existiert nicht || Uppgiften finns inte || Oppgaven finnes ikke
+mangler || is missing || fehlt || saknas || mangler
+Prisen skal være et tal || The price must be a number || Der Preis muss eine Zahl sein || Priset måste vara ett tal || Prisen må være et tall
+Prisen skal være mellem 0 og 1000 kr. || The price must be between 0 and 1000 kr. || Der Preis muss zwischen 0 und 1000 kr. liegen || Priset måste vara mellan 0 och 1000 kr. || Prisen må være mellom 0 og 1000 kr.
+Prisen skal være mindst 1 kr. || The price must be at least 1 kr. || Der Preis muss mindestens 1 kr. betragen || Priset måste vara minst 1 kr. || Prisen må være minst 1 kr.
+Ukendt sæson || Unknown season || Unbekannte Jahreszeit || Okänd säsong || Ukjent sesong
+Antal gange skal være et tal || The number of times must be a number || Die Anzahl muss eine Zahl sein || Antal gånger måste vara ett tal || Antall ganger må være et tall
+Antal gange skal være mellem 1 og 5 || The number of times must be between 1 and 5 || Die Anzahl muss zwischen 1 und 5 liegen || Antal gånger måste vara mellan 1 och 5 || Antall ganger må være mellom 1 og 5
+Alderen skal være et tal || The age must be a number || Das Alter muss eine Zahl sein || Åldern måste vara ett tal || Alderen må være et tall
+Alder skal være et tal || The age must be a number || Das Alter muss eine Zahl sein || Åldern måste vara ett tal || Alderen må være et tall
+Alderen skal være mellem 1 og 25 år || The age must be between 1 and 25 years || Das Alter muss zwischen 1 und 25 Jahren liegen || Åldern måste vara mellan 1 och 25 år || Alderen må være mellom 1 og 25 år
+Fødselsdatoen skal være en dato || The birthday must be a date || Der Geburtstag muss ein Datum sein || Födelsedatumet måste vara ett datum || Fødselsdatoen må være en dato
+Notifikationstjenesten må kun indeholde bogstaver, tal og _ || The notification service may only contain letters, numbers and _ || Der Benachrichtigungsdienst darf nur Buchstaben, Zahlen und _ enthalten || Aviseringstjänsten får bara innehålla bokstäver, siffror och _ || Varslingstjenesten kan bare inneholde bokstaver, tall og _
+Beløbet skal være mindst 1 kr. || The amount must be at least 1 kr. || Der Betrag muss mindestens 1 kr. betragen || Beloppet måste vara minst 1 kr. || Beløpet må være minst 1 kr.
+Navn på sparemålet || Name of the saving goal || Name des Sparziels || Namn på sparmålet || Navn på sparemålet
+Navn på familiemålet || Name of the family goal || Name des Familienziels || Namn på familjemålet || Navn på familiemålet
+Linket passer ikke || The link doesn't match || Der Link passt nicht || Länken stämmer inte || Lenken stemmer ikke
+Tilmeldingen er ugyldig || The registration is invalid || Die Anmeldung ist ungültig || Anmälan är ogiltig || Registreringen er ugyldig
+Ukendt gentagelse || Unknown repetition || Unbekannte Wiederholung || Okänd upprepning || Ukjent gjentakelse
+Navn på belønningen || Name of the reward || Name der Belohnung || Namn på belöningen || Navn på belønningen
+30 minutters ekstra skærmtid || 30 minutes extra screen time || 30 Minuten extra Bildschirmzeit || 30 minuters extra skärmtid || 30 minutter ekstra skjermtid
+Vælg fredagsfilmen || Pick the Friday movie || Den Freitagsfilm aussuchen || Välj fredagsfilmen || Velg fredagsfilmen
+Blive oppe 30 minutter længere || Stay up 30 minutes longer || 30 Minuten länger aufbleiben || Få vara uppe 30 minuter längre || Få være oppe 30 minutter lenger
+Belønningen findes ikke længere || The reward no longer exists || Die Belohnung gibt es nicht mehr || Belöningen finns inte längre || Belønningen finnes ikke lenger
+Du har allerede bedt om den || You have already asked for it || Du hast schon danach gefragt || Du har redan bett om den || Du har allerede bedt om den
+Du har ikke penge nok endnu || You don't have enough money yet || Du hast noch nicht genug Geld || Du har inte tillräckligt med pengar än || Du har ikke nok penger ennå
+Anmodningen findes ikke længere || The request no longer exists || Die Anfrage gibt es nicht mehr || Begäran finns inte längre || Forespørselen finnes ikke lenger
+Barnet har ikke penge nok længere || The child doesn't have enough money anymore || Das Kind hat nicht mehr genug Geld || Barnet har inte tillräckligt med pengar längre || Barnet har ikke nok penger lenger
+Skriv, hvad det koster || Write what it costs || Schreibe, was es kostet || Skriv vad det kostar || Skriv hva det koster
+Hvad ønsker du dig || What do you wish for || Was wünschst du dir || Vad önskar du dig || Hva ønsker du deg
+Der er ikke noget at udbetale || There is nothing to pay out || Es gibt nichts auszuzahlen || Det finns inget att betala ut || Det er ikke noe å utbetale
+har ikke åbnet siden i || has not opened the page for || hat die Seite seit || har inte öppnat sidan på || har ikke åpnet siden på
+dage. Send linket igen. || days. Send the link again. || Tagen nicht geöffnet. Sende den Link erneut. || dagar. Skicka länken igen. || dager. Send lenken igjen.
+har endnu ikke åbnet sit link. Send det igen. || has not opened their link yet. Send it again. || hat den Link noch nicht geöffnet. Sende ihn erneut. || har inte öppnat sin länk än. Skicka den igen. || har ikke åpnet lenken sin ennå. Send den igjen.
+er misset || has been missed || wurde verpasst || har missats || er misset
+gange de sidste 14 dage. Prøv at sætte prisen op eller fjern den. || times in the last 14 days. Try raising the price or remove it. || Mal in den letzten 14 Tagen. Erhöhe den Preis oder entferne sie. || gånger de senaste 14 dagarna. Prova att höja priset eller ta bort den. || ganger de siste 14 dagene. Prøv å sette opp prisen eller fjern den.
+Billedet er for stort || The picture is too large || Das Bild ist zu groß || Bilden är för stor || Bildet er for stort
+Billedet skal være et JPEG-billede || The picture must be a JPEG || Das Bild muss ein JPEG sein || Bilden måste vara en JPEG || Bildet må være et JPEG-bilde
+Uge || Week || Woche || Vecka || Uke
+Det er ikke din opgave || That's not your chore || Das ist nicht deine Aufgabe || Det är inte din uppgift || Det er ikke din oppgave
+Opgaven er allerede meldt færdig || The chore is already reported done || Die Aufgabe ist bereits als erledigt gemeldet || Uppgiften är redan anmäld som klar || Oppgaven er allerede meldt ferdig
+Tag et billede af opgaven først || Take a photo of the chore first || Mache zuerst ein Foto der Aufgabe || Ta en bild på uppgiften först || Ta et bilde av oppgaven først
+Opgaven er allerede taget || The chore has already been taken || Die Aufgabe wurde schon genommen || Uppgiften är redan tagen || Oppgaven er allerede tatt
+Opgaven er ikke godkendt || The chore is not approved || Die Aufgabe ist nicht genehmigt || Uppgiften är inte godkänd || Oppgaven er ikke godkjent
+Pengene er allerede udbetalt, så det kan ikke fortrydes || The money has already been paid out, so it can't be undone || Das Geld wurde bereits ausgezahlt, das kann nicht rückgängig gemacht werden || Pengarna är redan utbetalda, så det kan inte ångras || Pengene er allerede utbetalt, så det kan ikke angres
+Ingen perfekt uge at give bonus for || No perfect week to give a bonus for || Keine perfekte Woche für einen Bonus || Ingen perfekt vecka att ge bonus för || Ingen perfekt uke å gi bonus for
+enkeltstående || one-off || einmalige || enstaka || enkeltstående
+Opgaven er gratis. Er det meningen? || The chore is free. Is that intended? || Die Aufgabe ist kostenlos. Ist das Absicht? || Uppgiften är gratis. Är det meningen? || Oppgaven er gratis. Er det meningen?
+Højt: || High: || Hoch: || Högt: || Høyt:
+opgaver ligger ofte på || chores are often || Aufgaben liegen oft bei || uppgifter ligger ofta på || oppgaver ligger ofte på
+dine andre || your other || deine anderen || dina andra || dine andre
+opgaver koster typisk || chores typically cost || Aufgaben kosten typischerweise || uppgifter kostar vanligtvis || oppgaver koster typisk
+Lavt: || Low: || Niedrig: || Lågt: || Lavt:
+gange || times || Mal || gånger || ganger
+er meget for en || is a lot for a || ist viel für eine || är mycket för en || er mye for en
+opgave. || chore. || Aufgabe. || uppgift. || oppgave.
+Rimeligt. || Reasonable. || Angemessen. || Rimligt. || Rimelig.
+Rimeligt || Reasonable || Angemessen || Rimligt || Rimelig
+daglige || daily || tägliche || dagliga || daglige
+ugentlige || weekly || wöchentliche || veckovisa || ukentlige
+Bossen er ikke besejret endnu || The boss isn't defeated yet || Der Boss ist noch nicht besiegt || Bossen är inte besegrad än || Bossen er ikke beseiret ennå
+Bossbonussen er allerede givet || The boss bonus has already been given || Der Boss-Bonus wurde bereits vergeben || Bossbonusen är redan given || Bossbonusen er allerede gitt
+Der er ikke valgt en bonus || No bonus has been chosen || Es wurde kein Bonus festgelegt || Ingen bonus är vald || Ingen bonus er valgt
+Besejrede || Defeated || Besiegt || Besegrade || Beseiret
+Bytte er slået fra || Swapping is turned off || Tauschen ist ausgeschaltet || Byten är avstängda || Bytte er slått av
+Den opgave kan ikke byttes || That chore can't be swapped || Diese Aufgabe kann nicht getauscht werden || Den uppgiften kan inte bytas || Den oppgaven kan ikke byttes
+Det barn kan ikke tage den || That child can't take it || Dieses Kind kann sie nicht nehmen || Det barnet kan inte ta den || Det barnet kan ikke ta den
+er ikke gammel nok til den opgave || is not old enough for that chore || ist für diese Aufgabe nicht alt genug || är inte gammal nog för den uppgiften || er ikke gammel nok til den oppgaven
+Beløbet skal være mellem 0 og || The amount must be between 0 and || Der Betrag muss zwischen 0 und || Beloppet måste vara mellan 0 och || Beløpet må være mellom 0 og
+Du har ikke penge nok til at betale for et bytte || You don't have enough money to pay for a swap || Du hast nicht genug Geld, um den Tausch zu bezahlen || Du har inte tillräckligt med pengar för att betala för ett byte || Du har ikke nok penger til å betale for et bytte
+Beløbet skal være et tal || The amount must be a number || Der Betrag muss eine Zahl sein || Beloppet måste vara ett tal || Beløpet må være et tall
+Du har allerede tilbudt den opgave || You have already offered that chore || Du hast diese Aufgabe schon angeboten || Du har redan erbjudit den uppgiften || Du har allerede tilbudt den oppgaven
+Tilbuddet findes ikke længere || The offer no longer exists || Das Angebot gibt es nicht mehr || Erbjudandet finns inte längre || Tilbudet finnes ikke lenger
+Det tilbud er ikke til dig || That offer is not for you || Dieses Angebot ist nicht für dich || Det erbjudandet är inte till dig || Det tilbudet er ikke til deg
+Det tilbud er ikke dit || That offer is not yours || Dieses Angebot ist nicht deins || Det erbjudandet är inte ditt || Det tilbudet er ikke ditt
+Bytte: || Swap: || Tausch: || Byte: || Bytte:
+Enhedens id skal ligne sensor.vaskemaskine || The device id must look like sensor.washing_machine || Die Geräte-ID muss wie sensor.waschmaschine aussehen || Enhetens id ska se ut som sensor.tvattmaskin || Enhetens id må se ut som sensor.vaskemaskin
+Reglen findes ikke || The rule does not exist || Die Regel existiert nicht || Regeln finns inte || Regelen finnes ikke
+Fra huset || From the house || Vom Haus || Från huset || Fra huset
+(til udbetaling: || (to pay out: || (auszuzahlen: || (att betala ut: || (til utbetaling:
+slag || hits || Treffer || slag || slag
+besejret! || defeated! || besiegt! || besegrad! || beseiret!
+Opgaven venter ikke på godkendelse || The chore is not waiting for approval || Die Aufgabe wartet nicht auf Genehmigung || Uppgiften väntar inte på godkännande || Oppgaven venter ikke på godkjenning
+Ugens bonus er allerede givet || This week's bonus has already been given || Der Bonus dieser Woche wurde bereits vergeben || Veckans bonus är redan given || Ukens bonus er allerede gitt
+Der er ingen ugens helt endnu || There is no hero of the week yet || Es gibt noch keinen Helden der Woche || Det finns ingen veckans hjälte än || Det er ingen ukens helt ennå
+Målet skal være mellem 1 og 50 || The goal must be between 1 and 50 || Das Ziel muss zwischen 1 und 50 liegen || Målet måste vara mellan 1 och 50 || Målet må være mellom 1 og 50
+Bossens liv skal være mellem 0 og 500 || The boss's lives must be between 0 and 500 || Die Leben des Bosses müssen zwischen 0 und 500 liegen || Bossens liv måste vara mellan 0 och 500 || Bossens liv må være mellom 0 og 500
+Tidspunktet skal være som 17:00 || The time must look like 17:00 || Die Uhrzeit muss wie 17:00 aussehen || Tidpunkten måste se ut som 17:00 || Tidspunktet må se ut som 17:00
+Vælg en lampe, fx light.stue || Choose a light, e.g. light.living_room || Wähle eine Lampe, z. B. light.wohnzimmer || Välj en lampa, t.ex. light.vardagsrum || Velg en lampe, f.eks. light.stue
+Ukendt indstilling || Unknown setting || Unbekannte Einstellung || Okänd inställning || Ukjent innstilling
+For stor forespørgsel || Request too large || Anfrage zu groß || För stor förfrågan || For stor forespørsel
+Forkert type || Wrong type || Falscher Typ || Fel typ || Feil type
+Kunne ikke læse forespørgslen || Could not read the request || Die Anfrage konnte nicht gelesen werden || Kunde inte läsa förfrågan || Kunne ikke lese forespørselen
+Ikke tilladt || Not allowed || Nicht erlaubt || Inte tillåtet || Ikke tillatt
+Noget gik galt || Something went wrong || Etwas ist schiefgelaufen || Något gick fel || Noe gikk galt
+Beskeder er ikke slået til || Notifications are not turned on || Benachrichtigungen sind nicht eingeschaltet || Aviseringar är inte påslagna || Varsler er ikke slått på
+Findes ikke || Not found || Nicht gefunden || Finns inte || Finnes ikke
+Det virker! Her kommer dine beskeder. || It works! Your messages will show up here. || Es funktioniert! Hier erscheinen deine Nachrichten. || Det fungerar! Här kommer dina meddelanden. || Det virker! Her kommer meldingene dine.
+Slå beskeder til og gem først || Turn on notifications and save first || Schalte Benachrichtigungen ein und speichere zuerst || Slå på aviseringar och spara först || Slå på varsler og lagre først
+Ingen opgaver at oprette || No chores to create || Keine Aufgaben zum Erstellen || Inga uppgifter att skapa || Ingen oppgaver å opprette
+Ny opgave || New chore || Neue Aufgabe || Ny uppgift || Ny oppgave
+Overraskelse! || Surprise! || Überraschung! || Överraskning! || Overraskelse!
+Husk dine pligter || Remember your chores || Denk an deine Pflichten || Kom ihåg dina sysslor || Husk pliktene dine
+Fødselsdag i morgen || Birthday tomorrow || Morgen ist Geburtstag || Födelsedag i morgon || Bursdag i morgen
+Ugens pligter || The week's chores || Die Pflichten der Woche || Veckans sysslor || Ukens plikter
+Pligt-pilot || Chore Pilot || Pflicht-Pilot || Syssle-pilot || Plikt-pilot
+er færdig med: || has finished: || ist fertig mit: || är klar med: || er ferdig med:
+Åbn Pligter for at godkende. || Open Chores to approve. || Öffne Pflichten zum Genehmigen. || Öppna Sysslor för att godkänna. || Åpne Plikter for å godkjenne.
+vil give dig: || wants to give you: || möchte dir geben: || vill ge dig: || vil gi deg:
+og betaler || and pays || und zahlt || och betalar || og betaler
+tog imod: || accepted: || hat angenommen: || tog emot: || tok imot:
+vil bruge || wants to spend || möchte || vill använda || vil bruke
+kr. på: || kr. on: || kr. ausgeben für: || kr. på: || kr. på:
+Åbn Pligter for at svare. || Open Chores to answer. || Öffne Pflichten zum Antworten. || Öppna Sysslor för att svara. || Åpne Plikter for å svare.
+ønsker sig || wishes for || wünscht sich || önskar sig || ønsker seg
+(dobbelt pris) de næste || (double price) for the next || (doppelter Preis) für die nächsten || (dubbelt pris) de närmaste || (dobbel pris) de neste
+minutter. Først til mølle! || minutes. First come, first served! || Minuten. Wer zuerst kommt, mahlt zuerst! || minuterna. Först till kvarn! || minuttene. Først til mølla!
+Du har || You have || Du hast || Du har || Du har
+i dag. || today. || heute. || i dag. || i dag.
+fylder || turns || wird || fyller || fyller
+i morgen. Så får || tomorrow. Then || morgen. Dann bekommt || i morgon. Då får || i morgen. Da får
+nye opgaver. || gets new chores. || neue Aufgaben. || nya uppgifter. || nye oppgaver.
+Du fik lov: || You got permission: || Du darfst: || Du fick lov: || Du fikk lov:
+Ikke i dag: || Not today: || Heute nicht: || Inte idag: || Ikke i dag:
+Dit ønske er et mål nu: || Your wish is a goal now: || Dein Wunsch ist jetzt ein Ziel: || Din önskan är ett mål nu: || Ønsket ditt er et mål nå:
+Ønsket blev ikke til noget: || The wish didn't happen: || Aus dem Wunsch wurde nichts: || Önskan blev inget: || Ønsket ble ikke noe av:
+Godkendt: || Approved: || Genehmigt: || Godkänt: || Godkjent:
+Du fik || You got || Du hast || Du fick || Du fikk
+kr.! || kr.! || kr. bekommen! || kr.! || kr.!
+Prøv igen: || Try again: || Versuche es nochmal: || Försök igen: || Prøv igjen:
+Dæk bord || Set the table || Tisch decken || Duka bordet || Dekk bordet
+Køkken || Kitchen || Küche || Kök || Kjøkken
+Ryd dit legetøj op || Tidy up your toys || Räum dein Spielzeug auf || Städa undan dina leksaker || Rydd opp lekene dine
+Børneværelse || Kids' room || Kinderzimmer || Barnrum || Barnerom
+Fodr kæledyr || Feed the pets || Haustiere füttern || Mata husdjuren || Mat kjæledyrene
+Sæt sko og jakke på plads || Put shoes and jacket away || Schuhe und Jacke wegräumen || Ställ undan skor och jacka || Sett skoene og jakka på plass
+Tøm skraldespanden || Empty the bin || Mülleimer leeren || Töm soptunnan || Tøm søppelbøtta
+Ryd dit værelse || Clean your room || Räum dein Zimmer auf || Städa ditt rum || Rydd rommet ditt
+Hjælp med aftensmaden || Help with dinner || Beim Abendessen helfen || Hjälp till med middagen || Hjelp til med middagen
+Støvsug stuen || Vacuum the living room || Wohnzimmer saugen || Dammsug vardagsrummet || Støvsug stua
+Gør badeværelset rent || Clean the bathroom || Badezimmer putzen || Städa badrummet || Gjør badet rent
+Badeværelse || Bathroom || Badezimmer || Badrum || Bad
+Tag tøj ned og fold det || Take the clothes down and fold them || Wäsche abnehmen und falten || Ta ner kläderna och vik dem || Ta tøyet ned og brett det
+Fej løv || Sweep leaves || Laub fegen || Sopa löv || Fei løv
+Slå græs || Mow the lawn || Rasen mähen || Klipp gräset || Klipp plenen
+Ryd sne || Clear snow || Schnee räumen || Skotta snö || Måk snø
+Tør køkkenbordet af || Wipe the kitchen table || Küchentisch abwischen || Torka av köksbordet || Tørk av kjøkkenbordet
+Tag madpakker ud af tasken || Take lunch boxes out of the bag || Brotdosen aus der Tasche nehmen || Ta ut matlådorna ur väskan || Ta matboksene ut av sekken
+Bryggers || Utility room || Hauswirtschaftsraum || Tvättstuga || Vaskerom
+Læg rent tøj på plads || Put clean clothes away || Saubere Wäsche wegräumen || Lägg undan rena kläder || Legg rene klær på plass
+Ryd badeværelset || Tidy the bathroom || Badezimmer aufräumen || Städa upp badrummet || Rydd badet
+Tør vask og spejl af || Wipe the sink and mirror || Waschbecken und Spiegel abwischen || Torka av handfat och spegel || Tørk av vask og speil
+Stue || Living room || Wohnzimmer || Vardagsrum || Stue
+Ryd stuen || Tidy the living room || Wohnzimmer aufräumen || Städa vardagsrummet || Rydd stua
+Tør støv af || Dust || Staub wischen || Damma || Tørk støv
+Værelser || Bedrooms || Schlafzimmer || Sovrum || Soverom
+Red din seng || Make your bed || Mach dein Bett || Bädda din säng || Re sengen din
+Skift sengetøj || Change the bedding || Bettwäsche wechseln || Byt sängkläder || Skift sengetøy
+Have || Garden || Garten || Trädgård || Hage
+Vand blomsterne || Water the flowers || Blumen gießen || Vattna blommorna || Vann blomstene
+Fej terrassen || Sweep the patio || Terrasse fegen || Sopa altanen || Fei terrassen
+Saml grene og blade op || Pick up branches and leaves || Äste und Blätter aufsammeln || Plocka upp grenar och löv || Samle opp greiner og blader
+Entré || Hallway || Eingangsbereich || Hall || Gang
+Ryd skoene || Tidy the shoes || Schuhe aufräumen || Städa skorna || Rydd skoene
+Fej entréen || Sweep the hallway || Eingang fegen || Sopa hallen || Fei gangen
+Tag vasketøj ud af vaskemaskinen || Take laundry out of the washing machine || Wäsche aus der Waschmaschine nehmen || Ta ut tvätten ur tvättmaskinen || Ta tøyet ut av vaskemaskinen
+Hæng vasketøjet op || Hang up the laundry || Wäsche aufhängen || Häng upp tvätten || Heng opp tøyet
+Tag tøj ud af tørretumbleren || Take clothes out of the dryer || Wäsche aus dem Trockner nehmen || Ta ut kläder ur torktumlaren || Ta tøy ut av tørketrommelen
+Fold vasketøj || Fold laundry || Wäsche falten || Vik tvätt || Brett tøy
+Fyld opvaskemaskinen || Load the dishwasher || Geschirrspüler einräumen || Fyll diskmaskinen || Fyll oppvaskmaskinen
+Støvsugerrobot || Robot vacuum || Saugroboter || Robotdammsugare || Robotstøvsuger
+Ryd gulvet, så robotten kan køre || Clear the floor so the robot can run || Boden freiräumen, damit der Roboter fahren kann || Ta undan saker från golvet så roboten kan köra || Rydd gulvet så roboten kan kjøre
+Tøm støvsugerrobotten || Empty the robot vacuum || Saugroboter leeren || Töm robotdammsugaren || Tøm robotstøvsugeren
+Plæneklipper || Lawn mower || Rasenmäher || Gräsklippare || Gressklipper
+Ryd haven for ting, før plæneklipperen kører || Clear the garden of things before the mower runs || Garten freiräumen, bevor der Mäher fährt || Ta undan saker från trädgården innan gräsklipparen körs || Rydd hagen for ting før gressklipperen kjører
+Efterår || Autumn || Herbst || Höst || Høst
+Fej blade op || Sweep up leaves || Blätter zusammenfegen || Sopa ihop löv || Fei opp blader
+Tag havemøbler ind || Bring in the garden furniture || Gartenmöbel hereinholen || Ta in trädgårdsmöblerna || Ta inn hagemøblene
+Ryd tagrenden for blade || Clear the gutter of leaves || Dachrinne von Laub befreien || Rensa hängrännan från löv || Rens takrenna for blader
+Vinter || Winter || Winter || Vinter || Vinter
+Skovl sne || Shovel snow || Schnee schaufeln || Skotta snö || Måk snø
+Drys salt på trappen || Sprinkle salt on the steps || Salz auf die Treppe streuen || Strö salt på trappan || Strø salt på trappa
+Fyld brændekurven || Fill the firewood basket || Brennholzkorb füllen || Fyll vedkorgen || Fyll vedkurven
+Forår || Spring || Frühling || Vår || Vår
+Luge i bedene || Weed the flower beds || Beete jäten || Rensa ogräs i rabatterna || Luk i bedene
+Gør terrassen klar || Get the patio ready || Terrasse vorbereiten || Gör altanen redo || Gjør terrassen klar
+Vask havemøblerne || Wash the garden furniture || Gartenmöbel waschen || Tvätta trädgårdsmöblerna || Vask hagemøblene
+Sommer || Summer || Sommer || Sommar || Sommer
+Vand haven || Water the garden || Garten gießen || Vattna trädgården || Vann hagen
+Fyld fuglebadet || Fill the bird bath || Vogeltränke füllen || Fyll fågelbadet || Fyll fuglebadet
+Klip græsset || Cut the grass || Gras schneiden || Klipp gräset || Klipp gresset
+Hele huset || The whole house || Das ganze Haus || Hela huset || Hele huset
+Sæt skraldespanden ud || Put the bin out || Mülleimer rausstellen || Ställ ut soptunnan || Sett ut søppelbøtta
+Tag posten ind || Bring in the post || Post hereinholen || Hämta posten || Hent posten
+Tøm skraldespandene || Empty the bins || Mülleimer leeren || Töm soptunnorna || Tøm søppelbøttene

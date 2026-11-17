@@ -1,0 +1,257 @@
+Menu || Menu || Menü || Meny || Meny
+Vaskemaskine || Washing machine || Waschmaschine || Tvättmaskin || Vaskemaskin
+Flyt tøj fra vaskemaskinen til tørretumbleren || Move clothes from the washer to the dryer || Wäsche von der Waschmaschine in den Trockner legen || Flytta kläder från tvättmaskinen till torktumlaren || Flytt tøy fra vaskemaskinen til tørketrommelen
+Hver dag || Every day || Jeden Tag || Varje dag || Hver dag
+Hver uge || Every week || Jede Woche || Varje vecka || Hver uke
+Én gang || Once || Einmal || En gång || Én gang
+Kan ikke hente data. Prøver igen… || Can't load data. Trying again… || Daten konnten nicht geladen werden. Neuer Versuch… || Kan inte hämta data. Försöker igen… || Kan ikke hente data. Prøver igjen…
+Hele året || All year || Ganzjährig || Hela året || Hele året
+forår || spring || Frühling || vår || vår
+Forår (mar–maj) || Spring (Mar–May) || Frühling (Mär–Mai) || Vår (mar–maj) || Vår (mar–mai)
+Sommer (jun–aug) || Summer (Jun–Aug) || Sommer (Jun–Aug) || Sommar (jun–aug) || Sommer (jun–aug)
+efterår || autumn || Herbst || höst || høst
+Efterår (sep–nov) || Autumn (Sep–Nov) || Herbst (Sep–Nov) || Höst (sep–nov) || Høst (sep–nov)
+Vinter (dec–feb) || Winter (Dec–Feb) || Winter (Dez–Feb) || Vinter (dec–feb) || Vinter (des–feb)
+om foråret || in spring || im Frühling || på våren || om våren
+om sommeren || in summer || im Sommer || på sommaren || om sommeren
+om efteråret || in autumn || im Herbst || på hösten || om høsten
+om vinteren || in winter || im Winter || på vintern || om vinteren
+Dag || Day || Tag || Dag || Dag
+Måned || Month || Monat || Månad || Måned
+År || Year || Jahr || År || År
+1 gang || 1 time || 1 Mal || 1 gång || 1 gang
+gange || times || Mal || gånger || ganger
+Hvem skal have den? || Who should get it? || Wer soll sie bekommen? || Vem ska få den? || Hvem skal ha den?
+Kun de valgte børn || Only the chosen children || Nur die gewählten Kinder || Bara de valda barnen || Bare de valgte barna
+Alle børn (vælg for at begrænse) || All children (choose to limit) || Alle Kinder (auswählen, um einzuschränken) || Alla barn (välj för att begränsa) || Alle barn (velg for å begrense)
+Navn || Name || Name || Namn || Navn
+Pris (kr.) || Price (kr.) || Preis (kr.) || Pris (kr.) || Pris (kr.)
+Fra alder || From age || Ab Alter || Från ålder || Fra alder
+Hvor tit || How often || Wie oft || Hur ofta || Hvor ofte
+Hvor mange gange pr. periode || How many times per period || Wie oft pro Zeitraum || Hur många gånger per period || Hvor mange ganger per periode
+Hvornår på året || When in the year || Zu welcher Jahreszeit || När på året || Når på året
+Overraskelse: dukker af og til op med dobbelt pris || Surprise: pops up now and then at double price || Überraschung: taucht ab und zu zum doppelten Preis auf || Överraskning: dyker upp då och då till dubbelt pris || Overraskelse: dukker opp av og til til dobbel pris
+Barnet skal tage et billede som bevis || The child must take a photo as proof || Das Kind muss als Beweis ein Foto machen || Barnet ska ta en bild som bevis || Barnet må ta et bilde som bevis
+Gem || Save || Speichern || Spara || Lagre
+Sparemål || Saving goal || Sparziel || Sparmål || Sparemål
+– nået! || – reached! || – erreicht! || – nått! || – nådd!
+Hvad sparer || What is || Wofür spart || Vad sparar || Hva sparer
+op til? || saving up for? || ? || upp till? || opp til?
+Fx Cykel || E.g. Bicycle || Z. B. Fahrrad || T.ex. Cykel || F.eks. Sykkel
+Beløb i kroner || Amount in kroner || Betrag in Kronen || Belopp i kronor || Beløp i kroner
+Kr. || Kr. || Kr. || Kr. || Kr.
+Opdatér mål || Update goal || Ziel aktualisieren || Uppdatera mål || Oppdater mål
+Sæt mål || Set goal || Ziel setzen || Sätt mål || Sett mål
+Fjern mål || Remove goal || Ziel entfernen || Ta bort mål || Fjern mål
+QR-kode til barnets link || QR code for the child's link || QR-Code für den Link des Kindes || QR-kod till barnets länk || QR-kode til barnets lenke
+Velkommen || Welcome || Willkommen || Välkommen || Velkommen
+Tre trin, så er I i gang || Three steps and you're ready || Drei Schritte, dann geht es los || Tre steg, sedan är ni igång || Tre trinn, så er dere i gang
+Tilføj børnene || Add the children || Kinder hinzufügen || Lägg till barnen || Legg til barna
+Navn og fødselsdato, så passer opgaverne til alderen || Name and birthday, so the chores fit the age || Name und Geburtstag, damit die Aufgaben zum Alter passen || Namn och födelsedatum, så passar uppgifterna åldern || Navn og fødselsdato, så passer oppgavene til alderen
+Start || Start || Start || Start || Start
+Vælg opgaver || Choose chores || Aufgaben wählen || Välj uppgifter || Velg oppgaver
+Brug en færdig startpakke, der passer til børnenes alder, eller vælg selv || Use a ready-made starter pack that fits the children's ages, or choose yourself || Nutze ein fertiges Startpaket passend zum Alter der Kinder oder wähle selbst || Använd ett färdigt startpaket som passar barnens ålder, eller välj själv || Bruk en ferdig startpakke som passer barnas alder, eller velg selv
+Startpakke || Starter pack || Startpaket || Startpaket || Startpakke
+Vælg selv || Choose myself || Selbst wählen || Välj själv || Velg selv
+Giv børnene deres link || Give the children their link || Gib den Kindern ihren Link || Ge barnen deras länk || Gi barna lenken sin
+Vis en QR-kode, som barnet scanner med sin telefon || Show a QR code the child scans with their phone || Zeige einen QR-Code, den das Kind mit dem Handy scannt || Visa en QR-kod som barnet skannar med sin telefon || Vis en QR-kode som barnet skanner med telefonen sin
+Vis || Show || Zeigen || Visa || Vis
+Oversigt || Overview || Übersicht || Översikt || Oversikt
+· Familien || · The family || · Die Familie || · Familjen || · Familien
+Forælder || Parent || Elternteil || Förälder || Forelder
+Til godkendelse || To approve || Zu genehmigen || Att godkänna || Til godkjenning
+Alt er godkendt. Godt gået! || Everything is approved. Well done! || Alles ist genehmigt. Gut gemacht! || Allt är godkänt. Bra jobbat! || Alt er godkjent. Bra jobba!
+Godkend alle || Approve all || Alle genehmigen || Godkänn alla || Godkjenn alle
+(billeder ses først) || (photos are checked first) || (Fotos werden zuerst geprüft) || (bilder kollas först) || (bilder sees først)
+Afvis || Reject || Ablehnen || Avvisa || Avvis
+Godkend || Approve || Genehmigen || Godkänn || Godkjenn
+Billede af || Photo of || Foto von || Bild på || Bilde av
+Perfekt uge || Perfect week || Perfekte Woche || Perfekt vecka || Perfekt uke
+klarede alt i uge || did everything in week || hat alles geschafft in Woche || klarade allt i vecka || klarte alt i uke
+Alle opgaver godkendt || All chores approved || Alle Aufgaben genehmigt || Alla uppgifter godkända || Alle oppgaver godkjent
+Giv || Give || Gib || Ge || Gi
+Køb og ønsker || Purchases and wishes || Käufe und Wünsche || Köp och önskningar || Kjøp og ønsker
+vil have: || wants: || möchte: || vill ha: || vil ha:
+Koster || Costs || Kostet || Kostar || Koster
+Nej til || No to || Nein zu || Nej till || Nei til
+Ja til || Yes to || Ja zu || Ja till || Ja til
+ønsker sig: || wishes for: || wünscht sich: || önskar sig: || ønsker seg:
+kr. Sæt det som sparemål? || kr. Set it as a saving goal? || kr. Als Sparziel setzen? || kr. Sätta det som sparmål? || kr. Sette det som sparemål?
+Sæt som mål || Set as goal || Als Ziel setzen || Sätt som mål || Sett som mål
+Gode råd || Tips || Tipps || Goda råd || Gode råd
+Ugens boss || Boss of the week || Boss der Woche || Veckans boss || Ukens boss
+opgaver klaret sammen || chores done together || Aufgaben gemeinsam erledigt || uppgifter klarade tillsammans || oppgaver klart sammen
+– besejret! || – defeated! || – besiegt! || – besegrad! || – beseiret!
+kr til dem, der hjalp || kr to those who helped || kr an die, die geholfen haben || kr till dem som hjälpte || kr til dem som hjalp
+Børnene || The children || Die Kinder || Barnen || Barna
+Udbetal til alle ( || Pay out to all ( || An alle auszahlen ( || Betala ut till alla ( || Utbetal til alle (
+På pause || On pause || Pausiert || På paus || På pause
+år · || yrs · || Jahre · || år · || år ·
+at udbetale || to pay out || auszuzahlen || att betala ut || til utbetaling
+Ugens helt || Hero of the week || Held der Woche || Veckans hjälte || Ukens helt
+Udbetal || Pay out || Auszahlen || Betala ut || Utbetal
+kr i bonus || kr bonus || kr Bonus || kr i bonus || kr i bonus
+I alt at udbetale || Total to pay out || Insgesamt auszuzahlen || Totalt att betala ut || Totalt til utbetaling
+Ugens helt får || The hero of the week gets || Der Held der Woche bekommt || Veckans hjälte får || Ukens helt får
+Familiemål || Family goal || Familienziel || Familjemål || Familiemål
+Pr. måned || Per month || Pro Monat || Per månad || Per måned
+Seneste || Latest || Zuletzt || Senaste || Siste
+Udbetalt || Paid out || Ausgezahlt || Utbetalt || Utbetalt
+Lommepenge || Pocket money || Taschengeld || Fickpengar || Lommepenger
+Træk: || Deduction: || Abzug: || Avdrag: || Trekk:
+Belønning: || Reward: || Belohnung: || Belöning: || Belønning:
+Bonus || Bonus || Bonus || Bonus || Bonus
+Fortryd || Undo || Rückgängig || Ångra || Angre
+Tip: Skriv din notifikationstjeneste ind i add-onens indstillinger (notify_service), så får du besked, når et barn er færdig. || Tip: Enter your notification service in the add-on's settings (notify_service) to get a message when a child is done. || Tipp: Trage deinen Benachrichtigungsdienst in den Add-on-Einstellungen ein (notify_service), dann wirst du benachrichtigt, wenn ein Kind fertig ist. || Tips: Skriv in din aviseringstjänst i tilläggets inställningar (notify_service) så får du besked när ett barn är klart. || Tips: Skriv inn varslingstjenesten din i tilleggets innstillinger (notify_service), så får du beskjed når et barn er ferdig.
+Foreslå fra mit hjem || Suggest from my home || Vorschläge aus meinem Zuhause || Föreslå utifrån mitt hem || Foreslå fra hjemmet mitt
+Appen kigger på husets rum og foreslår opgaver || The app looks at the rooms in the house and suggests chores || Die App schaut sich die Räume im Haus an und schlägt Aufgaben vor || Appen tittar på husets rum och föreslår uppgifter || Appen ser på rommene i huset og foreslår oppgaver
+Opdatér forslag || Update suggestions || Vorschläge aktualisieren || Uppdatera förslag || Oppdater forslag
+Vis forslag || Show suggestions || Vorschläge anzeigen || Visa förslag || Vis forslag
+Vælg alle || Select all || Alle auswählen || Välj alla || Velg alle
+Fravælg alle || Deselect all || Alle abwählen || Avmarkera alla || Fjern alle valg
+· fundet i dit hjem || · found in your home || · in deinem Zuhause gefunden || · hittad i ditt hem || · funnet i hjemmet ditt
+Findes allerede || Already exists || Gibt es schon || Finns redan || Finnes allerede
+· fra || · from || · ab || · från || · fra
+år || yrs || Jahre || år || år
+Rediger || Edit || Bearbeiten || Redigera || Rediger
+Opret || Create || Erstellen || Skapa || Opprett
+valgte || chosen || gewählte || valda || valgte
+Andet || Other || Sonstiges || Övrigt || Annet
+· ledig, først til mølle || · open, first come first served || · frei, wer zuerst kommt || · ledig, först till kvarn || · ledig, først til mølla
+· med foto || · with photo || · mit Foto || · med bild || · med bilde
+· overraskelse || · surprise || · Überraschung || · överraskning || · overraskelse
+· kun || · only || · nur || · bara || · bare
+Lav en kopi af || Make a copy of || Kopie erstellen von || Gör en kopia av || Lag en kopi av
+Kopi || Copy || Kopie || Kopia || Kopi
+Slet || Delete || Löschen || Ta bort || Slett
+Belønninger || Rewards || Belohnungen || Belöningar || Belønninger
+Børnene kan bruge kroner på dem. Du siger ja eller nej, hver gang. || The children can spend kroner on them. You say yes or no each time. || Die Kinder können Kronen dafür ausgeben. Du sagst jedes Mal Ja oder Nein. || Barnen kan använda kronor på dem. Du säger ja eller nej varje gång. || Barna kan bruke kroner på dem. Du sier ja eller nei hver gang.
+Tilføj tre eksempler || Add three examples || Drei Beispiele hinzufügen || Lägg till tre exempel || Legg til tre eksempler
+Fx Biograftur || E.g. Cinema trip || Z. B. Kinobesuch || T.ex. Biobesök || F.eks. Kinotur
+Ny belønning || New reward || Neue Belohnung || Ny belöning || Ny belønning
+Tilføj belønning || Add reward || Belohnung hinzufügen || Lägg till belöning || Legg til belønning
+Skriv din egen opgave || Write your own chore || Eigene Aufgabe schreiben || Skriv din egen uppgift || Skriv din egen oppgave
+Navn på opgaven || Name of the chore || Name der Aufgabe || Namn på uppgiften || Navn på oppgaven
+Fx Fodr kaninen || E.g. Feed the rabbit || Z. B. Kaninchen füttern || T.ex. Mata kaninen || F.eks. Mat kaninen
+Pris i kr. || Price in kr. || Preis in kr. || Pris i kr. || Pris i kr.
+Rum || Room || Raum || Rum || Rom
+Fx Køkken || E.g. Kitchen || Z. B. Küche || T.ex. Kök || F.eks. Kjøkken
+Ledig opgave: den første, der tager den, får den || Open chore: the first to take it gets it || Offene Aufgabe: Wer sie zuerst nimmt, bekommt sie || Ledig uppgift: den första som tar den får den || Ledig oppgave: den første som tar den, får den
+Tilføj opgave || Add chore || Aufgabe hinzufügen || Lägg till uppgift || Legg til oppgave
+Børn og links || Children and links || Kinder und Links || Barn och länkar || Barn og lenker
+Hvert barn har sit eget link || Each child has their own link || Jedes Kind hat seinen eigenen Link || Varje barn har sin egen länk || Hvert barn har sin egen lenke
+Børnesiden bruger https. Skriv din https-adresse i indstillingen public_url (fx https://navn.duckdns.org:8099), så linkene herunder virker. || The kids' page uses https. Enter your https address in the public_url setting (e.g. https://name.duckdns.org:8099) so the links below work. || Die Kinderseite nutzt https. Trage deine https-Adresse in die Einstellung public_url ein (z. B. https://name.duckdns.org:8099), damit die Links unten funktionieren. || Barnsidan använder https. Skriv din https-adress i inställningen public_url (t.ex. https://namn.duckdns.org:8099) så fungerar länkarna nedan. || Barnesiden bruker https. Skriv https-adressen din i innstillingen public_url (f.eks. https://navn.duckdns.org:8099), så virker lenkene under.
+Personligt link || Personal link || Persönlicher Link || Personlig länk || Personlig lenke
+Kopiér || Copy || Kopieren || Kopiera || Kopier
+Skjul QR-kode || Hide QR code || QR-Code ausblenden || Dölj QR-kod || Skjul QR-kode
+Vis QR-kode || Show QR code || QR-Code anzeigen || Visa QR-kod || Vis QR-kode
+Hold barnets telefon hen foran skærmen, så åbner linket. || Hold the child's phone up to the screen and the link opens. || Halte das Handy des Kindes vor den Bildschirm, dann öffnet sich der Link. || Håll barnets telefon framför skärmen så öppnas länken. || Hold telefonen til barnet foran skjermen, så åpnes lenken.
+Appen kan ikke se Home Assistants adresse derhjemme. Skriv den i indstillingen public_url, fx http://192.168.1.50:8099, så kommer linket frem. || The app can't see Home Assistant's address at home. Enter it in the public_url setting, e.g. http://192.168.1.50:8099, and the link will appear. || Die App kann die Adresse von Home Assistant zu Hause nicht sehen. Trage sie in die Einstellung public_url ein, z. B. http://192.168.1.50:8099, dann erscheint der Link. || Appen kan inte se Home Assistants adress hemma. Skriv den i inställningen public_url, t.ex. http://192.168.1.50:8099, så visas länken. || Appen kan ikke se adressen til Home Assistant hjemme. Skriv den i innstillingen public_url, f.eks. http://192.168.1.50:8099, så kommer lenken fram.
+Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren. Linket virker på jeres wifi derhjemme. || Send the link to the child and choose "Add to Home Screen" in the browser. The link works on your home wifi. || Sende den Link an das Kind und wähle im Browser „Zum Home-Bildschirm“. Der Link funktioniert im WLAN zu Hause. || Skicka länken till barnet och välj "Lägg till på hemskärmen" i webbläsaren. Länken fungerar på ert wifi hemma. || Send lenken til barnet og velg "Legg til på Hjem-skjermen" i nettleseren. Lenken virker på wifi-et hjemme.
+Ferie eller syg: ingen opgaver, og ugen tæller ikke som misset || Holiday or sick: no chores, and the week doesn't count as missed || Urlaub oder krank: keine Aufgaben, und die Woche zählt nicht als verpasst || Semester eller sjuk: inga uppgifter, och veckan räknas inte som missad || Ferie eller syk: ingen oppgaver, og uka teller ikke som misset
+Fødselsdato || Birthday || Geburtsdatum || Födelsedatum || Fødselsdato
+Lommepenge pr. uge (kr.) || Pocket money per week (kr.) || Taschengeld pro Woche (kr.) || Fickpengar per vecka (kr.) || Lommepenger per uke (kr.)
+Beskeder til barnets telefon || Notifications to the child's phone || Benachrichtigungen aufs Handy des Kindes || Aviseringar till barnets telefon || Varsler til telefonen til barnet
+Gratis med appen ntfy. Virker uden HA-app og uden https. || Free with the ntfy app. Works without the HA app and without https. || Kostenlos mit der App ntfy. Funktioniert ohne HA-App und ohne https. || Gratis med appen ntfy. Fungerar utan HA-appen och utan https. || Gratis med appen ntfy. Virker uten HA-app og uten https.
+Beskeder til || Notifications for || Benachrichtigungen für || Aviseringar till || Varsler til
+1. Installér appen || 1. Install the app || 1. Installiere die App || 1. Installera appen || 1. Installer appen
+på || on || auf || på || på
+s telefon (gratis, App Store eller Google Play). || 's phone (free, App Store or Google Play). || s Handy (kostenlos, App Store oder Google Play). || s telefon (gratis, App Store eller Google Play). || s telefon (gratis, App Store eller Google Play).
+2. Tryk på + og vælg || 2. Tap + and choose || 2. Tippe auf + und wähle || 2. Tryck på + och välj || 2. Trykk på + og velg
+3. Skriv dette emne: || 3. Enter this topic: || 3. Gib dieses Thema ein: || 3. Skriv det här ämnet: || 3. Skriv dette emnet:
+Emne || Topic || Thema || Ämne || Emne
+Send en prøvebesked || Send a test message || Testnachricht senden || Skicka ett testmeddelande || Send en prøvemelding
+Beskeder i browseren: || Notifications in the browser: || Benachrichtigungen im Browser: || Aviseringar i webbläsaren: || Varsler i nettleseren:
+telefon er || phone is || Handy ist || telefon är || telefon er
+telefoner er || phones are || Handys sind || telefoner är || telefoner er
+Beskeder i browseren: ingen telefon er tilmeldt endnu. || Notifications in the browser: no phone is signed up yet. || Benachrichtigungen im Browser: noch kein Handy angemeldet. || Aviseringar i webbläsaren: ingen telefon är anmäld än. || Varsler i nettleseren: ingen telefon er registrert ennå.
+tilmeldt. || signed up. || angemeldet. || anmäld. || registrert.
+trykker Slå beskeder til på sin side. || taps Turn on notifications on their page. || tippt auf Benachrichtigungen einschalten auf der eigenen Seite. || trycker på Slå på aviseringar på sin sida. || trykker Slå på varsler på siden sin.
+Beskeder i browseren kræver et https-link. Se vejledningen under Beskeder i dokumentationen. || Notifications in the browser require an https link. See the guide under Notifications in the documentation. || Benachrichtigungen im Browser benötigen einen https-Link. Siehe die Anleitung unter Benachrichtigungen in der Dokumentation. || Aviseringar i webbläsaren kräver en https-länk. Se guiden under Aviseringar i dokumentationen. || Varsler i nettleseren krever en https-lenke. Se veiledningen under Varsler i dokumentasjonen.
+Eller: barnets notifikationstjeneste i HA (valgfri) || Or: the child's notification service in HA (optional) || Oder: Benachrichtigungsdienst des Kindes in HA (optional) || Eller: barnets aviseringstjänst i HA (valfri) || Eller: barnets varslingstjeneste i HA (valgfri)
+Fx mobile_app_emmas_tlf || E.g. mobile_app_emmas_phone || Z. B. mobile_app_emmas_handy || T.ex. mobile_app_emmas_tel || F.eks. mobile_app_emmas_tlf
+Alderen ( || The age ( || Das Alter ( || Åldern ( || Alderen (
+år) følger fødselsdatoen. || yrs) follows the birthday. || Jahre) folgt dem Geburtstag. || år) följer födelsedatumet. || år) følger fødselsdatoen.
+Skriv fødselsdato, så skifter alderen af sig selv. || Enter a birthday and the age updates by itself. || Gib den Geburtstag ein, dann ändert sich das Alter von selbst. || Skriv födelsedatum så ändras åldern av sig själv. || Skriv fødselsdato, så skifter alderen av seg selv.
+Gem oplysninger || Save details || Angaben speichern || Spara uppgifter || Lagre opplysninger
+Nyt link || New link || Neuer Link || Ny länk || Ny lenke
+Fjern barn || Remove child || Kind entfernen || Ta bort barn || Fjern barn
+Tilføj barn || Add child || Kind hinzufügen || Lägg till barn || Legg til barn
+eller alder || or age || oder Alter || eller ålder || eller alder
+Tilføj || Add || Hinzufügen || Lägg till || Legg til
+Indstillinger || Settings || Einstellungen || Inställningar || Innstillinger
+Ugens mål (opgaver) || Goal for the week (chores) || Wochenziel (Aufgaben) || Veckans mål (uppgifter) || Ukens mål (oppgaver)
+Bonus til ugens helt (kr.) || Bonus for the hero of the week (kr.) || Bonus für den Helden der Woche (kr.) || Bonus till veckans hjälte (kr.) || Bonus til ukens helt (kr.)
+Bonus for perfekt uge (kr.) || Bonus for a perfect week (kr.) || Bonus für eine perfekte Woche (kr.) || Bonus för perfekt vecka (kr.) || Bonus for perfekt uke (kr.)
+Træk pr. glemt opgave (kr.) || Deduction per forgotten chore (kr.) || Abzug pro vergessener Aufgabe (kr.) || Avdrag per glömd uppgift (kr.) || Trekk per glemt oppgave (kr.)
+0 betyder slået fra. Træk tager aldrig mere end barnets saldo. || 0 means off. Deductions never take more than the child's balance. || 0 bedeutet aus. Abzüge nehmen nie mehr als das Guthaben des Kindes. || 0 betyder avstängt. Avdrag tar aldrig mer än barnets saldo. || 0 betyr av. Trekk tar aldri mer enn saldoen til barnet.
+Ugens boss: antal opgaver || Boss of the week: number of chores || Boss der Woche: Anzahl Aufgaben || Veckans boss: antal uppgifter || Ukens boss: antall oppgaver
+Bossbonus til hver (kr.) || Boss bonus for each (kr.) || Boss-Bonus für jeden (kr.) || Bossbonus till var och en (kr.) || Bossbonus til hver (kr.)
+Boss: 0 opgaver slår den fra. Børnene slår bossen sammen. || Boss: 0 chores turns it off. The children beat the boss together. || Boss: 0 Aufgaben schaltet ihn aus. Die Kinder besiegen den Boss gemeinsam. || Boss: 0 uppgifter stänger av den. Barnen besegrar bossen tillsammans. || Boss: 0 oppgaver slår den av. Barna slår bossen sammen.
+Bonus for 5 dage i træk (kr.) || Bonus for 5 days in a row (kr.) || Bonus für 5 Tage in Folge (kr.) || Bonus för 5 dagar i rad (kr.) || Bonus for 5 dager på rad (kr.)
+Send mig en opsummering hver søndag kl. 18 || Send me a summary every Sunday at 6 pm || Sende mir jeden Sonntag um 18 Uhr eine Zusammenfassung || Skicka mig en sammanfattning varje söndag kl. 18 || Send meg en oppsummering hver søndag kl. 18
+Børnene må bytte opgaver med hinanden || The children may swap chores with each other || Die Kinder dürfen Aufgaben untereinander tauschen || Barnen får byta uppgifter med varandra || Barna får bytte oppgaver med hverandre
+Påmind børnene kl. || Remind the children at || Kinder erinnern um || Påminn barnen kl. || Påminn barna kl.
+Lampe, der blinker grønt ved godkendelse || Light that flashes green on approval || Lampe, die bei Genehmigung grün blinkt || Lampa som blinkar grönt vid godkännande || Lampe som blinker grønt ved godkjenning
+Fx light.stue || E.g. light.living_room || Z. B. light.wohnzimmer || T.ex. light.vardagsrum || F.eks. light.stue
+Fx Tivoli || E.g. Amusement park || Z. B. Freizeitpark || T.ex. Nöjesfält || F.eks. Tusenfryd
+Beløb (kr.) || Amount (kr.) || Betrag (kr.) || Belopp (kr.) || Beløp (kr.)
+Gem indstillinger || Save settings || Einstellungen speichern || Spara inställningar || Lagre innstillinger
+Hent backup af alt || Download a backup of everything || Backup von allem herunterladen || Hämta backup av allt || Hent sikkerhetskopi av alt
+Tørretumbler || Tumble dryer || Wäschetrockner || Torktumlare || Tørketrommel
+Tag tøj ud af tørretumbleren og fold det || Take clothes out of the dryer and fold them || Wäsche aus dem Trockner nehmen und falten || Ta ut kläderna ur torktumlaren och vik dem || Ta tøy ut av tørketrommelen og brett det
+Opvaskemaskine || Dishwasher || Geschirrspüler || Diskmaskin || Oppvaskmaskin
+Tøm opvaskemaskinen || Empty the dishwasher || Geschirrspüler ausräumen || Töm diskmaskinen || Tøm oppvaskmaskinen
+Huset || The house || Das Haus || Huset || Huset
+Opgaver, der opstår af sig selv || Chores that appear on their own || Aufgaben, die von selbst entstehen || Uppgifter som uppstår av sig själva || Oppgaver som oppstår av seg selv
+Når en maskine er færdig, får børnene en ledig opgave og en besked på telefonen, hvis du har slået beskeder til. Den første, der tager den, får den. || When a machine is done, the children get an open chore and a message on their phone if you've turned notifications on. The first to take it gets it. || Wenn eine Maschine fertig ist, bekommen die Kinder eine offene Aufgabe und, falls eingeschaltet, eine Nachricht aufs Handy. Wer sie zuerst nimmt, bekommt sie. || När en maskin är klar får barnen en ledig uppgift och ett meddelande på telefonen om du har slagit på aviseringar. Den första som tar den får den. || Når en maskin er ferdig, får barna en ledig oppgave og en melding på telefonen hvis du har slått på varsler. Den første som tar den, får den.
+Fundet i dit hjem || Found in your home || In deinem Zuhause gefunden || Hittat i ditt hem || Funnet i hjemmet ditt
+Giver opgaven: || Gives the chore: || Ergibt die Aufgabe: || Ger uppgiften: || Gir oppgaven:
+Brug den || Use it || Verwenden || Använd den || Bruk den
+Brug i stedet: || Use instead: || Stattdessen verwenden: || Använd istället: || Bruk i stedet:
+Jeg fandt ingen maskiner med navne som vaskemaskine, tørretumbler eller opvaskemaskine. Tilføj dem selv nedenfor. || I found no machines with names like washing machine, dryer or dishwasher. Add them yourself below. || Ich habe keine Geräte mit Namen wie Waschmaschine, Trockner oder Geschirrspüler gefunden. Füge sie unten selbst hinzu. || Jag hittade inga maskiner med namn som tvättmaskin, torktumlare eller diskmaskin. Lägg till dem själv nedan. || Jeg fant ingen maskiner med navn som vaskemaskin, tørketrommel eller oppvaskmaskin. Legg dem til selv nedenfor.
+Når den er færdig: || When it is done: || Wenn sie fertig ist: || När den är klar: || Når den er ferdig:
+Tilføj regel || Add rule || Regel hinzufügen || Lägg till regel || Legg til regel
+Hvilken maskine? || Which machine? || Welche Maschine? || Vilken maskin? || Hvilken maskin?
+Fx sensor.vaskemaskine_effekt || E.g. sensor.washing_machine_power || Z. B. sensor.waschmaschine_leistung || T.ex. sensor.tvattmaskin_effekt || F.eks. sensor.vaskemaskin_effekt
+Måler eller kontakt, der viser, om den kører || Meter or switch that shows whether it is running || Messgerät oder Schalter, der zeigt, ob sie läuft || Mätare eller strömbrytare som visar om den körs || Måler eller bryter som viser om den går
+Appen kan ikke se Home Assistant lige nu. Skriv enhedens id selv. || The app can't see Home Assistant right now. Enter the device id yourself. || Die App kann Home Assistant gerade nicht erreichen. Gib die Geräte-ID selbst ein. || Appen kan inte se Home Assistant just nu. Skriv enhetens id själv. || Appen kan ikke se Home Assistant nå. Skriv enhetens id selv.
+Vælg fra listen, eller skriv selv. Bedst er en stikkontakt med effektmåling (watt). || Choose from the list or type it yourself. Best is a socket with power measurement (watt). || Wähle aus der Liste oder tippe selbst. Am besten ist eine Steckdose mit Leistungsmessung (Watt). || Välj från listan eller skriv själv. Bäst är ett uttag med effektmätning (watt). || Velg fra listen eller skriv selv. Best er en stikkontakt med effektmåling (watt).
+Opgave || Chore || Aufgabe || Uppgift || Oppgave
+Børn || Children || Kinder || Barn || Barn
+Afvist || Rejected || Abgelehnt || Avvisad || Avvist
+Sat som sparemål || Set as saving goal || Als Sparziel gesetzt || Satt som sparmål || Satt som sparemål
+Ønsket er fjernet || The wish was removed || Der Wunsch wurde entfernt || Önskningen är borttagen || Ønsket er fjernet
+Udbetale til alle børn? || Pay out to all children? || An alle Kinder auszahlen? || Betala ut till alla barn? || Utbetale til alle barn?
+Eksempler tilføjet || Examples added || Beispiele hinzugefügt || Exempel tillagda || Eksempler lagt til
+Slettet || Deleted || Gelöscht || Borttagen || Slettet
+Belønningen er tilføjet || The reward was added || Die Belohnung wurde hinzugefügt || Belöningen har lagts till || Belønningen er lagt til
+Startpakken er oprettet. Slå det fra, du ikke vil have. || The starter pack was created. Switch off what you don't want. || Das Startpaket wurde erstellt. Schalte aus, was du nicht willst. || Startpaketet är skapat. Stäng av det du inte vill ha. || Startpakken er opprettet. Slå av det du ikke vil ha.
+Alt er godkendt || Everything is approved || Alles ist genehmigt || Allt är godkänt || Alt er godkjent
+Afvist. Barnet kan prøve igen. || Rejected. The child can try again. || Abgelehnt. Das Kind kann es nochmal versuchen. || Avvisad. Barnet kan försöka igen. || Avvist. Barnet kan prøve igjen.
+Bonus givet || Bonus given || Bonus vergeben || Bonus given || Bonus gitt
+Gemt || Saved || Gespeichert || Sparat || Lagret
+opgaver oprettet || chores created || Aufgaben erstellt || uppgifter skapade || oppgaver opprettet
+Kopi lavet. Tryk Rediger for at ændre den. || Copy made. Tap Edit to change it. || Kopie erstellt. Tippe auf Bearbeiten, um sie zu ändern. || Kopia skapad. Tryck på Redigera för att ändra den. || Kopi laget. Trykk Rediger for å endre den.
+Slette opgaven? || Delete the chore? || Aufgabe löschen? || Ta bort uppgiften? || Slette oppgaven?
+Opgaven er tilføjet || The chore was added || Die Aufgabe wurde hinzugefügt || Uppgiften har lagts till || Oppgaven er lagt til
+Barnet er tilføjet || The child was added || Das Kind wurde hinzugefügt || Barnet har lagts till || Barnet er lagt til
+er sat op || is set up || ist eingerichtet || är inställd || er satt opp
+Slette reglen? || Delete the rule? || Regel löschen? || Ta bort regeln? || Slette regelen?
+Reglen er slettet || The rule was deleted || Die Regel wurde gelöscht || Regeln har tagits bort || Regelen er slettet
+Reglen er tilføjet || The rule was added || Die Regel wurde hinzugefügt || Regeln har lagts till || Regelen er lagt til
+Beskeder er slået fra || Notifications are switched off || Benachrichtigungen sind ausgeschaltet || Aviseringar är avstängda || Varsler er slått av
+Beskeder er slået til || Notifications are switched on || Benachrichtigungen sind eingeschaltet || Aviseringar är påslagna || Varsler er slått på
+Prøvebesked er sendt || Test message sent || Testnachricht gesendet || Testmeddelande skickat || Prøvemelding er sendt
+er med igen || is back in || ist wieder dabei || är med igen || er med igjen
+er sat på pause || is paused || ist pausiert || är pausad || er satt på pause
+Sparemål gemt || Saving goal saved || Sparziel gespeichert || Sparmål sparat || Sparemål lagret
+Sparemål fjernet || Saving goal removed || Sparziel entfernt || Sparmål borttaget || Sparemål fjernet
+Fortryd godkendelsen? Pengene trækkes tilbage. || Undo the approval? The money is taken back. || Genehmigung rückgängig machen? Das Geld wird zurückgebucht. || Ångra godkännandet? Pengarna dras tillbaka. || Angre godkjenningen? Pengene trekkes tilbake.
+Fortrudt. Opgaven venter igen. || Undone. The chore is waiting again. || Rückgängig gemacht. Die Aufgabe wartet wieder. || Ångrat. Uppgiften väntar igen. || Angret. Oppgaven venter igjen.
+Linket er kopieret || The link was copied || Der Link wurde kopiert || Länken är kopierad || Lenken er kopiert
+Tryk og hold for at kopiere || Press and hold to copy || Gedrückt halten zum Kopieren || Tryck och håll för att kopiera || Trykk og hold for å kopiere
+Det gamle link holder op med at virke. Fortsæt? || The old link will stop working. Continue? || Der alte Link funktioniert nicht mehr. Fortfahren? || Den gamla länken slutar fungera. Fortsätta? || Den gamle lenken slutter å virke. Fortsette?
+Nyt link er lavet || A new link was made || Ein neuer Link wurde erstellt || En ny länk har skapats || Ny lenke er laget
+Fjerne barnet og alle dets opgaver og penge? || Remove the child and all their chores and money? || Kind samt alle Aufgaben und Geld entfernen? || Ta bort barnet och alla dess uppgifter och pengar? || Fjerne barnet og alle oppgavene og pengene?
+Barnet er fjernet || The child was removed || Das Kind wurde entfernt || Barnet har tagits bort || Barnet er fjernet

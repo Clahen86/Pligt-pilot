@@ -70,9 +70,9 @@ button { font: inherit; cursor: pointer; }
 h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; display: flex; align-items: center; gap: 8px; }
 .new { background: #C73A30; color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 900; }
 .list { display: flex; flex-direction: column; gap: 8px; }
-.task { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 20px; padding: 9px 10px 9px 14px; }
+.task { display: flex; flex-wrap: wrap; row-gap: 6px; align-items: center; gap: 10px; background: #fff; border-radius: 20px; padding: 9px 10px 9px 14px; }
 .task.open { background: #FFFBF2; border: 2px dashed var(--accent); padding: 7px 8px 7px 14px; }
-.task .t { flex: 1; min-width: 0; }
+.task .t { flex: 1 1 130px; min-width: 0; }
 .task .t b { display: block; font-size: 15px; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
 .task .t span { font-size: 13px; color: var(--muted); font-weight: 600; }
 .price { font-size: 15px; font-weight: 900; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, #fff);
@@ -99,6 +99,63 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 (function () {
   var state = null, busy = false, tradeOpen = '', wishOpen = false;
   var app = document.getElementById('app'), errBox = document.getElementById('err');
+  // ---- sprog: udskifter kendte danske tekststykker (samme metode som serverens i18n.py) ----
+  var I18N = { lang: 'da', locale: 'da-DK', rx: null, map: {}, exact: {}, loading: false };
+  var W = 'A-Za-z0-9_ÆØÅæøå';
+  function i18nSetup(data) {
+    var map = {}, exact = {}, keys = [], k;
+    for (k in data.table) {
+      if (k.charAt(0) === '=') { exact[k.slice(1)] = data.table[k]; } else { map[k] = data.table[k]; keys.push(k); }
+    }
+    keys.sort(function (a, b) { return b.length - a.length; });
+    var word = new RegExp('^[' + W + ']'), wordEnd = new RegExp('[' + W + ']$'), A = [], B = [];
+    keys.forEach(function (key) {
+      var piece = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + (wordEnd.test(key) ? '(?![' + W + '])' : '');
+      (word.test(key) ? A : B).push(piece);
+    });
+    var src = [];
+    if (A.length) { src.push('(^|[^' + W + '])(' + A.join('|') + ')'); }
+    if (B.length) { src.push('(' + B.join('|') + ')'); }
+    I18N.rx = src.length ? new RegExp(src.join('|'), 'g') : null;
+    I18N.map = map; I18N.exact = exact; I18N.lang = data.lang; I18N.locale = data.locale || 'da-DK';
+    document.documentElement.lang = data.lang === 'nb' ? 'nb' : data.lang;
+    document.title = T(document.title);
+  }
+  function T(s) {
+    if (!s || !I18N.rx) { return s; }
+    var core = String(s).trim();
+    if (I18N.exact[core]) { return String(s).replace(core, I18N.exact[core]); }
+    return String(s).replace(I18N.rx, function (m, pre, a, b) {
+      return a !== undefined ? pre + I18N.map[a] : I18N.map[m];
+    });
+  }
+  function i18nApply(root) {
+    if (!I18N.rx) { return; }
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), node, list = [];
+    while ((node = walker.nextNode())) { list.push(node); }
+    list.forEach(function (t) {
+      var p = t.parentNode ? t.parentNode.nodeName : '';
+      if (p === 'SCRIPT' || p === 'STYLE' || p === 'TEXTAREA' || t.__i === t.nodeValue) { return; }
+      var v = T(t.nodeValue);
+      if (v !== t.nodeValue) { t.nodeValue = v; }
+      t.__i = t.nodeValue;
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[placeholder],[aria-label],[title],[alt]'), function (el) {
+      ['placeholder', 'aria-label', 'title', 'alt'].forEach(function (a) {
+        var v = el.getAttribute(a);
+        if (v && el.__ia !== v + a) { var t = T(v); if (t !== v) { el.setAttribute(a, t); } el.__ia = t + a; }
+      });
+    });
+  }
+  var nativeConfirm = window.confirm;
+  window.confirm = function (m) { return nativeConfirm.call(window, T(m)); };
+  function loadLang() {
+    if (I18N.loading) { return; }
+    I18N.loading = true;
+    fetch('api/i18n').then(function (r) { return r.json(); }).then(function (d) { i18nSetup(d); }).catch(function () {})
+      .then(function () { I18N.loading = false; render(); });
+  }
+
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -126,7 +183,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     if (busy) { return; }
     busy = true;
     call(path, true, body).then(function (s) { state = s; errBox.hidden = true; render(); })
-      .catch(function (e) { errBox.textContent = e.message; errBox.hidden = false; setTimeout(load, 1500); })
+      .catch(function (e) { errBox.textContent = T(e.message); errBox.hidden = false; setTimeout(load, 1500); })
       .then(function () { busy = false; });
   }
 
@@ -135,9 +192,10 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
   function render() {
     if (!state) { return; }
+    if (state.lang && state.lang !== I18N.lang) { loadLang(); if (!I18N.rx) { return; } }
     var s = state, k = s.kid;
     document.documentElement.style.setProperty('--accent', k.color);
-    document.title = k.name + ' – pligter';
+    document.title = T(k.name + ' – pligter');
     var circ = 238.76, frac = Math.min(1, s.completed / s.goal);
     var bars = s.bars.map(function (b) {
       var bg = b.today ? 'var(--sun)' : (b.future || b.n === 0 ? '#E8DFD0' : 'var(--accent)');
@@ -191,6 +249,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       '<h2>Dine opgaver</h2><div class="list">' +
       (items || '<div class="empty">Ingen opgaver lige nu. Godt gået!</div>') + '</div>' +
       (jobs ? '<h2>Ledige nu <span class="new">Ny</span></h2><div class="list">' + jobs + '</div>' : '');
+    i18nApply(document.body);
   }
 
   function goalCard(g, prefix) {
@@ -329,7 +388,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
         });
       }).then(function (sub) { return call('api/push', true, { subscription: sub.toJSON() }); })
         .then(function () { pushState = 'on'; render(); });
-    }).catch(function () { errBox.textContent = 'Kunne ikke slå beskeder til'; errBox.hidden = false; });
+    }).catch(function () { errBox.textContent = T('Kunne ikke slå beskeder til'); errBox.hidden = false; });
   }
   function pushCard() {
     if (pushState === 'ready') {
@@ -362,7 +421,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
         while (url.length > 560000 && q > 0.3) { q -= 0.15; url = c.toDataURL('image/jpeg', q); }
         done(url.split(',')[1]);
       };
-      img.onerror = function () { errBox.textContent = 'Billedet kunne ikke læses'; errBox.hidden = false; };
+      img.onerror = function () { errBox.textContent = T('Billedet kunne ikke læses'); errBox.hidden = false; };
       img.src = reader.result;
     };
     reader.readAsDataURL(file);

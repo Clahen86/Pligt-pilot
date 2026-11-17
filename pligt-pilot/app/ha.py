@@ -27,6 +27,7 @@ class HomeAssistant:
         self.ntfy_server = (ntfy_server or 'https://ntfy.sh').rstrip('/')
         self.public_url = (public_url or '').rstrip('/')
         self.pusher = None
+        self.translator = None          # (barn eller None, tekst) -> tekst
         self._ingress = None
         self._local_ip = ''
         self._local_try = 0.0
@@ -153,6 +154,7 @@ class HomeAssistant:
 
     def notify_kid(self, kid, title, message):
         """Besked til et barn: via ntfy og/eller barnets notifikationstjeneste i HA."""
+        title, message = self._tr(kid, title), self._tr(kid, message)
         sent = False
         click = '%s/k/%s/' % (self.public_url, kid['token']) if self.public_url else None
         if self.pusher and self.pusher.send_kid(kid, title, message, click):
@@ -163,8 +165,12 @@ class HomeAssistant:
             sent = self.notify_to(kid['notify'], title, message) or sent
         return sent
 
+    def _tr(self, kid, text):
+        return self.translator(kid, text) if self.translator else text
+
     def notify(self, title, message):
         """Notifikation til forælderen. Et tryk åbner appen."""
+        title, message = self._tr(None, title), self._tr(None, message)
         return self.notify_to(self.notify_service, title, message, open_app=True)
 
     def entities(self):

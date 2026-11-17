@@ -103,6 +103,62 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   var qrKid = '';
   var draft = { rule: { preset: 'Vaskemaskine', entity: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false, season: '', surprise: false }, kid: { name: '', age: '', birthday: '' }, reward: { title: '', price: '10' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
+  // ---- sprog: udskifter kendte danske tekststykker (samme metode som serverens i18n.py) ----
+  var I18N = { lang: 'da', locale: 'da-DK', rx: null, map: {}, exact: {}, loading: false };
+  var W = 'A-Za-z0-9_ÆØÅæøå';
+  function i18nSetup(data) {
+    var map = {}, exact = {}, keys = [], k;
+    for (k in data.table) {
+      if (k.charAt(0) === '=') { exact[k.slice(1)] = data.table[k]; } else { map[k] = data.table[k]; keys.push(k); }
+    }
+    keys.sort(function (a, b) { return b.length - a.length; });
+    var word = new RegExp('^[' + W + ']'), wordEnd = new RegExp('[' + W + ']$'), A = [], B = [];
+    keys.forEach(function (key) {
+      var piece = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + (wordEnd.test(key) ? '(?![' + W + '])' : '');
+      (word.test(key) ? A : B).push(piece);
+    });
+    var src = [];
+    if (A.length) { src.push('(^|[^' + W + '])(' + A.join('|') + ')'); }
+    if (B.length) { src.push('(' + B.join('|') + ')'); }
+    I18N.rx = src.length ? new RegExp(src.join('|'), 'g') : null;
+    I18N.map = map; I18N.exact = exact; I18N.lang = data.lang; I18N.locale = data.locale || 'da-DK';
+    document.documentElement.lang = data.lang === 'nb' ? 'nb' : data.lang;
+    document.title = T(document.title);
+  }
+  function T(s) {
+    if (!s || !I18N.rx) { return s; }
+    var core = String(s).trim();
+    if (I18N.exact[core]) { return String(s).replace(core, I18N.exact[core]); }
+    return String(s).replace(I18N.rx, function (m, pre, a, b) {
+      return a !== undefined ? pre + I18N.map[a] : I18N.map[m];
+    });
+  }
+  function i18nApply(root) {
+    if (!I18N.rx) { return; }
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), node, list = [];
+    while ((node = walker.nextNode())) { list.push(node); }
+    list.forEach(function (t) {
+      var p = t.parentNode ? t.parentNode.nodeName : '';
+      if (p === 'SCRIPT' || p === 'STYLE' || p === 'TEXTAREA' || t.__i === t.nodeValue) { return; }
+      var v = T(t.nodeValue);
+      if (v !== t.nodeValue) { t.nodeValue = v; }
+      t.__i = t.nodeValue;
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[placeholder],[aria-label],[title],[alt]'), function (el) {
+      ['placeholder', 'aria-label', 'title', 'alt'].forEach(function (a) {
+        var v = el.getAttribute(a);
+        if (v && el.__ia !== v + a) { var t = T(v); if (t !== v) { el.setAttribute(a, t); } el.__ia = t + a; }
+      });
+    });
+  }
+  var nativeConfirm = window.confirm;
+  window.confirm = function (m) { return nativeConfirm.call(window, T(m)); };
+  function loadLang() {
+    if (I18N.loading) { return; }
+    I18N.loading = true;
+    fetch('api/i18n').then(function (r) { return r.json(); }).then(function (d) { i18nSetup(d); }).catch(function () {})
+      .then(function () { I18N.loading = false; render(); });
+  }
   var REPEAT = { daily: 'Hver dag', weekly: 'Hver uge', once: 'Én gang' };
   var CHECK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"></path></svg>';
   var CROSS = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C73A30" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>';
@@ -114,7 +170,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     });
   }
   function say(msg) {
-    toast.textContent = msg; toast.hidden = false;
+    toast.textContent = T(msg); toast.hidden = false;
     clearTimeout(say.t); say.t = setTimeout(function () { toast.hidden = true; }, 3200);
   }
   function call(path, body) {
@@ -470,7 +526,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       s.history.slice(0, 12).forEach(function (h) {
         var label = h.kind === 'task' ? h.note : h.kind === 'payout' ? 'Udbetalt' : h.kind === 'allowance' ? 'Lommepenge' : h.kind === 'penalty' ? 'Træk: ' + h.note : h.kind === 'reward' ? 'Belønning: ' + h.note : h.note || 'Bonus';
         var when = new Date(h.at);
-        var day = isNaN(when) ? '' : when.toLocaleDateString('da-DK', { weekday: 'short', day: 'numeric', month: 'short' });
+        var day = isNaN(when) ? '' : when.toLocaleDateString(I18N.locale, { weekday: 'short', day: 'numeric', month: 'short' });
         out += '<div class="row card"><div class="avatar" style="background:' + esc(h.color) + '" aria-hidden="true">' + esc(h.name.charAt(0).toUpperCase()) + '</div>' +
           '<div class="grow t"><b>' + esc(label) + '</b><span>' + esc(h.name) + ' · ' + esc(day) + '</span></div>' +
           '<div class="price" style="color:' + (h.amount < 0 ? '#C73A30' : '#0B7A70') + '">' + (h.amount > 0 ? '+' : '') + h.amount + ' kr</div>' +
@@ -574,6 +630,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         '<div class="row"><div class="grow t"><b>På pause</b><span>Ferie eller syg: ingen opgaver, og ugen tæller ikke som misset</span></div>' +
         '<button class="sw" role="switch" aria-checked="' + (k.paused ? 'true' : 'false') + '" aria-label="' + esc(k.name) + ' er på pause" data-pause="' + k.id + '"><span></span></button></div>' +
         '<div><label for="b-' + k.id + '-d">Fødselsdato</label>' + dateSelects('b-' + k.id, k.birthday) + '</div>' +
+        '<div><label for="lg-' + k.id + '">Sprog</label><select id="lg-' + k.id + '"><option value="">Samme som huset</option>' + s.langs.map(function (l) { return '<option value="' + l[0] + '"' + (k.lang === l[0] ? ' selected' : '') + '>' + esc(l[1]) + '</option>'; }).join('') + '</select></div>' +
         '<div><label for="al-' + k.id + '">Lommepenge pr. uge (kr.)</label><input id="al-' + k.id + '" type="number" inputmode="numeric" min="0" max="1000" value="' + k.allowance + '"></div>' +
         '<div class="row"><div class="grow t"><b>Beskeder til barnets telefon</b><span>Gratis med appen ntfy. Virker uden HA-app og uden https.</span></div>' +
         '<button class="sw" role="switch" aria-checked="' + (k.ntfy_on ? 'true' : 'false') + '" aria-label="Beskeder til ' + esc(k.name) + '" data-ntfy="' + k.id + '"><span></span></button></div>' +
@@ -608,6 +665,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<div class="two"><div><label for="s-bosshp">Ugens boss: antal opgaver</label><input id="s-bosshp" type="number" min="0" max="500" value="' + (cfg.boss_hp == null ? 20 : cfg.boss_hp) + '"></div>' +
       '<div><label for="s-bossbonus">Bossbonus til hver (kr.)</label><input id="s-bossbonus" type="number" min="0" max="1000" value="' + (cfg.boss_bonus || 0) + '"></div></div>' +
       '<div class="note">Boss: 0 opgaver slår den fra. Børnene slår bossen sammen.</div>' +
+      '<div><label for="s-lang">Sprog</label><select id="s-lang">' + s.langs.map(function (l) { return '<option value="' + l[0] + '"' + (s.lang === l[0] ? ' selected' : '') + '>' + esc(l[1]) + '</option>'; }).join('') + '</select></div>' +
       '<div><label for="s-streak">Bonus for 5 dage i træk (kr.)</label><input id="s-streak" type="number" min="0" max="1000" value="' + (cfg.streak_bonus == null ? 5 : cfg.streak_bonus) + '"></div>' +
       '<label class="check"><input type="checkbox" id="s-summary"' + (cfg.weekly_summary === false ? '' : ' checked') + '> Send mig en opsummering hver søndag kl. 18</label>' +
       '<label class="check"><input type="checkbox" id="s-trading"' + (cfg.trading === false ? '' : ' checked') + '> Børnene må bytte opgaver med hinanden</label>' +
@@ -698,7 +756,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   }
 
   function render() {
-    if (!state) { return; }
+    if (state && state.lang && state.lang !== I18N.lang) { loadLang(); if (!I18N.rx) { return; } }
     if (!state) { return; }
     app.innerHTML = tab === 'home' ? home() : tab === 'tasks' ? tasks() : tab === 'house' ? house() : kids();
     if (tab === 'tasks') { updateFair(); }
@@ -708,6 +766,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<button data-tab="tasks"' + (tab === 'tasks' ? ' aria-current="page"' : '') + '>Opgaver</button>' +
       '<button data-tab="house"' + (tab === 'house' ? ' aria-current="page"' : '') + '>Huset</button>' +
       '<button data-tab="kids"' + (tab === 'kids' ? ' aria-current="page"' : '') + '>Børn</button>';
+    i18nApply(document.body);
   }
 
   // ---- hændelser ----------------------------------------------------
@@ -822,6 +881,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     else if (d.savekid) {
       post('api/kids/' + d.savekid, {
         birthday: validDate(readDate('b-' + d.savekid)),
+        lang: document.getElementById('lg-' + d.savekid).value,
         notify: document.getElementById('n-' + d.savekid).value,
         allowance: document.getElementById('al-' + d.savekid).value
       }, 'Gemt');
@@ -854,7 +914,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         goal: document.getElementById('s-goal').value, hero_bonus: document.getElementById('s-bonus').value,
         perfect_bonus: document.getElementById('s-perfect').value, penalty: document.getElementById('s-penalty').value,
         reminder_time: document.getElementById('s-remind').value, celebrate_light: document.getElementById('s-light').value,
-        streak_bonus: document.getElementById('s-streak').value, boss_hp: document.getElementById('s-bosshp').value, boss_bonus: document.getElementById('s-bossbonus').value,
+        lang: document.getElementById('s-lang').value, streak_bonus: document.getElementById('s-streak').value, boss_hp: document.getElementById('s-bosshp').value, boss_bonus: document.getElementById('s-bossbonus').value,
         trading: document.getElementById('s-trading').checked,
           weekly_summary: document.getElementById('s-summary').checked
       };

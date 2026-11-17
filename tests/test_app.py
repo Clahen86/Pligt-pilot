@@ -929,6 +929,70 @@ class NtfyTests(unittest.TestCase):
         self.assertFalse(ha.ntfy('../../ond', 'x', 'y'))
 
 
+class LanguageTests(unittest.TestCase):
+    def setUp(self):
+        self.clock = Clock(monday())
+        self.store = Store(None, self.clock)
+        self.emil = self.store.add_kid('Emil', 9)
+
+    def test_translation_keeps_names_and_numbers(self):
+        import i18n
+        self.assertEqual(i18n.translate('en', 'Emma ønsker sig: Cykel'), 'Emma wishes for: Cykel')
+        self.assertEqual(i18n.translate('da', 'Emma ønsker sig: Cykel'), 'Emma ønsker sig: Cykel')
+        self.assertEqual(i18n.translate('de', 'Du har tjent'), 'Du hast verdient')
+        self.assertEqual(i18n.translate('xx', 'Du har tjent'), 'Du har tjent')   # ukendt sprog: dansk
+
+    def test_words_inside_other_words_are_left_alone(self):
+        import i18n
+        self.assertEqual(i18n.translate('en', 'foråret'), 'foråret')
+        self.assertEqual(i18n.translate('en', '=Ny'), '=Ny')
+        self.assertEqual(i18n.translate('en', 'Ny bold'), 'Ny bold')            # kun hele teksten 'Ny'
+        self.assertEqual(i18n.translate('en', 'Ny'), 'New')
+
+    def test_every_translation_row_has_english_german_and_swedish(self):
+        import i18n
+        i18n._tables = None
+        tables = i18n._load()
+        for key in tables['en']:
+            for lang in ('de', 'sv', 'nb'):
+                self.assertIn(key, tables[lang], '%s mangler %s' % (key, lang))
+
+    def test_kid_language_overrides_the_house_language(self):
+        self.store.set_setting('lang', 'de')
+        self.assertEqual(self.store.lang_of(), 'de')
+        self.assertEqual(self.store.lang_of(self.emil), 'de')
+        self.store.update_kid(self.emil['id'], lang='en')
+        self.assertEqual(self.store.lang_of(self.emil), 'en')
+        self.assertEqual(self.store.kid_view(self.emil['token'])['bars'][0]['label'], 'Mon')
+        self.store.update_kid(self.emil['id'], lang='')
+        self.assertEqual(self.store.lang_of(self.emil), 'de')
+        self.store.set_setting('lang', 'klingon')
+        self.assertEqual(self.store.lang_of(), 'da')
+
+    def test_starter_pack_is_created_in_the_house_language(self):
+        self.store.set_setting('lang', 'en')
+        self.store.add_starter_pack()
+        titles = [t['title'] for t in self.store.data['tasks']]
+        self.assertIn('Set the table', titles)
+        self.assertEqual(self.store.add_starter_pack(), 0)
+
+    def test_notifications_are_translated_for_the_receiver(self):
+        sent = []
+
+        class Ha(HomeAssistant):
+            def notify_to(self, service, title, message, open_app=False):
+                sent.append((title, message))
+                return True
+        ha = Ha(notify_service='x')
+        App(self.store, ha)
+        self.store.set_setting('lang', 'en')
+        self.store.update_kid(self.emil['id'], lang='de', notify='mobile_app_x')
+        ha.notify('Pligt-pilot', 'Emil er færdig med: Dæk bord (5 kr.). Åbn Pligter for at godkende.')
+        ha.notify_kid(self.store._kid(self.emil['id']), 'Husk dine pligter', 'Du har 2 opgaver i dag.')
+        self.assertIn('has finished', sent[0][1])
+        self.assertEqual(sent[1], ('Denk an deine Pflichten', 'Du hast 2 Aufgaben heute.'))
+
+
 class TlsPushTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

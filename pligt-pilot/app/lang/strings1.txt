@@ -1,0 +1,82 @@
+# Dansk || English || Deutsch || Svenska || Norsk (tom = som dansk)
+Mine pligter || My chores || Meine Pflichten || Mina sysslor || Mine plikter
+Pligter || Chores || Pflichten || Sysslor || Plikter
+Kan ikke nå huset lige nu. Prøver igen… || Can't reach the house right now. Trying again… || Das Haus ist gerade nicht erreichbar. Neuer Versuch… || Kan inte nå huset just nu. Försöker igen… || Får ikke kontakt med huset nå. Prøver igjen…
+Fejl || Error || Fehler || Fel || Feil
+Prøv igen || Try again || Nochmal versuchen || Försök igen || Prøv igjen
+i træk || in a row || in Folge || i rad || på rad
+Tag foto af: || Take a photo of: || Foto machen von: || Ta kort på: || Ta bilde av:
+Tag foto || Take photo || Foto machen || Ta kort || Ta bilde
+Færdig: || Done: || Erledigt: || Klar: || Ferdig:
+Færdig || Done || Erledigt || Klar || Ferdig
+Venter || Waiting || Wartet || Väntar || Venter
+Godkendt || Approved || Genehmigt || Godkänt || Godkjent
+Byt: || Swap: || Tauschen: || Byt: || Bytt:
+Byt || Swap || Tauschen || Byt || Bytt
+Overraskelse! Slutter kl. || Surprise! Ends at || Überraschung! Endet um || Överraskning! Slutar kl. || Overraskelse! Slutter kl.
+Først til mølle || First come, first served || Wer zuerst kommt, mahlt zuerst || Först till kvarn || Først til mølla
+Tag den || Take it || Nimm sie || Ta den || Ta den
+Hej || Hi || Hallo || Hej || Hei
+Du har tjent || You have earned || Du hast verdient || Du har tjänat || Du har tjent
+kr venter || kr waiting || kr warten || kr väntar || kr venter
+i ugen || this week || diese Woche || i veckan || i uka
+Tillykke med fødselsdagen, || Happy birthday, || Alles Gute zum Geburtstag, || Grattis på födelsedagen, || Gratulerer med dagen,
+Du er || You are || Du bist || Du är || Du er
+år i dag. || years old today. || Jahre alt geworden. || år i dag. || år i dag.
+Du har pause || You are on a break || Du hast Pause || Du har paus || Du har pause
+Ingen opgaver lige nu. God fornøjelse! || No chores right now. Enjoy! || Gerade keine Aufgaben. Viel Spaß! || Inga uppgifter just nu. Ha det så kul! || Ingen oppgaver nå. Kos deg!
+Familiens mål || The family goal || Das Familienziel || Familjens mål || Familiens mål
+Din uge || Your week || Deine Woche || Din vecka || Uka di
+Mål: || Goal: || Ziel: || Mål: || Mål:
+Dine opgaver || Your chores || Deine Aufgaben || Dina uppgifter || Oppgavene dine
+Ingen opgaver lige nu. Godt gået! || No chores right now. Well done! || Gerade keine Aufgaben. Gut gemacht! || Inga uppgifter just nu. Bra jobbat! || Ingen oppgaver nå. Bra jobba!
+Ledige nu || Available now || Jetzt frei || Lediga nu || Ledige nå
+=Ny || New || Neu || Ny || Ny
+Målet er nået! Sig det til mor eller far. || Goal reached! Tell mum or dad. || Ziel erreicht! Sag es Mama oder Papa. || Målet är nått! Säg det till mamma eller pappa. || Målet er nådd! Si det til mamma eller pappa.
+Din pligtfugl, niveau || Your chore bird, level || Dein Pflichtvogel, Stufe || Din syssefågel, nivå || Pliktfuglen din, nivå
+Niveau || Level || Stufe || Nivå || Nivå
+· bonus om || · bonus in || · Bonus in || · bonus om || · bonus om
+til næste niveau || to the next level || bis zur nächsten Stufe || till nästa nivå || til neste nivå
+Du er på det højeste niveau! || You are at the highest level! || Du bist auf der höchsten Stufe! || Du är på den högsta nivån! || Du er på det høyeste nivået!
+Ugens boss: || Boss of the week: || Boss der Woche: || Veckans boss: || Ukens boss:
+Bossen er besejret! Godt gået, alle sammen. || The boss is defeated! Well done, everyone. || Der Boss ist besiegt! Gut gemacht, ihr alle. || Bossen är besegrad! Bra jobbat, allihop. || Bossen er beseiret! Bra jobba, alle sammen.
+Bossen har || The boss has || Der Boss hat noch || Bossen har || Bossen har
+liv tilbage. Hver godkendt opgave er et slag. || lives left. Every approved chore is a hit. || Leben übrig. Jede genehmigte Aufgabe ist ein Treffer. || liv kvar. Varje godkänd uppgift är ett slag. || liv igjen. Hver godkjente oppgave er et slag.
+Brug dine penge || Spend your money || Gib dein Geld aus || Använd dina pengar || Bruk pengene dine
+Du kan bruge || You can spend || Du kannst ausgeben || Du kan använda || Du kan bruke
+Træk tilbage || Withdraw || Zurückziehen || Dra tillbaka || Trekk tilbake
+Køb || Buy || Kaufen || Köp || Kjøp
+Mangler || Missing || Es fehlen || Saknar || Mangler
+· venter på svar || · waiting for an answer || · wartet auf Antwort || · väntar på svar || · venter på svar
+Du ønsker dig: || You wish for: || Du wünschst dir: || Du önskar dig: || Du ønsker deg:
+kr. · venter på svar || kr. · waiting for an answer || kr. · wartet auf Antwort || kr. · väntar på svar || kr. · venter på svar
+Fx ny bold || E.g. a new ball || Z. B. ein neuer Ball || T.ex. en ny boll || F.eks. ny ball
+Hvad ønsker du dig? || What do you wish for? || Was wünschst du dir? || Vad önskar du dig? || Hva ønsker du deg?
+Hvad koster det? (kr.) || What does it cost? (kr.) || Was kostet es? (kr.) || Vad kostar det? (kr.) || Hva koster det? (kr.)
+Send ønske || Send wish || Wunsch senden || Skicka önskan || Send ønske
+Annullér || Cancel || Abbrechen || Avbryt || Avbryt
+Jeg ønsker mig noget || I wish for something || Ich wünsche mir etwas || Jag önskar mig något || Jeg ønsker meg noe
+Giv den til || Give it to || Gib sie || Ge den till || Gi den til
+Du betaler (0 til || You pay (0 to || Du zahlst (0 bis || Du betalar (0 till || Du betaler (0 til
+Send tilbud || Send offer || Angebot senden || Skicka erbjudande || Send tilbud
+vil bytte || wants to swap || möchte tauschen || vill byta || vil bytte
+Tag " || Take " || Nimm " || Ta " || Ta "
+og få || and get || und bekomme || och få || og få
+kr af || kr from || kr von || kr av || kr av
+Tag imod || Accept || Annehmen || Ta emot || Ta imot
+Nej tak || No thanks || Nein danke || Nej tack || Nei takk
+Du har tilbudt " || You offered " || Du hast angeboten: " || Du har erbjudit " || Du har tilbudt "
+Venter på svar fra || Waiting for an answer from || Warte auf Antwort von || Väntar på svar från || Venter på svar fra
+Kunne ikke slå beskeder til || Could not turn on notifications || Benachrichtigungen konnten nicht eingeschaltet werden || Kunde inte slå på aviseringar || Kunne ikke slå på varsler
+Få besked på din telefon || Get notified on your phone || Benachrichtigungen aufs Handy || Få avisering på din telefon || Få varsel på telefonen din
+Så ved du, når der er en ny opgave. || So you know when there is a new chore. || So weißt du, wenn es eine neue Aufgabe gibt. || Så vet du när det finns en ny uppgift. || Så vet du når det er en ny oppgave.
+Slå beskeder til || Turn on notifications || Benachrichtigungen einschalten || Slå på aviseringar || Slå på varsler
+Tryk på del-knappen i Safari, vælg Føj til hjemmeskærm, og åbn så Pligter derfra. || Tap the share button in Safari, choose Add to Home Screen, and then open Chores from there. || Tippe in Safari auf Teilen, wähle „Zum Home-Bildschirm“ und öffne dann Pflichten von dort. || Tryck på dela-knappen i Safari, välj Lägg till på hemskärmen och öppna sedan Sysslor därifrån. || Trykk på del-knappen i Safari, velg Legg til på Hjem-skjermen, og åpne så Plikter derfra.
+Beskeder er slået fra || Notifications are off || Benachrichtigungen sind aus || Aviseringar är avstängda || Varsler er slått av
+Tillad beskeder for denne side i telefonens indstillinger. || Allow notifications for this page in your phone's settings. || Erlaube Benachrichtigungen für diese Seite in den Handy-Einstellungen. || Tillåt aviseringar för den här sidan i telefonens inställningar. || Tillat varsler for denne siden i telefonens innstillinger.
+Billedet kunne ikke læses || The picture could not be read || Das Bild konnte nicht gelesen werden || Bilden kunde inte läsas || Bildet kunne ikke leses
+opgave || chore || Aufgabe || uppgift || oppgave
+opgaver || chores || Aufgaben || uppgifter || oppgaver
+dag || day || Tag || dag || dag
+dage || days || Tage || dagar || dager
+Opgaver || Chores || Aufgaben || Uppgifter || Oppgaver

@@ -25,6 +25,9 @@ Se `pligt-pilot/DOCS.md` for indstillinger.
 - **Rigtige kroner.** Pris pr. opgave, saldo pr. barn og ugegraf.
 - **Ugens helt.** Konkurrence med point efter alder og en bonus.
 
+## Nyt i 0.8
+- **Flere sprog:** dansk, engelsk, tysk, svensk og norsk. Forældresiden følger husets sprog, og hvert barn kan have sit eget. Beskeder på telefonen kommer på modtagerens sprog.
+
 ## Nyt i 0.7
 - **Belønninger:** børnene kan bruge kroner på ting, du selv vælger (skærmtid, fredagsfilm). Du svarer ja eller nej.
 - **Ønsker:** et barn kan skrive et ønske, og du kan med ét tryk gøre det til barnets sparemål.

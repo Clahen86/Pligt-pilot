@@ -18,6 +18,7 @@ import urllib.parse
 import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+import i18n
 from house import find_sensors
 from store import Problem
 from suggestions import suggest
@@ -32,6 +33,7 @@ KID_STATE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/state$')
 KID_DONE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/items/([a-f0-9]{10})/done$')
 KID_TRADE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/items/([a-f0-9]{10})/trade$')
 KID_TRADE_END = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/trades/([a-f0-9]{10})/(accept|end)$')
+KID_I18N = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/i18n$')
 KID_BUY = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/rewards/([a-f0-9]{10})/buy$')
 KID_UNBUY = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/claims/([a-f0-9]{10})/cancel$')
 KID_WISH = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/wish$')
@@ -82,6 +84,7 @@ class App:
         self.ha = ha
         self.options = options or {}
         self.vapid = None
+        self.ha.translator = lambda kid, text: i18n.translate(store.lang_of(kid), text)
 
 
 def _read(name):
@@ -204,6 +207,13 @@ def make_handler(app, role, allow_from=None):
                 body = self._body()
                 store.add_push(m.group(1), body.get('subscription'))
                 return self._json({'ok': True})
+            m = KID_I18N.match(path)
+            if m and method == 'GET':
+                kid = store.kid_by_token(m.group(1))
+                if not kid:
+                    return self._json({'error': 'Linket passer ikke'}, 404)
+                lang = store.lang_of(kid)
+                return self._json({'lang': lang, 'locale': i18n.LOCALES[lang], 'table': i18n.table(lang)})
             m = KID_STATE.match(path)
             if m and method == 'GET':
                 store.touch(m.group(1))
@@ -314,12 +324,21 @@ def make_handler(app, role, allow_from=None):
                     one = lambda k, d='': (q.get(k) or [d])[0]
                     return self._json(store.fairness(one('price'), one('repeat', 'daily'),
                                                      one('times', '1'), one('skip') or None))
+                if path == '/api/i18n':
+                    lang = store.lang_of()
+                    return self._json({'lang': lang, 'locale': i18n.LOCALES[lang], 'table': i18n.table(lang)})
                 if path == '/api/entities':
                     return self._json({'entities': app.ha.entities(), 'on': app.ha.enabled})
                 if path == '/api/suggestions':
                     s = store.admin_state()
                     rows = suggest(app.ha.areas(), [k['age'] for k in s['kids']],
                                    [t['title'] for t in s['tasks']], app.ha.devices())
+                    lang = store.lang_of()
+                    for r in rows:
+                        r['title'] = i18n.translate(lang, r['title'])
+                        r['room'] = i18n.translate(lang, r.get('room', ''))
+                        if store.has_task_titled(r['title']):
+                            r['exists'], r['on'] = True, False
                     return self._json({'rows': rows})
                 return self._json({'error': 'Findes ikke'}, 404)
 
@@ -331,7 +350,8 @@ def make_handler(app, role, allow_from=None):
             if m:
                 store.update_kid(m.group(1), body.get('name'), body.get('age'),
                                  body.get('color'), body.get('paused'), body.get('birthday'),
-                                 body.get('notify'), body.get('allowance'), body.get('ntfy_on'))
+                                 body.get('notify'), body.get('allowance'), body.get('ntfy_on'),
+                                 body.get('lang'))
                 return self._json(store.admin_state())
             m = re.match(r'^/api/kids/' + ID + r'/test$', path)
             if m:
@@ -441,7 +461,7 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.admin_state())
             if path == '/api/settings':
                 for key in ('goal', 'hero_bonus', 'penalty', 'perfect_bonus',
-                            'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading', 'weekly_summary', 'streak_bonus'):
+                            'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading', 'weekly_summary', 'streak_bonus', 'lang'):
                     if key in body:
                         store.set_setting(key, body[key])
                 if 'family_title' in body or 'family_amount' in body:

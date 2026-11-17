@@ -49,6 +49,11 @@ Beskederne går gennem den åbne tjeneste ntfy.sh. Emnet er et langt tilfældigt
 
 Har barnet Home Assistant-appen, kan du i stedet skrive barnets notifikationstjeneste, fx `mobile_app_emmas_tlf`.
 
+## Sprog
+Dansk, engelsk, tysk, svensk og norsk. Husets sprog vælges under Indstillinger (Sprog), og hvert barn kan få sit eget under Børn. Beskeder sendes på modtagerens sprog. Startpakken og forslagene oprettes på husets sprog. Opgaver, du selv har skrevet, oversættes ikke.
+
+Nye sprog tilføjes i `app/lang/strings*.txt`: én linje pr. tekst, dansk først og så de andre sprog adskilt af ` || `.
+
 ## Penge og belønninger
 - **Belønninger:** under Opgaver, nederst. Tryk "Tilføj tre eksempler" for at komme i gang. Barnet trykker Køb, og du får en besked og svarer under Køb og ønsker på Oversigt. Pengene trækkes først, når du siger ja.
 - **Ønsker:** barnet skriver, hvad det ønsker sig og hvad det koster. Du kan sætte det som sparemål.
