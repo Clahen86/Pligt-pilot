@@ -64,6 +64,9 @@ h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; disp
 label { font-size: 13px; font-weight: 800; color: var(--muted); display: block; margin-bottom: 4px; }
 input[type=text], input[type=number], input[type=date], input[type=time], select { width: 100%; height: 44px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 0 12px; font-size: 16px; font-weight: 700; color: var(--ink); background: #fff; }
 .dates { display: grid; grid-template-columns: 1fr 1.6fr 1.2fr; gap: 6px; }
+.qr { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
+.qrsvg { border-radius: 14px; border: 2px solid #D9CFBE; max-width: 100%; height: auto; }
+.col { display: flex; flex-direction: column; gap: 6px; }
 .two { display: flex; gap: 10px; }
 .two > div { flex: 1; min-width: 0; }
 .check { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: var(--ink); margin: 0; }
@@ -96,6 +99,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 <script>
 (function () {
   var state = null, found = null, entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
+  var qrKid = '';
   var draft = { rule: { preset: 'Vaskemaskine', entity: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false, season: '', surprise: false }, kid: { name: '', age: '', birthday: '' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
   var REPEAT = { daily: 'Hver dag', weekly: 'Hver uge', once: 'Én gang' };
@@ -206,6 +210,150 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       (g ? '<button class="btn small danger" data-cleargoal="' + k.id + '">Fjern mål</button>' : '') + '</div></div>';
     return out;
   }
+  // ---- QR-kode (byte-tilstand, rettelsesniveau M, version 1-10) ----
+  var QR = (function () {
+    var EXP = [], LOG = [], x = 1, i;
+    for (i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 256) { x ^= 0x11d; } }
+    function gmul(a, b) { return a && b ? EXP[(LOG[a] + LOG[b]) % 255] : 0; }
+    function remainder(data, n) {
+      var gen = [1], j, k, res;
+      for (i = 0; i < n; i++) {
+        var next = new Array(gen.length + 1).fill(0);
+        for (j = 0; j < gen.length; j++) { next[j] ^= gen[j]; next[j + 1] ^= gmul(gen[j], EXP[i]); }
+        gen = next;
+      }
+      res = data.concat(new Array(n).fill(0));
+      for (k = 0; k < data.length; k++) {
+        var c = res[k];
+        if (c) { for (j = 1; j < gen.length; j++) { res[k + j] ^= gmul(gen[j], c); } }
+      }
+      return res.slice(data.length);
+    }
+    var VERS = [null, [10, [[1, 16]]], [16, [[1, 28]]], [26, [[1, 44]]], [18, [[2, 32]]], [24, [[2, 43]]],
+      [16, [[4, 27]]], [18, [[4, 31]]], [22, [[2, 38], [2, 39]]], [22, [[3, 36], [2, 37]]], [26, [[4, 43], [1, 44]]]];
+    var ALIGN = [null, [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+    function dataSize(v) { return VERS[v][1].reduce(function (a, b) { return a + b[0] * b[1]; }, 0); }
+    function utf8(t) { return Array.prototype.slice.call(new TextEncoder().encode(t)); }
+    function bits(value, n, out) { for (var b = n - 1; b >= 0; b--) { out.push((value >>> b) & 1); } }
+    function encode(text) {
+      var bytes = utf8(text), v = 1;
+      while (v <= 10 && 4 + (v < 10 ? 8 : 16) + 8 * bytes.length > dataSize(v) * 8) { v++; }
+      if (v > 10) { return null; }
+      var bs = [];
+      bits(4, 4, bs); bits(bytes.length, v < 10 ? 8 : 16, bs);
+      bytes.forEach(function (b) { bits(b, 8, bs); });
+      var cap = dataSize(v) * 8, t = 0;
+      while (bs.length < cap && t++ < 4) { bs.push(0); }
+      while (bs.length % 8) { bs.push(0); }
+      var words = [];
+      for (i = 0; i < bs.length; i += 8) { words.push(parseInt(bs.slice(i, i + 8).join(''), 2)); }
+      for (i = 0; words.length < dataSize(v); i++) { words.push(i % 2 ? 0x11 : 0xEC); }
+      var blocks = [], pos = 0, ecLen = VERS[v][0];
+      VERS[v][1].forEach(function (g) {
+        for (var n = 0; n < g[0]; n++) { var d = words.slice(pos, pos + g[1]); pos += g[1]; blocks.push({ d: d, e: remainder(d, ecLen) }); }
+      });
+      var out = [], maxd = Math.max.apply(null, blocks.map(function (b) { return b.d.length; }));
+      for (i = 0; i < maxd; i++) { blocks.forEach(function (b) { if (i < b.d.length) { out.push(b.d[i]); } }); }
+      for (i = 0; i < ecLen; i++) { blocks.forEach(function (b) { out.push(b.e[i]); }); }
+      return { v: v, words: out };
+    }
+    function build(enc, mask) {
+      var v = enc.v, size = 17 + 4 * v, mod = [], fn = [], y, xx;
+      for (y = 0; y < size; y++) { mod.push(new Array(size).fill(false)); fn.push(new Array(size).fill(false)); }
+      function set(cx, cy, dark) { if (cx >= 0 && cy >= 0 && cx < size && cy < size) { mod[cy][cx] = dark; fn[cy][cx] = true; } }
+      for (i = 0; i < size; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+      [[3, 3], [size - 4, 3], [3, size - 4]].forEach(function (c) {
+        for (var dy = -4; dy <= 4; dy++) { for (var dx = -4; dx <= 4; dx++) { var d = Math.max(Math.abs(dx), Math.abs(dy)); set(c[0] + dx, c[1] + dy, d !== 2 && d !== 4); } }
+      });
+      var al = ALIGN[v];
+      al.forEach(function (ay, a) {
+        al.forEach(function (ax, b) {
+          if ((a === 0 && b === 0) || (a === 0 && b === al.length - 1) || (a === al.length - 1 && b === 0)) { return; }
+          for (var dy = -2; dy <= 2; dy++) { for (var dx = -2; dx <= 2; dx++) { set(ax + dx, ay + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1); } }
+        });
+      });
+      function format(m) {
+        var data = m, rem = data, k;               // niveau M har kode 0
+        for (k = 0; k < 10; k++) { rem = (rem << 1) ^ ((rem >>> 9) * 0x537); }
+        var f = ((data << 10) | rem) ^ 0x5412, bit = function (n) { return ((f >>> n) & 1) !== 0; };
+        for (k = 0; k <= 5; k++) { set(8, k, bit(k)); }
+        set(8, 7, bit(6)); set(8, 8, bit(7)); set(7, 8, bit(8));
+        for (k = 9; k < 15; k++) { set(14 - k, 8, bit(k)); }
+        for (k = 0; k < 8; k++) { set(size - 1 - k, 8, bit(k)); }
+        for (k = 8; k < 15; k++) { set(8, size - 15 + k, bit(k)); }
+        set(8, size - 8, true);
+      }
+      format(0);
+      if (v >= 7) {
+        var r = v, k2;
+        for (k2 = 0; k2 < 12; k2++) { r = (r << 1) ^ ((r >>> 11) * 0x1F25); }
+        var vi = (v << 12) | r;
+        for (k2 = 0; k2 < 18; k2++) { var on = ((vi >>> k2) & 1) !== 0, a2 = size - 11 + k2 % 3, b2 = Math.floor(k2 / 3); set(a2, b2, on); set(b2, a2, on); }
+      }
+      var n = 0, total = enc.words.length * 8, right, vert, j, upward;
+      for (right = size - 1; right >= 1; right -= 2) {
+        if (right === 6) { right = 5; }
+        for (vert = 0; vert < size; vert++) {
+          for (j = 0; j < 2; j++) {
+            xx = right - j; upward = ((right + 1) & 2) === 0; y = upward ? size - 1 - vert : vert;
+            if (!fn[y][xx] && n < total) { mod[y][xx] = ((enc.words[n >>> 3] >>> (7 - (n & 7))) & 1) !== 0; n++; }
+          }
+        }
+      }
+      var masks = [
+        function (r2, c) { return (r2 + c) % 2 === 0; }, function (r2) { return r2 % 2 === 0; },
+        function (r2, c) { return c % 3 === 0; }, function (r2, c) { return (r2 + c) % 3 === 0; },
+        function (r2, c) { return (Math.floor(r2 / 2) + Math.floor(c / 3)) % 2 === 0; },
+        function (r2, c) { return (r2 * c) % 2 + (r2 * c) % 3 === 0; },
+        function (r2, c) { return ((r2 * c) % 2 + (r2 * c) % 3) % 2 === 0; },
+        function (r2, c) { return ((r2 + c) % 2 + (r2 * c) % 3) % 2 === 0; }];
+      for (y = 0; y < size; y++) { for (xx = 0; xx < size; xx++) { if (!fn[y][xx] && masks[mask](y, xx)) { mod[y][xx] = !mod[y][xx]; } } }
+      format(mask);
+      return mod;
+    }
+    function penalty(m) {
+      var size = m.length, p = 0, y, x2, run, dark = 0, line;
+      function runs(get) {
+        for (var a = 0; a < size; a++) {
+          run = 1;
+          for (var b = 1; b < size; b++) {
+            if (get(a, b) === get(a, b - 1)) { run++; if (run === 5) { p += 3; } else if (run > 5) { p++; } } else { run = 1; }
+          }
+          line = [];
+          for (b = 0; b < size; b++) { line.push(get(a, b) ? 1 : 0); }
+          var s = line.join('');
+          [/10111010000/g, /00001011101/g].forEach(function (re) { var f; while ((f = re.exec(s))) { p += 40; re.lastIndex = f.index + 1; } });
+        }
+      }
+      runs(function (a, b) { return m[a][b]; });
+      runs(function (a, b) { return m[b][a]; });
+      for (y = 0; y < size; y++) {
+        for (x2 = 0; x2 < size; x2++) {
+          if (m[y][x2]) { dark++; }
+          if (y && x2 && m[y][x2] === m[y - 1][x2] && m[y][x2] === m[y][x2 - 1] && m[y][x2] === m[y - 1][x2 - 1]) { p += 3; }
+        }
+      }
+      var tot = size * size;
+      return p + (Math.ceil(Math.abs(dark * 20 - tot * 10) / tot) - 1) * 10;
+    }
+    function make(text) {
+      var enc = encode(text);
+      if (!enc) { return null; }
+      var best = null, bestP = 1e9;
+      for (var mk = 0; mk < 8; mk++) { var m = build(enc, mk), pp = penalty(m); if (pp < bestP) { bestP = pp; best = m; } }
+      return best;
+    }
+    function svg(text) {
+      var m = make(text);
+      if (!m) { return ''; }
+      var n = m.length, d = '';
+      m.forEach(function (row, y) { row.forEach(function (on, x2) { if (on) { d += 'M' + (x2 + 4) + ' ' + (y + 4) + 'h1v1h-1z'; } }); });
+      return '<svg class="qrsvg" viewBox="0 0 ' + (n + 8) + ' ' + (n + 8) + '" width="220" height="220" role="img" aria-label="QR-kode til barnets link" shape-rendering="crispEdges">' +
+        '<rect width="100%" height="100%" fill="#fff"></rect><path d="' + d + '" fill="#22304A"></path></svg>';
+    }
+    return { svg: svg };
+  })();
+
   function kidById(id) { return state.kids.filter(function (k) { return k.id === id; })[0]; }
   function privateHost(h) {
     return h === 'localhost' || /\.local$/.test(h) || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
@@ -230,16 +378,22 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   // ---- Oversigt -----------------------------------------------------
   function home() {
     var s = state;
-    if (!s.kids.length) {
-      return '<div class="head"><div><h1>Velkommen</h1><div class="sub">Pligt-pilot er klar</div></div></div>' +
-        '<div class="steps">' +
-        '<div class="step"><div class="n">1</div><div class="grow t"><b>Tilføj børnene</b><span>Navn og alder</span></div><button class="btn small" data-tab="kids">Start</button></div>' +
-        '<div class="step"><div class="n">2</div><div class="grow t"><b>Vælg opgaver</b><span>Appen foreslår ud fra husets rum</span></div><button class="btn small ghost" data-tab="tasks">Åbn</button></div>' +
-        '<div class="step"><div class="n">3</div><div class="grow t"><b>Send linket til børnene</b><span>Det lægges på hjemmeskærmen</span></div></div></div>';
+    if (!s.kids.length || !s.tasks.length) {
+      var hasKids = s.kids.length > 0, hasTasks = s.tasks.length > 0;
+      function step(n, done, title, sub, btn) {
+        return '<div class="step"><div class="n">' + (done ? CHECK : n) + '</div><div class="grow t"><b>' + title + '</b><span>' + sub + '</span></div>' + btn + '</div>';
+      }
+      return '<div class="head"><div><h1>Velkommen</h1><div class="sub">Tre trin, så er I i gang</div></div></div><div class="steps">' +
+        step(1, hasKids, 'Tilføj børnene', 'Navn og fødselsdato, så passer opgaverne til alderen', hasKids ? '' : '<button class="btn small" data-tab="kids">Start</button>') +
+        step(2, hasTasks, 'Vælg opgaver', 'Brug en færdig startpakke, der passer til børnenes alder, eller vælg selv',
+             hasTasks ? '' : '<div class="col"><button class="btn small" data-starter="1"' + (hasKids ? '' : ' disabled') + '>Startpakke</button><button class="btn small ghost" data-tab="tasks">Vælg selv</button></div>') +
+        step(3, false, 'Giv børnene deres link', 'Vis en QR-kode, som barnet scanner med sin telefon', hasKids ? '<button class="btn small ghost" data-tab="kids">Vis</button>' : '') + '</div>';
     }
     var out = '<div class="head"><div><h1>Oversigt</h1><div class="sub">' + esc(s.week_label) + ' · Familien</div></div><div class="badge">Forælder</div></div>';
     out += '<h2>Til godkendelse' + (s.pending.length ? ' <span class="count">' + s.pending.length + '</span>' : '') + '</h2><div class="list">';
     if (!s.pending.length) { out += '<div class="empty">Alt er godkendt. Godt gået!</div>'; }
+    var plain = s.pending.filter(function (p) { return !p.has_photo; }).length;
+    if (plain > 1) { out += '<button class="btn" data-approveall="1">Godkend alle ' + plain + (s.pending.length > plain ? ' (billeder ses først)' : '') + '</button>'; }
     s.pending.forEach(function (p) {
       out += '<div class="card"><div class="row"><div class="avatar" style="background:' + esc(p.color) + '" aria-hidden="true">' + esc(p.name.charAt(0).toUpperCase()) + '</div>' +
         '<div class="grow t"><b>' + esc(p.title) + '</b><span>' + esc(p.name) + ' · ' + p.price + ' kr</span></div>' +
@@ -349,6 +503,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.photo ? ' · med foto' : '') + (t.season ? ' · ' + SEASON_SHORT[t.season] : '') + (t.surprise ? ' · overraskelse' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
           '<div class="price" ' + (t.fair && t.fair.level !== 'ok' ? 'title="' + esc(t.fair.text) + '" style="color:' + (t.fair.level === 'high' ? '#C73A30' : '#B05A00') + '"' : '') + '>' + t.price + ' kr' + (t.fair && t.fair.level !== 'ok' ? ' ' + (t.fair.level === 'high' ? '▲' : '▼') : '') + '</div>' +
           '<button class="sw" role="switch" aria-checked="' + (t.active ? 'true' : 'false') + '" aria-label="' + esc(t.title) + ' er slået til" data-active="' + t.id + '"><span></span></button>' +
+          '<button class="btn small ghost" data-duptask="' + t.id + '" aria-label="Lav en kopi af ' + esc(t.title) + '">Kopi</button>' +
           '<button class="icon no" style="width:40px;height:40px" data-deltask="' + t.id + '" aria-label="Slet ' + esc(t.title) + '">' + CROSS + '</button></div>' +
           (t.fair && t.fair.level !== 'ok' ? '<div class="note" style="color:' + (t.fair.level === 'high' ? '#C73A30' : '#B05A00') + '">' + esc(t.fair.text) + '</div>' : '') +
           (taskEdit === t.id ? editForm('t' + t.id, t, true) : '<button class="btn small ghost" data-taskedit="' + t.id + '">Rediger</button>') + '</div>';
@@ -383,7 +538,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         '<div class="grow"><div class="name">' + esc(k.name) + '</div><div class="sub">' + k.age + ' år</div></div></div>' +
         (linkFor(k)
           ? '<div><label for="l-' + k.id + '">Personligt link</label><div class="linkbox"><input id="l-' + k.id + '" type="text" readonly value="' + esc(linkFor(k)) + '">' +
-            '<button class="btn small" data-copy="' + k.id + '">Kopiér</button></div></div>'
+            '<button class="btn small" data-copy="' + k.id + '">Kopiér</button></div>' +
+            '<button class="btn small ghost" style="margin-top:8px" data-qr="' + k.id + '">' + (qrKid === k.id ? 'Skjul QR-kode' : 'Vis QR-kode') + '</button>' +
+            (qrKid === k.id ? '<div class="qr">' + QR.svg(linkFor(k)) + '<div class="note">Hold barnets telefon hen foran skærmen, så åbner linket.</div></div>' : '') + '</div>'
           : '<div class="empty">Appen kan ikke se Home Assistants adresse derhjemme. Skriv den i indstillingen public_url, fx http://192.168.1.50:8099, så kommer linket frem.</div>') +
         '<div class="note">Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren. Linket virker på jeres wifi derhjemme.</div>' +
         '<div class="row"><div class="grow t"><b>På pause</b><span>Ferie eller syg: ingen opgaver, og ugen tæller ikke som misset</span></div>' +
@@ -423,6 +580,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<div class="two"><div><label for="s-bosshp">Ugens boss: antal opgaver</label><input id="s-bosshp" type="number" min="0" max="500" value="' + (cfg.boss_hp == null ? 20 : cfg.boss_hp) + '"></div>' +
       '<div><label for="s-bossbonus">Bossbonus til hver (kr.)</label><input id="s-bossbonus" type="number" min="0" max="1000" value="' + (cfg.boss_bonus || 0) + '"></div></div>' +
       '<div class="note">Boss: 0 opgaver slår den fra. Børnene slår bossen sammen.</div>' +
+      '<label class="check"><input type="checkbox" id="s-summary"' + (cfg.weekly_summary === false ? '' : ' checked') + '> Send mig en opsummering hver søndag kl. 18</label>' +
       '<label class="check"><input type="checkbox" id="s-trading"' + (cfg.trading === false ? '' : ' checked') + '> Børnene må bytte opgaver med hinanden</label>' +
       '<div><label for="s-remind">Påmind børnene kl.</label><input id="s-remind" type="time" value="' + esc(cfg.reminder_time || '') + '"></div>' +
       '<div><label for="s-light">Lampe, der blinker grønt ved godkendelse</label><input id="s-light" type="text" list="lights" placeholder="Fx light.stue" value="' + esc(cfg.celebrate_light || '') + '">' +
@@ -555,6 +713,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var d = b.dataset;
     if (d.tab) { tab = d.tab; render(); window.scrollTo(0, 0); if ((d.tab === 'house' || d.tab === 'kids') && entitiesOn === null) { loadEntities(); }
       if (d.tab === 'house') { loadFound(); } }
+    else if (d.starter) { post('api/starter', {}, 'Startpakken er oprettet. Slå det fra, du ikke vil have.'); }
+    else if (d.approveall) { post('api/approve_all', {}, 'Alt er godkendt'); }
     else if (d.approve) { post('api/items/' + d.approve + '/approve', {}, 'Godkendt'); }
     else if (d.reject) { post('api/items/' + d.reject + '/reject', {}, 'Afvist. Barnet kan prøve igen.'); }
     else if (d.payout) { post('api/kids/' + d.payout + '/payout', {}, 'Udbetalt'); }
@@ -589,6 +749,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       var t = state.tasks.filter(function (x) { return x.id === d.active; })[0];
       post('api/tasks/' + d.active, { active: !t.active });
     }
+    else if (d.duptask) { post('api/tasks/' + d.duptask + '/duplicate', {}, 'Kopi lavet. Tryk Rediger for at ændre den.'); }
     else if (d.deltask) { if (confirm('Slette opgaven?')) { post('api/tasks/' + d.deltask + '/delete', {}, 'Slettet'); } }
     else if (d.addtask) {
       var x = draft.task;
@@ -638,6 +799,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     }
     else if (d.cleargoal) { post('api/kids/' + d.cleargoal + '/goal', { title: '', amount: '' }, 'Sparemål fjernet'); }
     else if (d.undo) { if (confirm('Fortryd godkendelsen? Pengene trækkes tilbage.')) { post('api/items/' + d.undo + '/undo', {}, 'Fortrudt. Opgaven venter igen.'); } }
+    else if (d.qr) { qrKid = qrKid === d.qr ? '' : d.qr; render(); }
     else if (d.copy) {
       var k = kidById(d.copy), input = document.getElementById('l-' + d.copy);
       if (navigator.clipboard && window.isSecureContext) {
@@ -652,7 +814,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         perfect_bonus: document.getElementById('s-perfect').value, penalty: document.getElementById('s-penalty').value,
         reminder_time: document.getElementById('s-remind').value, celebrate_light: document.getElementById('s-light').value,
         boss_hp: document.getElementById('s-bosshp').value, boss_bonus: document.getElementById('s-bossbonus').value,
-        trading: document.getElementById('s-trading').checked
+        trading: document.getElementById('s-trading').checked,
+          weekly_summary: document.getElementById('s-summary').checked
       };
       var ft = document.getElementById('s-ft').value, fa = document.getElementById('s-fa').value, fam = state.family;
       if (!fam ? (ft || fa) : (ft !== fam.title || String(fa) !== String(fam.amount))) { body.family_title = ft; body.family_amount = fa; }

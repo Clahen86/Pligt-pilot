@@ -510,6 +510,49 @@ class StoreTests(unittest.TestCase):
         self.store.admin_state()
         self.assertEqual(self.store.kid_view(self.emil['token'])['jobs'], [])
 
+    def test_starter_pack_fits_ages_and_is_not_made_twice(self):
+        made = self.store.add_starter_pack()
+        self.assertGreater(made, 8)
+        self.assertEqual(self.store.add_starter_pack(), 0)
+        titles = {t['title']: t for t in self.store.data['tasks']}
+        self.assertEqual(titles['Gør badeværelset rent']['age_min'], 13)
+        self.assertEqual(titles['Fej løv']['season'], 'efterår')
+
+    def test_approve_all_skips_photo_items_and_pays_everyone(self):
+        self.store.add_task('A', 5)
+        self.store.add_task('B', 7)
+        for i in list(self.kid_items(self.emil)):
+            self.store.mark_done(self.emil['token'], i['id'])
+        self.store.data['items'][0]['photo'] = True
+        done = self.store.decide_all()
+        self.assertEqual(len(done), 1)
+        self.assertEqual(len([i for i in self.store.data['items'] if i['status'] == 'wait']), 1)
+
+    def test_duplicate_task_makes_an_independent_copy(self):
+        task = self.store.add_task('Dæk bord', 6, kids=[self.emil['id']])
+        copy = self.store.duplicate_task(task['id'])
+        self.assertNotEqual(copy['id'], task['id'])
+        self.assertEqual(copy['title'], 'Dæk bord (kopi)')
+        copy['kids'].append('x')
+        self.assertEqual(task['kids'], [self.emil['id']])
+
+    def test_weekly_summary_is_sent_once_on_sunday_evening(self):
+        self.store.add_task('Dæk bord', 6)
+        for i in self.kid_items(self.emil):
+            self.store.mark_done(self.emil['token'], i['id'])
+            self.store.decide(i['id'], True)
+        self.assertIsNone(self.store.weekly_summary())              # mandag
+        self.clock.when = dt.datetime(2026, 11, 22, 17, 0)
+        self.assertIsNone(self.store.weekly_summary())              # søndag, men for tidligt
+        self.clock.when = dt.datetime(2026, 11, 22, 18, 5)
+        text = self.store.weekly_summary()
+        self.assertIn('Uge 47', text)
+        self.assertIn('%s: 1 opgave, 6 kr.' % self.emil['name'], text)
+        self.assertIsNone(self.store.weekly_summary())
+        self.store.set_setting('weekly_summary', False)
+        self.store.data['settings']['summary_week'] = ''
+        self.assertIsNone(self.store.weekly_summary())
+
     def test_surprise_day_can_be_a_quiet_day(self):
         import random
 

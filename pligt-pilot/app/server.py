@@ -345,6 +345,20 @@ def make_handler(app, role, allow_from=None):
             if m:
                 store.delete_task(m.group(1))
                 return self._json(store.admin_state())
+            if path == '/api/starter':
+                store.add_starter_pack()
+                return self._json(store.admin_state())
+            if path == '/api/approve_all':
+                for item in store.decide_all():
+                    kid = next((k for k in store.data['kids'] if k['id'] == item['kid_id']), None)
+                    if kid:
+                        app.ha.notify_kid(kid, 'Pligt-pilot', 'Godkendt: %s. Du fik %d kr.!'
+                                          % (item['title'], item['price']))
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/tasks/' + ID + r'/duplicate$', path)
+            if m:
+                store.duplicate_task(m.group(1))
+                return self._json(store.admin_state())
             m = re.match(r'^/api/items/' + ID + r'/(approve|reject)$', path)
             if m:
                 approve = m.group(2) == 'approve'
@@ -362,7 +376,7 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.admin_state())
             if path == '/api/settings':
                 for key in ('goal', 'hero_bonus', 'penalty', 'perfect_bonus',
-                            'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading'):
+                            'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading', 'weekly_summary'):
                     if key in body:
                         store.set_setting(key, body[key])
                 if 'family_title' in body or 'family_amount' in body:

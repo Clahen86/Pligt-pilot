@@ -25,6 +25,13 @@ Se `pligt-pilot/DOCS.md` for indstillinger.
 - **Rigtige kroner.** Pris pr. opgave, saldo pr. barn og ugegraf.
 - **Ugens helt.** Konkurrence med point efter alder og en bonus.
 
+## Nyt i 0.6
+- **Startpakke:** ét tryk opretter opgaver, der passer til børnenes alder.
+- **Godkend alle:** godkend alt, der venter, med ét tryk (billeder ses først).
+- **QR-kode:** hvert barn kan scanne sit link direkte fra skærmen.
+- **Kopi af opgave:** lav en kopi af en opgave og ret den til.
+- **Søndagsopsummering:** hver søndag kl. 18 får forælderen en besked om ugens opgaver og penge.
+
 ## Nyt i 0.5
 - **Ugens boss:** hele familien slår en boss sammen. Hver godkendt opgave er et slag, og når bossen er besejret kan forælderen give en bonus til dem, der hjalp.
 - **Karakter der vokser:** hvert barn har en fugl, der udvikler sig fra æg til Pligtlegende og får kasket, solbriller, kappe og krone.

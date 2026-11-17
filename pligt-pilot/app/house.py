@@ -75,6 +75,7 @@ class Automation:
         self._surprise()
         self._reminders()
         self._birthdays()
+        self._summary()
 
     def _rules(self, now):
         rules = [r for r in self.store.data['rules'] if r['active']]
@@ -112,6 +113,11 @@ class Automation:
         for kid, age in self.store.birthday_notices():
             self.ha.notify('Fødselsdag i morgen',
                            '%s fylder %d i morgen. Så får %s nye opgaver.' % (kid['name'], age, kid['name']))
+
+    def _summary(self):
+        text = self.store.weekly_summary()
+        if text:
+            self.ha.notify('Ugens pligter', text)
 
     def run(self, every=20):
         def loop():

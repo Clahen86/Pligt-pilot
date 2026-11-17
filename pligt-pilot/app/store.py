@@ -24,6 +24,23 @@ MONTHS = ['januar', 'februar', 'marts', 'april', 'maj', 'juni', 'juli', 'august'
 SEASONS = {'forår': (3, 4, 5), 'sommer': (6, 7, 8), 'efterår': (9, 10, 11), 'vinter': (12, 1, 2)}
 BOSSES = ['Støvdragen', 'Opvaskemonsteret', 'Vasketøjstrolden', 'Rodebunke-Rasmus',
           'Snavsedjævelen', 'Krummeuhyret', 'Sokkespøgelset', 'Skraldegiganten']
+# Startpakke: (titel, pris, rum, gentagelse, gange, mindstealder, højestealder, sæson)
+STARTER = [
+    ('Dæk bord', 3, 'Køkken', 'daily', 1, 4, 99, ''),
+    ('Ryd dit legetøj op', 3, 'Børneværelse', 'daily', 1, 4, 9, ''),
+    ('Fodr kæledyr', 3, '', 'daily', 1, 5, 99, ''),
+    ('Sæt sko og jakke på plads', 2, 'Gang', 'daily', 1, 4, 9, ''),
+    ('Tøm opvaskemaskinen', 5, 'Køkken', 'daily', 1, 8, 99, ''),
+    ('Tøm skraldespanden', 5, 'Køkken', 'daily', 1, 8, 99, ''),
+    ('Ryd dit værelse', 10, 'Børneværelse', 'weekly', 1, 7, 99, ''),
+    ('Hjælp med aftensmaden', 5, 'Køkken', 'daily', 1, 9, 99, ''),
+    ('Støvsug stuen', 10, 'Stue', 'weekly', 1, 11, 99, ''),
+    ('Gør badeværelset rent', 20, 'Badeværelse', 'weekly', 1, 13, 99, ''),
+    ('Tag tøj ned og fold det', 8, 'Bryggers', 'weekly', 2, 11, 99, ''),
+    ('Fej løv', 25, 'Have', 'weekly', 1, 11, 99, 'efterår'),
+    ('Slå græs', 40, 'Have', 'weekly', 1, 13, 99, 'sommer'),
+    ('Ryd sne', 30, 'Have', 'weekly', 1, 11, 99, 'vinter'),
+]
 LEVELS = [(0, 'Ægget'), (3, 'Ungen'), (10, 'Pligtfuglen'), (25, 'Pligtfuglen med kasket'),
           (50, 'Pligtmesteren'), (100, 'Pligtkongen'), (200, 'Pligtlegenden')]
 SURPRISE_MINUTES = 90
@@ -423,6 +440,33 @@ class Store:
             self._task(task_id)
             self.data['tasks'] = [t for t in self.data['tasks'] if t['id'] != task_id]
             self._save()
+
+    def add_starter_pack(self):
+        """Opretter en passende startpakke. Springer opgaver over, der allerede findes."""
+        made = 0
+        for title, price, room, repeat, times, lo, hi, season in STARTER:
+            if self.has_task_titled(title):
+                continue
+            self.add_task(title, price, room, repeat, False, None, lo, hi, times, False, None, season)
+            made += 1
+        return made
+
+    def duplicate_task(self, task_id):
+        with self.lock:
+            src = self._task(task_id)
+            copy = dict(src)
+            copy.update({'id': _id(), 'title': (src['title'] + ' (kopi)')[:60],
+                         'created': self._now().isoformat(timespec='seconds')})
+            copy['kids'] = list(src.get('kids') or [])
+            self.data['tasks'].append(copy)
+            self._save()
+            return copy
+
+    def decide_all(self):
+        """Godkender alt, der venter. Opgaver med billede springes over, så de ses først."""
+        with self.lock:
+            ids = [i['id'] for i in self.data['items'] if i['status'] == 'wait' and not i.get('photo')]
+        return [self.decide(item_id, True) for item_id in ids]
 
     def has_task_titled(self, title):
         wanted = (title or '').strip().lower()
@@ -832,9 +876,10 @@ class Store:
                 'family': self._family(),
                 'boss': self._boss(),
                 'rules': [dict(r) for r in self.data['rules']],
-                'settings': {k: settings.get(k) for k in
-                             ('penalty', 'perfect_bonus', 'reminder_time', 'celebrate_light',
-                              'boss_hp', 'boss_bonus', 'trading')},
+                'settings': dict({k: settings.get(k) for k in
+                                  ('penalty', 'perfect_bonus', 'reminder_time', 'celebrate_light',
+                                   'boss_hp', 'boss_bonus', 'trading')},
+                                 weekly_summary=bool(settings.get('weekly_summary', True))),
                 'pending': pending,
                 'tasks': [dict(t, fair=self.fairness(t['price'], t['repeat'], t.get('times', 1), t['id']))
                           for t in self.data['tasks']],
@@ -1213,6 +1258,33 @@ class Store:
                     out.append((k, n))
             return out
 
+    def weekly_summary(self):
+        """Tekst til forældrene om søndagen kl. 18 (én gang pr. uge). Ellers None."""
+        with self.lock:
+            self._refresh()
+            st = self.data['settings']
+            now = self._now()
+            wk = week_key(now)
+            if not st.get('weekly_summary', True) or now.weekday() != 6 or now.hour < 18 \
+                    or st.get('summary_week') == wk or not self.data['kids']:
+                return None
+            st['summary_week'] = wk
+            self._save()
+            lines = []
+            for k in self.data['kids']:
+                done = self._week_items(k['id'], ('done',))
+                money = sum(i['price'] for _, i in done)
+                line = '%s: %d opgave%s, %d kr.' % (k['name'], len(done), '' if len(done) == 1 else 'r', money)
+                bal = self.balance(k['id'])
+                if bal > 0:
+                    line += ' (til udbetaling: %d kr.)' % bal
+                lines.append(line)
+            boss = self._boss()
+            if boss:
+                lines.append('%s: %s' % (boss['name'], 'besejret!' if boss['defeated']
+                                         else '%d af %d slag' % (boss['hits'], boss['hp'])))
+            return 'Uge %d\n' % now.isocalendar()[1] + '\n'.join(lines)
+
     def birthday_notices(self):
         """Børn, der fylder år i morgen (kun efter kl. 16, én gang pr. år)."""
         with self.lock:
@@ -1284,7 +1356,7 @@ class Store:
                 value = int(value)
                 if value < 1 or value > 50:
                     raise Problem('Målet skal være mellem 1 og 50')
-            elif key == 'trading':
+            elif key in ('trading', 'weekly_summary'):
                 value = bool(value)
             elif key == 'boss_hp':
                 value = int(value or 0)

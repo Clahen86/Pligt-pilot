@@ -49,6 +49,12 @@ Beskederne går gennem den åbne tjeneste ntfy.sh. Emnet er et langt tilfældigt
 
 Har barnet Home Assistant-appen, kan du i stedet skrive barnets notifikationstjeneste, fx `mobile_app_emmas_tlf`.
 
+## Gør det nemt
+- **Startpakke:** på Oversigt (før du har opgaver) opretter knappen "Startpakke" opgaver, der passer til børnenes alder. Du kan slå dem fra eller ændre dem bagefter.
+- **Godkend alle:** knappen vises over de ventende opgaver. Opgaver med billede godkendes ikke automatisk.
+- **QR-kode:** under Børn, ved barnets link. Appen laver koden selv, uden internet.
+- **Søndagsopsummering:** kræver `notify_service`. Kan slås fra under Indstillinger.
+
 ## Sjove ting
 - **Ugens boss:** antal liv og bonus kan ændres under Indstillinger. Bonussen udbetales manuelt fra boss-kortet på Oversigt, når bossen er besejret.
 - **Overraskelse:** sæt kryds ved "Overraskelse" på en opgave. Den bliver ikke en fast opgave, men dukker af og til op som en ledig opgave med dobbelt pris, der udløber efter 90 minutter.
