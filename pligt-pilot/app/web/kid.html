@@ -68,6 +68,18 @@ button { font: inherit; cursor: pointer; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .bar.today small { font-weight: 900; color: var(--ink); }
 h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; display: flex; align-items: center; gap: 8px; }
+.jobs { background: #FFC247; border-radius: 22px; padding: 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 0 0 4px rgba(255, 194, 71, .35); }
+.jobshead b { display: block; font-size: 19px; font-weight: 900; color: #22304A; }
+.jobshead span { font-size: 14px; font-weight: 700; color: #4A3A0F; }
+.job { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #fff; border-radius: 18px; padding: 10px 12px; }
+.job .t { flex: 1 1 130px; min-width: 0; }
+.job .t b { display: block; font-size: 16px; font-weight: 800; overflow-wrap: anywhere; }
+.job .t span { font-size: 13px; color: var(--muted); font-weight: 700; }
+.job.surprise { outline: 3px dashed #C73A30; outline-offset: -3px; }
+.job .price { background: #FFF1CF; color: #22304A; border-radius: 999px; padding: 4px 10px; font-weight: 900; font-size: 14px; }
+.btn.grab { background: #22304A; min-height: 44px; }
+@media (prefers-reduced-motion: no-preference) { .jobs { animation: nudge 2.4s ease-in-out 2; } }
+@keyframes nudge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.015); } }
 .new { background: #C73A30; color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 900; }
 .list { display: flex; flex-direction: column; gap: 8px; }
 .task { display: flex; flex-wrap: wrap; row-gap: 6px; align-items: center; gap: 10px; background: #fff; border-radius: 20px; padding: 9px 10px 9px 14px; }
@@ -220,10 +232,14 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
         (tradeOpen === i.id ? tradeForm(i, s) : '');
     }).join('');
     var jobs = s.jobs.map(function (j) {
-      return '<div class="task open"><div class="t"><b>' + esc(j.title) + '</b><span>' +
+      return '<div class="job' + (j.expires ? ' surprise' : '') + '"><div class="t"><b>' + esc(j.title) + '</b><span>' +
         esc(j.expires ? 'Overraskelse! Slutter kl. ' + j.expires.slice(11, 16) : (j.room || 'Først til mølle')) + '</span></div><div class="price">' + j.price +
-        ' kr</div><button class="btn ghost" data-claim="' + j.task_id + '">Tag den</button></div>';
+        ' kr</div><button class="btn grab" data-claim="' + j.task_id + '">Tag den</button></div>';
     }).join('');
+    var jobsCard = s.jobs.length && !s.paused
+      ? '<section class="jobs" aria-label="Ledige opgaver"><div class="jobshead"><b>' + (s.jobs.length === 1 ? 'Der er en ledig opgave!' : 'Der er ' + s.jobs.length + ' ledige opgaver!') +
+        '</b><span>Først til mølle. Tag den, før en anden gør.</span></div>' + jobs + '</section>' : '';
+    document.title = T((s.jobs.length ? '(' + s.jobs.length + ') ' : '') + k.name + ' – pligter');
     app.innerHTML =
       '<div class="top"><div class="avatar" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' +
       '<div><div class="hello">Hej ' + esc(k.name) + '</div><div class="sub">' + esc(s.week_label) + '</div></div></div>' +
@@ -235,6 +251,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       'stroke-dasharray="' + (circ * frac).toFixed(1) + ' ' + circ + '" transform="rotate(-90 48 48)"></circle></svg>' +
       '<div class="mid"><b>' + s.completed + '/' + s.goal + '</b><span>i ugen</span></div></div></div>' +
       (s.birthday_today ? '<div class="card"><b>Tillykke med fødselsdagen, ' + esc(k.name) + '!</b><div class="sub">Du er ' + k.age + ' år i dag.</div></div>' : '') +
+      jobsCard +
       (s.paused ? '<div class="card"><b>Du har pause</b><div class="sub">Ingen opgaver lige nu. God fornøjelse!</div></div>' : '') +
       pushCard() +
       characterCard(s) +
@@ -248,7 +265,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       '<div class="bars">' + bars + '</div></div>' +
       '<h2>Dine opgaver</h2><div class="list">' +
       (items || '<div class="empty">Ingen opgaver lige nu. Godt gået!</div>') + '</div>' +
-      (jobs ? '<h2>Ledige nu <span class="new">Ny</span></h2><div class="list">' + jobs + '</div>' : '');
+      '';
     i18nApply(document.body);
   }
 

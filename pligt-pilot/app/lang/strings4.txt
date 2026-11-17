@@ -15,3 +15,8 @@ Fjerne denne forælder? Linket holder op med at virke. || Remove this parent? Th
 Der kan højst være 6 forældre || There can be at most 6 parents || Es kann höchstens 6 Eltern geben || Det kan högst finnas 6 föräldrar || Det kan høyst være 6 foreldre
 Forælderen findes ikke || The parent does not exist || Der Elternteil existiert nicht || Föräldern finns inte || Forelderen finnes ikke
 Link || Link || Link || Länk || Lenke
+Der er en ledig opgave! || There is an open chore! || Es gibt eine freie Aufgabe! || Det finns en ledig uppgift! || Det er en ledig oppgave!
+Der er || There are || Es gibt || Det finns || Det er
+ledige opgaver! || open chores! || freie Aufgaben! || lediga uppgifter! || ledige oppgaver!
+Først til mølle. Tag den, før en anden gør. || First come, first served. Grab it before someone else does. || Wer zuerst kommt, mahlt zuerst. Schnapp sie dir, bevor es ein anderer tut. || Först till kvarn. Ta den innan någon annan gör det. || Først til mølla. Ta den før en annen gjør det.
+Ledige opgaver || Open chores || Freie Aufgaben || Lediga uppgifter || Ledige oppgaver
