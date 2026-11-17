@@ -5,8 +5,16 @@ Pligter, penge og ønsker til hele familien, som en Home Assistant add-on.
 Børnene åbner et personligt link på telefon eller tablet. Ingen HA-konto,
 ingen kodeord. Du godkender med ét tryk.
 
-> Status: idé- og designfase. Ingen kode endnu. Udkastet til skærmene ligger i
-> `design/`.
+> Status: første version (v0.1). Testet mod en simuleret Home Assistant, men
+> endnu ikke på en rigtig installation. Udkastet til skærmene ligger i `design/`.
+
+## Installation
+
+1. I Home Assistant: **Indstillinger → Add-ons → Add-on butik → ⋮ → Repositories**.
+2. Tilføj `https://github.com/Clahen86/Pligt-pilot`.
+3. Installér **Pligt-pilot**, start den og åbn **Pligter** i sidemenuen.
+
+Se `pligt-pilot/DOCS.md` for indstillinger.
 
 ## Mål
 

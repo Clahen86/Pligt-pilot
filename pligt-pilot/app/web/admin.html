@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pligter</title>
+<style>
+:root { --accent: #0B7A70; --ink: #22304A; --muted: #55627A; --cream: #FFF6E9; --sun: #FFC247; --red: #C73A30; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--cream); color: var(--ink);
+  font-family: "Nunito", ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh; -webkit-text-size-adjust: 100%;
+}
+main { max-width: 520px; margin: 0 auto; padding: 20px 20px 110px; display: flex; flex-direction: column; gap: 14px; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+h1 { font-size: 24px; font-weight: 900; line-height: 1.1; margin: 0; }
+h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; display: flex; align-items: center; gap: 8px; }
+.sub { font-size: 14px; font-weight: 700; color: var(--muted); }
+.head { display: flex; align-items: center; justify-content: space-between; }
+.badge { background: var(--ink); color: #fff; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 800; }
+.count { background: var(--red); color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 13px; font-weight: 900; }
+.list { display: flex; flex-direction: column; gap: 8px; }
+.card { background: #fff; border-radius: 22px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row.card { flex-direction: row; padding: 8px 8px 8px 12px; border-radius: 20px; }
+.grow { flex: 1; min-width: 0; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; color: #fff; font-size: 17px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center; flex: none; }
+.avatar.big { width: 44px; height: 44px; font-size: 20px; }
+.t b { display: block; font-size: 15px; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
+.t span { font-size: 13px; color: var(--muted); font-weight: 700; }
+.icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; padding: 0; flex: none; }
+.icon.no { border: 2px solid var(--red); background: #fff; }
+.icon.yes { border: 0; background: var(--accent); }
+.btn { border: 0; background: var(--accent); color: #fff; font-size: 15px; font-weight: 800; min-height: 44px; padding: 0 16px; border-radius: 14px; }
+.btn.ghost { background: #fff; color: var(--accent); border: 2px solid var(--accent); }
+.btn.sun { background: var(--sun); color: var(--ink); }
+.btn.danger { background: #fff; color: var(--red); border: 2px solid var(--red); }
+.btn.small { min-height: 40px; padding: 0 12px; font-size: 14px; }
+.kid-top { display: flex; align-items: center; gap: 12px; }
+.kid-top .name { font-size: 18px; font-weight: 900; line-height: 1.1; }
+.money { text-align: right; }
+.money b { display: block; font-size: 28px; font-weight: 900; line-height: 1; }
+.money span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.mini { display: flex; align-items: flex-end; gap: 5px; height: 34px; }
+.mini i { display: block; width: 18px; border-radius: 5px; }
+.between { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.hero { display: inline-flex; align-items: center; gap: 6px; background: var(--sun); border-radius: 999px; padding: 6px 12px 6px 9px; font-size: 13px; font-weight: 900; }
+.total { display: flex; justify-content: space-between; align-items: center; background: var(--ink); color: #fff; border-radius: 22px; padding: 14px 18px; }
+.total small { display: block; font-size: 13px; font-weight: 700; color: #C9D2E3; }
+.total b { font-size: 26px; font-weight: 900; }
+.empty { background: #fff; border-radius: 20px; padding: 18px 16px; font-size: 15px; font-weight: 700; color: var(--muted); }
+.note { font-size: 13px; font-weight: 700; color: var(--muted); }
+.group { font-size: 14px; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 6px 0 -2px; }
+.price { font-size: 15px; font-weight: 900; color: var(--accent); white-space: nowrap; }
+.sw { width: 56px; height: 44px; border: 0; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; flex: none; }
+.sw span { display: block; position: relative; width: 52px; height: 30px; border-radius: 999px; background: #B9B2A4; transition: background .15s; }
+.sw span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: left .15s; }
+.sw[aria-checked="true"] span { background: var(--accent); }
+.sw[aria-checked="true"] span::after { left: 25px; }
+label { font-size: 13px; font-weight: 800; color: var(--muted); display: block; margin-bottom: 4px; }
+input[type=text], input[type=number], select { width: 100%; height: 44px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 0 12px; font-size: 16px; font-weight: 700; color: var(--ink); background: #fff; }
+.two { display: flex; gap: 10px; }
+.two > div { flex: 1; min-width: 0; }
+.check { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: var(--ink); margin: 0; }
+.check input { width: 22px; height: 22px; accent-color: var(--accent); }
+.linkbox { display: flex; gap: 8px; }
+.linkbox input { font-size: 14px; }
+.steps { counter-reset: s; display: flex; flex-direction: column; gap: 8px; }
+.steps .step { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 18px; padding: 10px 12px; }
+.steps .n { width: 30px; height: 30px; border-radius: 50%; background: var(--sun); font-weight: 900; display: flex; align-items: center; justify-content: center; flex: none; }
+nav { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #EADFCB; display: flex; justify-content: center; padding: 8px 12px max(10px, env(safe-area-inset-bottom)); z-index: 5; }
+nav .in { display: flex; gap: 6px; width: 100%; max-width: 520px; }
+nav button { flex: 1; min-height: 48px; border: 0; background: transparent; border-radius: 14px; font-size: 14px; font-weight: 800; color: var(--muted); position: relative; }
+nav button[aria-current="page"] { background: color-mix(in srgb, var(--accent) 14%, #fff); color: var(--accent); }
+nav .dot { position: absolute; top: 4px; right: 18%; background: var(--red); color: #fff; border-radius: 999px; font-size: 11px; min-width: 18px; padding: 1px 5px; }
+.toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 14px; font-size: 14px; font-weight: 700; z-index: 9; max-width: 90vw; }
+.toast[hidden] { display: none; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<nav aria-label="Menu"><div class="in" id="nav"></div></nav>
+<div class="toast" id="toast" hidden role="status"></div>
+<script>
+(function () {
+  var state = null, tab = 'home', suggestions = null, sugOn = {};
+  var draft = { task: { title: '', price: '5', room: '', repeat: 'daily', open: false }, kid: { name: '', age: '' } };
+  var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
+  var REPEAT = { daily: 'Hver dag', weekly: 'Hver uge', once: 'Én gang' };
+  var CHECK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"></path></svg>';
+  var CROSS = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C73A30" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>';
+  var CROWN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#22304A" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"></path></svg>';
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function say(msg) {
+    toast.textContent = msg; toast.hidden = false;
+    clearTimeout(say.t); say.t = setTimeout(function () { toast.hidden = true; }, 3200);
+  }
+  function call(path, body) {
+    var opt = body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+    return fetch(path, opt).then(function (r) {
+      return r.json().then(function (j) { if (!r.ok) { throw new Error(j.error || 'Fejl'); } return j; });
+    });
+  }
+  function post(path, body, okMsg) {
+    return call(path, body || {}).then(function (s) {
+      if (state) { s.public_url = state.public_url; s.notify_on = state.notify_on; }
+      state = s; render(); if (okMsg) { say(okMsg); } return s;
+    }).catch(function (e) { say(e.message); throw e; });
+  }
+  function load() {
+    return call('api/state').then(function (s) { state = s; render(); })
+      .catch(function () { say('Kan ikke hente data. Prøver igen…'); });
+  }
+  function typing() {
+    var a = document.activeElement;
+    return a && (a.tagName === 'INPUT' || a.tagName === 'SELECT');
+  }
+  function kidById(id) { return state.kids.filter(function (k) { return k.id === id; })[0]; }
+  function linkFor(k) {
+    var base = state.public_url || ((location.protocol === 'https:' ? 'http:' : location.protocol) + '//' + location.hostname + ':8099');
+    return base.replace(/\/$/, '') + '/k/' + k.token + '/';
+  }
+  function miniBars(k) {
+    return k.bars.map(function (b, i) {
+      var bg = b.today ? '#FFC247' : (b.n === 0 ? '#E8DFD0' : k.color);
+      return '<i style="height:' + (6 + b.n * 9) + 'px;background:' + bg + '" title="' + esc(b.label) + '"></i>';
+    }).join('');
+  }
+
+  // ---- Oversigt -----------------------------------------------------
+  function home() {
+    var s = state;
+    if (!s.kids.length) {
+      return '<div class="head"><div><h1>Velkommen</h1><div class="sub">Pligt-pilot er klar</div></div></div>' +
+        '<div class="steps">' +
+        '<div class="step"><div class="n">1</div><div class="grow t"><b>Tilføj børnene</b><span>Navn og alder</span></div><button class="btn small" data-tab="kids">Start</button></div>' +
+        '<div class="step"><div class="n">2</div><div class="grow t"><b>Vælg opgaver</b><span>Appen foreslår ud fra husets rum</span></div><button class="btn small ghost" data-tab="tasks">Åbn</button></div>' +
+        '<div class="step"><div class="n">3</div><div class="grow t"><b>Send linket til børnene</b><span>Det lægges på hjemmeskærmen</span></div></div></div>';
+    }
+    var out = '<div class="head"><div><h1>Oversigt</h1><div class="sub">' + esc(s.week_label) + ' · Familien</div></div><div class="badge">Forælder</div></div>';
+    out += '<h2>Til godkendelse' + (s.pending.length ? ' <span class="count">' + s.pending.length + '</span>' : '') + '</h2><div class="list">';
+    if (!s.pending.length) { out += '<div class="empty">Alt er godkendt. Godt gået!</div>'; }
+    s.pending.forEach(function (p) {
+      out += '<div class="row card"><div class="avatar" style="background:' + esc(p.color) + '" aria-hidden="true">' + esc(p.name.charAt(0).toUpperCase()) + '</div>' +
+        '<div class="grow t"><b>' + esc(p.title) + '</b><span>' + esc(p.name) + ' · ' + p.price + ' kr</span></div>' +
+        '<button class="icon no" data-reject="' + p.id + '" aria-label="Afvis ' + esc(p.title) + '">' + CROSS + '</button>' +
+        '<button class="icon yes" data-approve="' + p.id + '" aria-label="Godkend ' + esc(p.title) + '">' + CHECK + '</button></div>';
+    });
+    out += '</div><h2>Børnene</h2><div class="list">';
+    s.kids.forEach(function (k) {
+      out += '<div class="card"><div class="kid-top"><div class="avatar big" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' +
+        '<div class="grow"><div class="name">' + esc(k.name) + '</div><div class="sub">' + k.age + ' år · ' + k.tasks_week + (k.tasks_week === 1 ? ' opgave' : ' opgaver') + ' i ugen</div></div>' +
+        '<div class="money"><b style="color:' + esc(k.color) + '">' + k.balance + ' kr</b><span>at udbetale</span></div></div>' +
+        '<div class="between"><div class="mini" aria-hidden="true">' + miniBars(k) + '</div>' +
+        (k.is_hero ? '<div class="hero">' + CROWN + 'Ugens helt</div>' : '') + '</div>';
+      var acts = '';
+      if (k.balance > 0) { acts += '<button class="btn small" data-payout="' + k.id + '">Udbetal ' + k.balance + ' kr</button>'; }
+      if (k.is_hero && !s.hero_paid) { acts += '<button class="btn small sun" data-bonus="1">Giv ' + s.hero_bonus + ' kr i bonus</button>'; }
+      if (acts) { out += '<div class="row" style="flex-wrap:wrap">' + acts + '</div>'; }
+      out += '</div>';
+    });
+    out += '</div><div class="total"><div><small>I alt at udbetale</small><b>' + s.total + ' kr</b></div>' +
+      '<small style="max-width:150px;text-align:right">Ugens helt får ' + s.hero_bonus + ' kr</small></div>';
+    if (!s.notify_on) {
+      out += '<div class="note">Tip: Skriv din notifikationstjeneste ind i add-onens indstillinger (notify_service), så får du besked, når et barn er færdig.</div>';
+    }
+    return out;
+  }
+
+  // ---- Opgaver ------------------------------------------------------
+  function tasks() {
+    var s = state, out = '<div class="head"><div><h1>Opgaver</h1><div class="sub">' + s.tasks.length + (s.tasks.length === 1 ? ' opgave' : ' opgaver') + '</div></div></div>';
+    out += '<div class="card"><div class="t"><b>Foreslå fra mit hjem</b><span>Appen kigger på husets rum og foreslår opgaver</span></div>' +
+      '<button class="btn" data-suggest="1">' + (suggestions ? 'Opdatér forslag' : 'Vis forslag') + '</button></div>';
+    if (suggestions) {
+      var rooms = [];
+      suggestions.forEach(function (r) { if (rooms.indexOf(r.room) < 0) { rooms.push(r.room); } });
+      var n = 0;
+      suggestions.forEach(function (r, i) { if (sugOn[i]) { n++; } });
+      rooms.forEach(function (room) {
+        out += '<div class="group">' + esc(room) + (suggestions.some(function (r) { return r.room === room && r.found; }) ? ' · fundet i dit hjem' : '') + '</div><div class="list">';
+        suggestions.forEach(function (r, i) {
+          if (r.room !== room) { return; }
+          out += '<div class="row card"><div class="grow t"><b>' + esc(r.title) + '</b><span>' + (r.exists ? 'Findes allerede' : esc(REPEAT[r.repeat]) + ' · fra ' + r.age_min + ' år') + '</span></div>' +
+            '<div class="price">' + r.price + ' kr</div>' +
+            (r.exists ? '' : '<button class="sw" role="switch" aria-checked="' + (sugOn[i] ? 'true' : 'false') + '" aria-label="' + esc(r.title) + '" data-sug="' + i + '"><span></span></button>') + '</div>';
+        });
+        out += '</div>';
+      });
+      out += '<button class="btn" data-setup="1"' + (n ? '' : ' disabled') + '>Opret ' + n + ' valgte</button>';
+    }
+    var rooms2 = [];
+    s.tasks.forEach(function (t) { var r = t.room || 'Andet'; if (rooms2.indexOf(r) < 0) { rooms2.push(r); } });
+    if (s.tasks.length) { out += '<h2>Dine opgaver</h2>'; }
+    rooms2.forEach(function (room) {
+      out += '<div class="group">' + esc(room) + '</div><div class="list">';
+      s.tasks.forEach(function (t) {
+        if ((t.room || 'Andet') !== room) { return; }
+        out += '<div class="row card"><div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
+          '<div class="price">' + t.price + ' kr</div>' +
+          '<button class="sw" role="switch" aria-checked="' + (t.active ? 'true' : 'false') + '" aria-label="' + esc(t.title) + ' er slået til" data-active="' + t.id + '"><span></span></button>' +
+          '<button class="icon no" style="width:40px;height:40px" data-deltask="' + t.id + '" aria-label="Slet ' + esc(t.title) + '">' + CROSS + '</button></div>';
+      });
+      out += '</div>';
+    });
+    var d = draft.task;
+    out += '<h2>Skriv din egen opgave</h2><div class="card">' +
+      '<div><label for="t-title">Navn på opgaven</label><input id="t-title" type="text" data-draft="task.title" value="' + esc(d.title) + '" placeholder="Fx Fodr kaninen"></div>' +
+      '<div class="two"><div><label for="t-price">Pris i kr.</label><input id="t-price" type="number" inputmode="numeric" min="0" max="1000" data-draft="task.price" value="' + esc(d.price) + '"></div>' +
+      '<div><label for="t-room">Rum</label><input id="t-room" type="text" data-draft="task.room" value="' + esc(d.room) + '" placeholder="Fx Køkken"></div></div>' +
+      '<div><label for="t-repeat">Hvor tit</label><select id="t-repeat" data-draft="task.repeat">' +
+      ['daily', 'weekly', 'once'].map(function (r) { return '<option value="' + r + '"' + (d.repeat === r ? ' selected' : '') + '>' + REPEAT[r] + '</option>'; }).join('') + '</select></div>' +
+      '<label class="check"><input type="checkbox" data-draft="task.open"' + (d.open ? ' checked' : '') + '> Ledig opgave: den første, der tager den, får den</label>' +
+      '<button class="btn" data-addtask="1">Tilføj opgave</button></div>';
+    return out;
+  }
+
+  // ---- Børn ---------------------------------------------------------
+  function kids() {
+    var s = state, out = '<div class="head"><div><h1>Børn og links</h1><div class="sub">Hvert barn har sit eget link</div></div></div>';
+    s.kids.forEach(function (k) {
+      out += '<div class="card"><div class="kid-top"><div class="avatar big" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' +
+        '<div class="grow"><div class="name">' + esc(k.name) + '</div><div class="sub">' + k.age + ' år</div></div></div>' +
+        '<div><label for="l-' + k.id + '">Personligt link</label><div class="linkbox"><input id="l-' + k.id + '" type="text" readonly value="' + esc(linkFor(k)) + '">' +
+        '<button class="btn small" data-copy="' + k.id + '">Kopiér</button></div></div>' +
+        '<div class="note">Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren.</div>' +
+        '<div class="row" style="flex-wrap:wrap"><button class="btn small ghost" data-newlink="' + k.id + '">Nyt link</button>' +
+        '<button class="btn small danger" data-delkid="' + k.id + '">Fjern barn</button></div></div>';
+    });
+    var d = draft.kid;
+    out += '<h2>Tilføj barn</h2><div class="card"><div class="two">' +
+      '<div><label for="k-name">Navn</label><input id="k-name" type="text" data-draft="kid.name" value="' + esc(d.name) + '"></div>' +
+      '<div><label for="k-age">Alder</label><input id="k-age" type="number" inputmode="numeric" min="1" max="25" data-draft="kid.age" value="' + esc(d.age) + '"></div></div>' +
+      '<button class="btn" data-addkid="1">Tilføj</button></div>';
+    out += '<h2>Indstillinger</h2><div class="card"><div class="two">' +
+      '<div><label for="s-goal">Ugens mål (opgaver)</label><input id="s-goal" type="number" min="1" max="50" value="' + s.goal + '"></div>' +
+      '<div><label for="s-bonus">Bonus til ugens helt (kr.)</label><input id="s-bonus" type="number" min="0" max="1000" value="' + s.hero_bonus + '"></div></div>' +
+      '<button class="btn ghost" data-savesettings="1">Gem indstillinger</button></div>';
+    return out;
+  }
+
+  function render() {
+    if (!state) { return; }
+    app.innerHTML = tab === 'home' ? home() : tab === 'tasks' ? tasks() : kids();
+    var pend = state.pending.length;
+    nav.innerHTML =
+      '<button data-tab="home"' + (tab === 'home' ? ' aria-current="page"' : '') + '>Oversigt' + (pend ? '<span class="dot">' + pend + '</span>' : '') + '</button>' +
+      '<button data-tab="tasks"' + (tab === 'tasks' ? ' aria-current="page"' : '') + '>Opgaver</button>' +
+      '<button data-tab="kids"' + (tab === 'kids' ? ' aria-current="page"' : '') + '>Børn</button>';
+  }
+
+  // ---- hændelser ----------------------------------------------------
+  function setDraft(path, value) {
+    var p = path.split('.'); draft[p[0]][p[1]] = value;
+  }
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t.dataset && t.dataset.draft) { setDraft(t.dataset.draft, t.type === 'checkbox' ? t.checked : t.value); }
+  });
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.dataset && t.dataset.draft) { setDraft(t.dataset.draft, t.type === 'checkbox' ? t.checked : t.value); }
+  });
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) { return; }
+    var d = b.dataset;
+    if (d.tab) { tab = d.tab; render(); window.scrollTo(0, 0); }
+    else if (d.approve) { post('api/items/' + d.approve + '/approve', {}, 'Godkendt'); }
+    else if (d.reject) { post('api/items/' + d.reject + '/reject', {}, 'Afvist. Barnet kan prøve igen.'); }
+    else if (d.payout) { post('api/kids/' + d.payout + '/payout', {}, 'Udbetalt'); }
+    else if (d.bonus) { post('api/hero_bonus', {}, 'Bonus givet'); }
+    else if (d.suggest) {
+      call('api/suggestions').then(function (r) {
+        suggestions = r.rows; sugOn = {};
+        suggestions.forEach(function (row, i) { sugOn[i] = !!row.on; });
+        render();
+      }).catch(function (err) { say(err.message); });
+    }
+    else if (d.sug !== undefined) { sugOn[d.sug] = !sugOn[d.sug]; render(); }
+    else if (d.setup) {
+      var rows = suggestions.filter(function (r, i) { return sugOn[i] && !r.exists; });
+      post('api/setup', { rows: rows }, rows.length + ' opgaver oprettet').then(function () { suggestions = null; });
+    }
+    else if (d.active) {
+      var t = state.tasks.filter(function (x) { return x.id === d.active; })[0];
+      post('api/tasks/' + d.active, { active: !t.active });
+    }
+    else if (d.deltask) { if (confirm('Slette opgaven?')) { post('api/tasks/' + d.deltask + '/delete', {}, 'Slettet'); } }
+    else if (d.addtask) {
+      var x = draft.task;
+      post('api/tasks', { title: x.title, price: x.price, room: x.room, repeat: x.repeat, open: x.open }, 'Opgaven er tilføjet')
+        .then(function () { draft.task = { title: '', price: x.price, room: x.room, repeat: x.repeat, open: false }; render(); }).catch(function () {});
+    }
+    else if (d.addkid) {
+      var y = draft.kid;
+      post('api/kids', { name: y.name, age: y.age }, 'Barnet er tilføjet')
+        .then(function () { draft.kid = { name: '', age: '' }; render(); }).catch(function () {});
+    }
+    else if (d.copy) {
+      var k = kidById(d.copy), input = document.getElementById('l-' + d.copy);
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(linkFor(k)).then(function () { say('Linket er kopieret'); }, function () { input.select(); });
+      } else { input.select(); input.setSelectionRange(0, 9999); say('Tryk og hold for at kopiere'); }
+    }
+    else if (d.newlink) { if (confirm('Det gamle link holder op med at virke. Fortsæt?')) { post('api/kids/' + d.newlink + '/newlink', {}, 'Nyt link er lavet'); } }
+    else if (d.delkid) { if (confirm('Fjerne barnet og alle dets opgaver og penge?')) { post('api/kids/' + d.delkid + '/delete', {}, 'Barnet er fjernet'); } }
+    else if (d.savesettings) {
+      post('api/settings', { goal: document.getElementById('s-goal').value, hero_bonus: document.getElementById('s-bonus').value }, 'Gemt');
+    }
+  });
+  setInterval(function () { if (!document.hidden && !typing()) { load(); } }, 20000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && !typing()) { load(); } });
+  load();
+})();
+</script>
+</body>
+</html>
