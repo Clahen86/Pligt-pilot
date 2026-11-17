@@ -11,6 +11,8 @@
 
 Under fanen **Huset** vælger du en maskine (fx vaskemaskine) og den måler eller kontakt, der viser, om den kører. Bedst er en stikkontakt med effektmåling i watt. Når maskinen har kørt og så har været stille i ca. 3 minutter, får børnene en ledig opgave. Den første, der tager den, får den.
 
+Finder appen ikke din vaskemaskine eller tørretumbler på navnet, viser Huset en liste over alle effektmålere i hjemmet med rum og aktuel værdi. Tænd maskinen, se hvilken måler der stiger, vælg maskinen og tryk **Brug den**.
+
 Lav fx to regler: vaskemaskinen giver "Flyt tøj til tørretumbleren", og tørretumbleren giver "Tag tøj ud og fold det".
 
 ## Beskeder direkte fra linket (uden app)

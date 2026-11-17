@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pligt-pilot', 
 from ha import HomeAssistant  # noqa: E402
 from server import App, make_tls, serve  # noqa: E402
 import push  # noqa: E402
-from house import Automation, find_sensors, step  # noqa: E402
+from house import power_sensors, Automation, find_sensors, step  # noqa: E402
 from store import Problem, Store  # noqa: E402
 
 
@@ -736,6 +736,19 @@ class FindSensorTests(unittest.TestCase):
         found = find_sensors(self.ENTITIES, existing_names=['Opvaskemaskine'])
         self.assertEqual([f['preset'] for f in found], ['Vaskemaskine', 'Tørretumbler'])
         self.assertEqual(find_sensors([['light.stue', 'Stue', '', '']]), [])
+
+    def test_other_languages_and_power_list(self):
+        rows = [['sensor.waschmaschine_leistung', 'Waschmaschine', 'power', 'W', 'Keller'],
+                ['sensor.trockner_leistung', 'Trockner', 'power', 'W', 'Keller'],
+                ['sensor.spuelmaschine', 'Spülmaschine', 'power', 'W', 'Küche'],
+                ['sensor.stue_temp', 'Temp', 'temperature', '°C', 'Stue']]
+        found = {f['preset']: f['best']['entity'] for f in find_sensors(rows)}
+        self.assertEqual(found['Vaskemaskine'], 'sensor.waschmaschine_leistung')
+        self.assertEqual(found['Tørretumbler'], 'sensor.trockner_leistung')
+        from house import power_sensors
+        power = power_sensors(rows)
+        self.assertEqual(len(power), 3)
+        self.assertEqual(power[0]['area'], 'Keller')
 
 
 class PushTests(unittest.TestCase):

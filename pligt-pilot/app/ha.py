@@ -174,7 +174,7 @@ class HomeAssistant:
         return self.notify_to(self.notify_service, title, message, open_app=True)
 
     def entities(self):
-        """[[entity_id, navn, enhedstype, enhed], ...] for alt i Home Assistant. Gemmes i et minut."""
+        """[[entity_id, navn, enhedstype, enhed, rum], ...] for alt i Home Assistant. Gemmes i et minut."""
         if not self.enabled:
             return []
         if self._entities and time.time() - self._entities_at < 60:
@@ -183,12 +183,13 @@ class HomeAssistant:
             raw = self._post('/template', {'template':
                 "{% set ns = namespace(r=[]) %}{% for s in states %}"
                 "{% set ns.r = ns.r + [[s.entity_id, s.name, s.attributes.get('device_class', '') or '', "
-                "s.attributes.get('unit_of_measurement', '') or '']] %}{% endfor %}{{ ns.r | tojson }}"},
+                "s.attributes.get('unit_of_measurement', '') or '', area_name(s.entity_id) or '']] %}"
+                "{% endfor %}{{ ns.r | tojson }}"},
                 timeout=15)
             rows = []
             for row in json.loads(raw):
-                row = [str(x) for x in row] + [''] * (4 - len(row))
-                rows.append(row[:4])
+                row = [str(x) for x in row] + [''] * (5 - len(row))
+                rows.append(row[:5])
             self._entities = rows
             self._entities_at = time.time()
         except Exception as err:  # noqa: BLE001

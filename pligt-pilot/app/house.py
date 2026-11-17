@@ -134,11 +134,13 @@ class Automation:
 # ---- find måleren selv ---------------------------------------------------
 MACHINES = [
     {'preset': 'Vaskemaskine', 'title': 'Flyt tøj fra vaskemaskinen til tørretumbleren', 'price': 5,
-     'words': ['vaskemaskine', 'washing_machine', 'washer', 'vasker'], 'not': ['opvask', 'dishwasher']},
+     'words': ['vaskemaskine', 'vask', 'washing', 'washer', 'laundry', 'waschmaschine', 'tvättmaskin', 'vaskemaskin'],
+     'not': ['opvask', 'dishwasher', 'dryer', 'tørre', 'tumble', 'trockner', 'torktumlare', 'spül', 'diskmaskin', 'oppvask']},
     {'preset': 'Tørretumbler', 'title': 'Tag tøj ud af tørretumbleren og fold det', 'price': 8,
-     'words': ['tørretumbler', 'toerretumbler', 'tumbler', 'dryer', 'tumble'], 'not': ['hair', 'hår']},
+     'words': ['tørretumbler', 'toerretumbler', 'tørre', 'tumbler', 'dryer', 'tumble', 'trockner', 'torktumlare', 'tørketrommel'],
+     'not': ['hair', 'hår', 'opvask', 'dishwasher']},
     {'preset': 'Opvaskemaskine', 'title': 'Tøm opvaskemaskinen', 'price': 5,
-     'words': ['opvaskemaskine', 'dishwasher', 'opvasker'], 'not': []},
+     'words': ['opvask', 'dishwasher', 'spülmaschine', 'diskmaskin', 'oppvask'], 'not': []},
 ]
 BAD = ('energy', 'kwh', 'forbrug', 'total', 'update', 'battery', 'batteri', 'rssi', 'linkquality',
        'voltage', 'spænding', 'frequency', 'cost', 'price', 'pris', 'signal', 'uptime', 'temperature',
@@ -148,7 +150,7 @@ DOMAINS = ('sensor.', 'binary_sensor.', 'switch.', 'input_boolean.')
 
 def score_entity(row, words, not_words):
     """Hvor godt en enhed ligner måleren for en maskine. 0 betyder: ikke egnet."""
-    ent, name, dclass, unit = (list(row) + ['', '', '', ''])[:4]
+    ent, name, dclass, unit, area = (list(row) + ['', '', '', '', ''])[:5]
     text = (ent + ' ' + name).lower()
     if not ent.startswith(DOMAINS):
         return 0
@@ -186,7 +188,19 @@ def find_sensors(entities, existing_names=()):
         ranked.sort(key=lambda x: (-x[0], x[1][0]))
         if not ranked:
             continue
-        pick = lambda r: {'entity': r[1][0], 'name': r[1][1], 'unit': r[1][3] if len(r[1]) > 3 else ''}
+        pick = lambda r: {'entity': r[1][0], 'name': r[1][1], 'unit': r[1][3] if len(r[1]) > 3 else '',
+                          'area': r[1][4] if len(r[1]) > 4 else ''}
         out.append({'preset': m['preset'], 'title': m['title'], 'price': m['price'],
                     'best': pick(ranked[0]), 'alts': [pick(r) for r in ranked[1:4]]})
     return out
+
+
+def power_sensors(entities, limit=60):
+    """Alle effektmålere i huset (watt), så man selv kan pege på dem, hvis navnene ikke passer."""
+    out = []
+    for row in entities:
+        ent, name, dclass, unit, area = (list(row) + ['', '', '', '', ''])[:5]
+        if ent.startswith('sensor.') and (dclass == 'power' or unit.lower() in ('w', 'kw')):
+            out.append({'entity': ent, 'name': name, 'unit': unit, 'area': area})
+    out.sort(key=lambda x: (x['area'] == '', x['area'].lower(), x['name'].lower()))
+    return out[:limit]

@@ -104,7 +104,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 <div class="toast" id="toast" hidden role="status"></div>
 <script>
 (function () {
-  var state = null, found = null, entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
+  var state = null, found = null, powerList = [], entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
   var qrKid = '', qrParent = '';
   var draft = { rule: { preset: 'Vaskemaskine', entity: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false, season: '', surprise: false, icon: '' }, kid: { name: '', age: '', birthday: '' }, reward: { title: '', price: '10' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
@@ -747,7 +747,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       });
       out += '</div>';
     } else if (found && entitiesOn) {
-      out += '<div class="note">Jeg fandt ingen maskiner med navne som vaskemaskine, tørretumbler eller opvaskemaskine. Tilføj dem selv nedenfor.</div>';
+      out += '<div class="note">Jeg fandt ingen maskiner med navne som vaskemaskine, tørretumbler eller opvaskemaskine. Vælg dem selv herunder.</div>';
+    }
+    if (powerList.length) {
+      var have = (s.rules || []).map(function (r) { return r.entity; });
+      out += '<h2>Alle målere i dit hjem</h2><div class="note">Finder jeg ikke din vaskemaskine eller tørretumbler, så peg på den her. Tænd maskinen, og se hvilken måler der stiger.</div><div class="list">';
+      powerList.forEach(function (p, i) {
+        if (have.indexOf(p.entity) >= 0) { return; }
+        out += '<div class="card"><div class="t"><b>' + esc(p.name) + '</b><span>' + (p.area ? esc(p.area) + ' · ' : '') + 'nu: ' + esc(p.value || '?') + ' ' + esc(p.unit) + '</span></div>' +
+          '<div class="row"><select id="pw-' + i + '" aria-label="Hvilken maskine er ' + esc(p.name) + '?">' +
+          Object.keys(PRESETS).map(function (k) { return '<option>' + k + '</option>'; }).join('') + '</select>' +
+          '<button class="btn small" data-usepower="' + i + '">Brug den</button></div></div>';
+      });
+      out += '</div>';
     }
     if (s.rules && s.rules.length) {
       out += '<div class="list">';
@@ -784,7 +796,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     }).catch(function () {});
   }
   function loadFound() {
-    return call('api/house_find').then(function (r) { found = r.found || []; entitiesOn = !!r.on; render(); })
+    return call('api/house_find').then(function (r) { found = r.found || []; powerList = r.power || []; entitiesOn = !!r.on; render(); })
       .catch(function () { found = []; });
   }
   function loadEntities() {
@@ -901,6 +913,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     else if (d.userule) {
       var f = found[+d.userule], pick = +d.alt < 0 ? f.best : f.alts[+d.alt];
       post('api/rules', { name: f.preset, entity: pick.entity, title: f.title, price: f.price }, f.preset + ' er sat op')
+        .then(loadFound).catch(function () {});
+    }
+    else if (d.usepower) {
+      var pw = powerList[+d.usepower], pn = document.getElementById('pw-' + d.usepower).value, pp = PRESETS[pn];
+      post('api/rules', { name: pn, entity: pw.entity, title: pp.title || ('Opgave efter ' + pw.name), price: pp.price }, pn + ' er sat op')
         .then(loadFound).catch(function () {});
     }
     else if (d.boss) { post('api/boss_bonus', {}, 'Bonus givet'); }
