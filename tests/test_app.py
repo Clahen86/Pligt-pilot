@@ -1221,7 +1221,8 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn('Mormor', manifest)
         self.assertEqual(self.call(self.kid, '/p/%s/sw.js' % token)[0], 200)
-        self.assertEqual(self.call(self.kid, '/p/%s/icon.png' % token)[0], 200)
+        with urllib.request.urlopen(self.kid + '/p/%s/icon.png' % token) as resp:
+            self.assertEqual(resp.headers.get_content_type(), 'image/png')
 
     def test_parent_link_cannot_manage_parents_or_download_backup(self):
         status, state = self.call(self.adm, '/api/parents', {'name': 'Far'})
