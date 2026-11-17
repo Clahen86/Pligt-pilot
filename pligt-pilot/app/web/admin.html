@@ -94,7 +94,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 <div class="toast" id="toast" hidden role="status"></div>
 <script>
 (function () {
-  var state = null, entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
+  var state = null, found = null, entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
   var draft = { rule: { preset: 'Vaskemaskine', entity: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false }, kid: { name: '', age: '', birthday: '' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
   var REPEAT = { daily: 'Hver dag', weekly: 'Hver uge', once: 'Én gang' };
@@ -388,7 +388,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   function house() {
     var s = state, d = draft.rule;
     var out = '<div class="head"><div><h1>Huset</h1><div class="sub">Opgaver, der opstår af sig selv</div></div></div>';
-    out += '<div class="empty">Når en maskine er færdig, får børnene en ledig opgave og en besked, hvis de har en notifikationstjeneste. Den første, der tager den, får den.</div>';
+    out += '<div class="empty">Når en maskine er færdig, får børnene en ledig opgave og en besked på telefonen, hvis du har slået beskeder til. Den første, der tager den, får den.</div>';
+    if (found && found.length) {
+      out += '<h2>Fundet i dit hjem</h2><div class="list">';
+      found.forEach(function (f, i) {
+        out += '<div class="card"><div class="t"><b>' + esc(f.preset) + '</b><span>' + esc(f.best.name) + (f.best.unit ? ' (' + esc(f.best.unit) + ')' : '') + ' · ' + esc(f.best.entity) + '</span></div>' +
+          '<div class="note">Giver opgaven: ' + esc(f.title) + ' (' + f.price + ' kr)</div>' +
+          '<button class="btn small" data-userule="' + i + '" data-alt="-1">Brug den</button>' +
+          f.alts.map(function (alt, j) {
+            return '<button class="btn small ghost" data-userule="' + i + '" data-alt="' + j + '">Brug i stedet: ' + esc(alt.name) + '</button>';
+          }).join('') + '</div>';
+      });
+      out += '</div>';
+    } else if (found && entitiesOn) {
+      out += '<div class="note">Jeg fandt ingen maskiner med navne som vaskemaskine, tørretumbler eller opvaskemaskine. Tilføj dem selv nedenfor.</div>';
+    }
     if (s.rules && s.rules.length) {
       out += '<div class="list">';
       s.rules.forEach(function (r) {
@@ -411,6 +425,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     return out;
   }
 
+  function loadFound() {
+    return call('api/house_find').then(function (r) { found = r.found || []; entitiesOn = !!r.on; render(); })
+      .catch(function () { found = []; });
+  }
   function loadEntities() {
     return call('api/entities').then(function (r) { entityList = r.entities || []; entitiesOn = !!r.on && entityList.length > 0; render(); })
       .catch(function () { entitiesOn = false; });
@@ -452,7 +470,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var b = e.target.closest('button');
     if (!b) { return; }
     var d = b.dataset;
-    if (d.tab) { tab = d.tab; render(); window.scrollTo(0, 0); if ((d.tab === 'house' || d.tab === 'kids') && entitiesOn === null) { loadEntities(); } }
+    if (d.tab) { tab = d.tab; render(); window.scrollTo(0, 0); if ((d.tab === 'house' || d.tab === 'kids') && entitiesOn === null) { loadEntities(); }
+      if (d.tab === 'house') { loadFound(); } }
     else if (d.approve) { post('api/items/' + d.approve + '/approve', {}, 'Godkendt'); }
     else if (d.reject) { post('api/items/' + d.reject + '/reject', {}, 'Afvist. Barnet kan prøve igen.'); }
     else if (d.payout) { post('api/kids/' + d.payout + '/payout', {}, 'Udbetalt'); }
@@ -497,6 +516,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       var y = draft.kid;
       post('api/kids', { name: y.name, age: y.age, birthday: y.birthday }, 'Barnet er tilføjet')
         .then(function () { draft.kid = { name: '', age: '', birthday: '' }; render(); }).catch(function () {});
+    }
+    else if (d.userule) {
+      var f = found[+d.userule], pick = +d.alt < 0 ? f.best : f.alts[+d.alt];
+      post('api/rules', { name: f.preset, entity: pick.entity, title: f.title, price: f.price }, f.preset + ' er sat op')
+        .then(loadFound).catch(function () {});
     }
     else if (d.perfect) { post('api/perfect/' + d.perfect, {}, 'Bonus givet'); }
     else if (d.ruleactive) {

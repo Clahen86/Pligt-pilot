@@ -114,3 +114,64 @@ class Automation:
         thread = threading.Thread(target=loop, daemon=True)
         thread.start()
         return thread
+
+
+# ---- find måleren selv ---------------------------------------------------
+MACHINES = [
+    {'preset': 'Vaskemaskine', 'title': 'Flyt tøj fra vaskemaskinen til tørretumbleren', 'price': 5,
+     'words': ['vaskemaskine', 'washing_machine', 'washer', 'vasker'], 'not': ['opvask', 'dishwasher']},
+    {'preset': 'Tørretumbler', 'title': 'Tag tøj ud af tørretumbleren og fold det', 'price': 8,
+     'words': ['tørretumbler', 'toerretumbler', 'tumbler', 'dryer', 'tumble'], 'not': ['hair', 'hår']},
+    {'preset': 'Opvaskemaskine', 'title': 'Tøm opvaskemaskinen', 'price': 5,
+     'words': ['opvaskemaskine', 'dishwasher', 'opvasker'], 'not': []},
+]
+BAD = ('energy', 'kwh', 'forbrug', 'total', 'update', 'battery', 'batteri', 'rssi', 'linkquality',
+       'voltage', 'spænding', 'frequency', 'cost', 'price', 'pris', 'signal', 'uptime', 'temperature',
+       'temperatur', 'reset', 'child_lock', 'børnesikring', 'restart')
+DOMAINS = ('sensor.', 'binary_sensor.', 'switch.', 'input_boolean.')
+
+
+def score_entity(row, words, not_words):
+    """Hvor godt en enhed ligner måleren for en maskine. 0 betyder: ikke egnet."""
+    ent, name, dclass, unit = (list(row) + ['', '', '', ''])[:4]
+    text = (ent + ' ' + name).lower()
+    if not ent.startswith(DOMAINS):
+        return 0
+    if not any(w in text for w in words) or any(w in text for w in not_words):
+        return 0
+    if any(b in text for b in BAD) or unit.lower() in ('kwh', 'wh', 'v', 'hz', '°c', '%', 'dbm'):
+        return 0
+    if dclass in ('energy', 'voltage', 'battery', 'temperature', 'signal_strength', 'timestamp'):
+        return 0
+    score = 10
+    if dclass == 'power' or unit.lower() in ('w', 'kw'):
+        score += 8                      # effektmåling fortæller bedst, om maskinen kører
+    elif unit.lower() == 'a' or dclass == 'current':
+        score += 4
+    if ent.startswith('binary_sensor.') and any(w in text for w in ('running', 'kører', 'drift', 'active')):
+        score += 7
+    if ent.startswith('sensor.') and any(w in text for w in ('status', 'state', 'program', 'operation')):
+        score += 5
+    if ent.startswith(('switch.', 'input_boolean.')):
+        score -= 6                      # en stikkontakt er tændt, uanset om maskinen kører
+    return max(score, 1)
+
+
+def find_sensors(entities, existing_names=()):
+    """For hver maskine: den bedste måler og et par alternativer."""
+    out = []
+    for m in MACHINES:
+        if m['preset'] in existing_names:
+            continue
+        ranked = []
+        for row in entities:
+            sc = score_entity(row, m['words'], m['not'])
+            if sc:
+                ranked.append((sc, row))
+        ranked.sort(key=lambda x: (-x[0], x[1][0]))
+        if not ranked:
+            continue
+        pick = lambda r: {'entity': r[1][0], 'name': r[1][1], 'unit': r[1][3] if len(r[1]) > 3 else ''}
+        out.append({'preset': m['preset'], 'title': m['title'], 'price': m['price'],
+                    'best': pick(ranked[0]), 'alts': [pick(r) for r in ranked[1:4]]})
+    return out

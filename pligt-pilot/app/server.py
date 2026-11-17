@@ -13,6 +13,7 @@ import re
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from house import find_sensors
 from store import Problem
 from suggestions import suggest
 
@@ -170,6 +171,10 @@ def make_handler(app, role, allow_from=None):
                     if not data:
                         return self._json({'error': 'Findes ikke'}, 404)
                     return self._send(200, data, 'image/jpeg')
+                if path == '/api/house_find':
+                    names = [r['name'] for r in store.data['rules']]
+                    return self._json({'found': find_sensors(app.ha.entities(), names),
+                                       'on': app.ha.enabled and bool(app.ha.entities())})
                 if path == '/api/entities':
                     return self._json({'entities': app.ha.entities(), 'on': app.ha.enabled})
                 if path == '/api/suggestions':

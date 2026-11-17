@@ -122,7 +122,7 @@ class HomeAssistant:
         return self.notify_to(self.notify_service, title, message, open_app=True)
 
     def entities(self):
-        """[[entity_id, navn], ...] for alt i Home Assistant. Gemmes i et minut."""
+        """[[entity_id, navn, enhedstype, enhed], ...] for alt i Home Assistant. Gemmes i et minut."""
         if not self.enabled:
             return []
         if self._entities and time.time() - self._entities_at < 60:
@@ -130,9 +130,14 @@ class HomeAssistant:
         try:
             raw = self._post('/template', {'template':
                 "{% set ns = namespace(r=[]) %}{% for s in states %}"
-                "{% set ns.r = ns.r + [[s.entity_id, s.name]] %}{% endfor %}{{ ns.r | tojson }}"},
+                "{% set ns.r = ns.r + [[s.entity_id, s.name, s.attributes.get('device_class', '') or '', "
+                "s.attributes.get('unit_of_measurement', '') or '']] %}{% endfor %}{{ ns.r | tojson }}"},
                 timeout=15)
-            self._entities = [[str(a), str(b)] for a, b in json.loads(raw)]
+            rows = []
+            for row in json.loads(raw):
+                row = [str(x) for x in row] + [''] * (4 - len(row))
+                rows.append(row[:4])
+            self._entities = rows
             self._entities_at = time.time()
         except Exception as err:  # noqa: BLE001
             log.warning('Kunne ikke hente enheder fra Home Assistant: %s', err)
@@ -141,8 +146,8 @@ class HomeAssistant:
     def devices(self):
         """Navne og id'er på husets enheder, små bogstaver."""
         out = []
-        for ent, name in self.entities():
-            out += [ent.lower(), name.lower()]
+        for row in self.entities():
+            out += [row[0].lower(), row[1].lower()]
         return out
 
     def states(self, entity_ids):

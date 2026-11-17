@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pligt-pilot', 
 
 from ha import HomeAssistant  # noqa: E402
 from server import App, serve  # noqa: E402
-from house import Automation, step  # noqa: E402
+from house import Automation, find_sensors, step  # noqa: E402
 from store import Problem, Store  # noqa: E402
 
 
@@ -455,6 +455,31 @@ class StoreTests(unittest.TestCase):
         self.assertTrue(all(i['kid_id'] != self.emil['id'] for i in self.store.data['items']))
         with self.assertRaises(Problem):
             self.store.kid_view(self.emil['token'])
+
+
+class FindSensorTests(unittest.TestCase):
+    ENTITIES = [
+        ['switch.vaskemaskine_stik', 'Vaskemaskine stik', '', ''],
+        ['sensor.vaskemaskine_effekt', 'Vaskemaskine effekt', 'power', 'W'],
+        ['sensor.vaskemaskine_energi', 'Vaskemaskine energi', 'energy', 'kWh'],
+        ['sensor.vaskemaskine_spaending', 'Vaskemaskine spænding', 'voltage', 'V'],
+        ['sensor.opvaskemaskine_effekt', 'Opvaskemaskine effekt', 'power', 'W'],
+        ['binary_sensor.toerretumbler_koerer', 'Tørretumbler kører', '', ''],
+        ['light.stue', 'Stue', '', ''],
+    ]
+
+    def test_best_sensor_is_the_power_meter_not_plug_or_energy(self):
+        found = {f['preset']: f for f in find_sensors(self.ENTITIES)}
+        self.assertEqual(found['Vaskemaskine']['best']['entity'], 'sensor.vaskemaskine_effekt')
+        self.assertEqual([a['entity'] for a in found['Vaskemaskine']['alts']],
+                         ['switch.vaskemaskine_stik'])
+        self.assertEqual(found['Opvaskemaskine']['best']['entity'], 'sensor.opvaskemaskine_effekt')
+        self.assertEqual(found['Tørretumbler']['best']['entity'], 'binary_sensor.toerretumbler_koerer')
+
+    def test_washer_does_not_pick_the_dishwasher_and_existing_rules_are_skipped(self):
+        found = find_sensors(self.ENTITIES, existing_names=['Opvaskemaskine'])
+        self.assertEqual([f['preset'] for f in found], ['Vaskemaskine', 'Tørretumbler'])
+        self.assertEqual(find_sensors([['light.stue', 'Stue', '', '']]), [])
 
 
 class StubHA:
