@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<title>Forældre-oversigt</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+button{font-family:inherit;cursor:pointer}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&amp;display=swap" rel="stylesheet">
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#FFF6E9;font-family:'Nunito',system-ui,sans-serif;color:#22304A;padding:20px 20px 0;display:flex;flex-direction:column;gap:14px;overflow:hidden">
+
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div style="font-size:24px;font-weight:900;line-height:1.1">Oversigt</div>
+      <div style="font-size:14px;font-weight:700;color:#55627A">Uge 47 · Familien</div>
+    </div>
+    <div style="background:#22304A;color:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800">Forælder</div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:8px">
+    <div style="font-size:17px;font-weight:900">Til godkendelse</div>
+    <sc-if value="{{hasPending}}" hint-placeholder-val="{{ true }}">
+      <div style="background:#C73A30;color:#fff;border-radius:999px;padding:2px 9px;font-size:13px;font-weight:900">{{pendingCount}}</div>
+    </sc-if>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:-6px">
+    <sc-if value="{{noPending}}" hint-placeholder-val="{{ false }}">
+      <div style="background:#fff;border-radius:20px;padding:18px 16px;font-size:15px;font-weight:700;color:#55627A">Alt er godkendt. Godt gået!</div>
+    </sc-if>
+    <sc-for list="{{pending}}" as="p" hint-placeholder-count="3">
+      <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:20px;padding:8px 8px 8px 12px">
+        <div style="width:38px;height:38px;border-radius:50%;background:{{p.color}};color:#fff;font-size:17px;font-weight:900;display:flex;align-items:center;justify-content:center;flex:none">{{p.initial}}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:15px;font-weight:800;line-height:1.2">{{p.title}}</div>
+          <div style="font-size:13px;color:#55627A;font-weight:700">{{p.name}} · {{p.priceText}}</div>
+        </div>
+        <button onClick="{{p.reject}}" aria-label="Afvis" style="width:44px;height:44px;border-radius:14px;border:2px solid #C73A30;background:#fff;display:flex;align-items:center;justify-content:center;padding:0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C73A30" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+        <button onClick="{{p.approve}}" aria-label="Godkend" style="width:44px;height:44px;border-radius:14px;border:0;background:#0B7A70;display:flex;align-items:center;justify-content:center;padding:0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"></path></svg>
+        </button>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="font-size:17px;font-weight:900;margin-top:2px">Børnene</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:-6px">
+    <sc-for list="{{kids}}" as="k" hint-placeholder-count="2">
+      <div style="background:#fff;border-radius:24px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;border-radius:50%;background:{{k.color}};color:#fff;font-size:20px;font-weight:900;display:flex;align-items:center;justify-content:center;flex:none">{{k.initial}}</div>
+          <div style="flex:1">
+            <div style="font-size:18px;font-weight:900;line-height:1.1">{{k.name}}</div>
+            <div style="font-size:13px;font-weight:700;color:#55627A">{{k.age}} år · {{k.tasks}} opgaver i ugen</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:28px;font-weight:900;line-height:1;color:{{k.color}}">{{k.balanceText}}</div>
+            <div style="font-size:12px;font-weight:700;color:#55627A">at udbetale</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+          <div style="display:flex;align-items:flex-end;gap:5px;height:34px">
+            <sc-for list="{{k.bars}}" as="b" hint-placeholder-count="7">
+              <div style="width:18px;height:{{b.h}}px;border-radius:5px;background:{{b.bg}}"></div>
+            </sc-for>
+          </div>
+          <sc-if value="{{k.isHero}}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:6px;background:#FFC247;border-radius:999px;padding:6px 12px 6px 9px;font-size:13px;font-weight:900">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#22304A" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"></path></svg>
+              Ugens helt
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;background:#22304A;color:#fff;border-radius:22px;padding:14px 18px">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:#C9D2E3">I alt til søndag</div>
+      <div style="font-size:26px;font-weight:900;line-height:1.1">{{totalText}}</div>
+    </div>
+    <div style="font-size:13px;font-weight:700;color:#C9D2E3;text-align:right;max-width:150px">Ugens helt får bonus: 20 kr.</div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const kidsBase = s.kids || {
+      emil: { name: 'Emil', initial: 'E', age: 8, color: '#0B7A70', balance: 59, tasks: 4, factor: 1.5, week: [2, 1, 0, 1, 0, 0, 0] },
+      maja: { name: 'Maja', initial: 'M', age: 12, color: '#C73A30', balance: 112, tasks: 5, factor: 1, week: [1, 2, 1, 1, 0, 0, 0] }
+    };
+    const pendingBase = s.pending || [
+      { id: 1, kid: 'emil', title: 'Ryd dit værelse', price: 15 },
+      { id: 2, kid: 'maja', title: 'Støvsug stuen', price: 20 },
+      { id: 3, kid: 'maja', title: 'Tøm opvaskemaskinen', price: 5 }
+    ];
+    const kidKeys = ['emil', 'maja'];
+    const score = key => kidsBase[key].tasks * kidsBase[key].factor;
+    const heroKey = score('emil') >= score('maja') ? 'emil' : 'maja';
+
+    const resolve = (p, ok) => {
+      const kids = Object.assign({}, kidsBase);
+      if (ok) {
+        const k = kids[p.kid];
+        const week = k.week.slice();
+        week[3] = week[3] + 1;
+        kids[p.kid] = Object.assign({}, k, { balance: k.balance + p.price, tasks: k.tasks + 1, week });
+      }
+      this.setState({ kids, pending: pendingBase.filter(x => x.id !== p.id) });
+    };
+
+    const pending = pendingBase.map(p => ({
+      id: p.id,
+      title: p.title,
+      name: kidsBase[p.kid].name,
+      initial: kidsBase[p.kid].initial,
+      color: kidsBase[p.kid].color,
+      priceText: p.price + ' kr',
+      approve: () => resolve(p, true),
+      reject: () => resolve(p, false)
+    }));
+
+    const kids = kidKeys.map(key => {
+      const k = kidsBase[key];
+      return {
+        name: k.name, initial: k.initial, age: k.age, color: k.color,
+        tasks: k.tasks,
+        balanceText: k.balance + ' kr',
+        isHero: key === heroKey,
+        bars: k.week.map((n, i) => ({
+          h: 6 + n * 9,
+          bg: i === 3 ? '#FFC247' : (n === 0 ? '#E8DFD0' : k.color)
+        }))
+      };
+    });
+    const total = kidKeys.reduce((a, key) => a + kidsBase[key].balance, 0);
+    return {
+      pending: pending,
+      hasPending: pending.length > 0,
+      noPending: pending.length === 0,
+      pendingCount: pending.length,
+      kids: kids,
+      totalText: total + ' kr'
+    };
+  }
+}
+</script>
+</body>
+</html>
