@@ -773,6 +773,20 @@ class LocalIpTests(unittest.TestCase):
              'ipv4': {'address': ['169.254.3.3/16', '192.168.1.50/24']}}]}})
         self.assertEqual(ha.local_ip(), '192.168.1.50')
 
+    def test_falls_back_to_the_internal_url_in_home_assistant_settings(self):
+        ha = HomeAssistant('http://supervisor/core/api', 'tok')
+
+        def get(url):
+            if url.endswith('/network/info'):
+                raise OSError('403')
+            return json.dumps({'internal_url': 'http://192.168.1.77:8123'})
+        ha._get = get
+        self.assertEqual(ha.local_ip(), '192.168.1.77')
+        ha2 = HomeAssistant('http://supervisor/core/api', 'tok')
+        ha2._get = lambda url: json.dumps({'internal_url': 'https://abc.ui.nabu.casa'}) \
+            if url.endswith('/config') else (_ for _ in ()).throw(OSError('403'))
+        self.assertEqual(ha2.local_ip(), '')
+
     def test_no_address_when_supervisor_does_not_answer(self):
         ha = HomeAssistant('http://supervisor/core/api', 'tok')
 

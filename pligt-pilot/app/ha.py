@@ -11,6 +11,7 @@ import logging
 import re
 import threading
 import time
+import urllib.parse
 import urllib.request
 
 log = logging.getLogger('pligt')
@@ -27,7 +28,8 @@ class HomeAssistant:
         self.public_url = (public_url or '').rstrip('/')
         self.pusher = None
         self._ingress = None
-        self._local_ip = None
+        self._local_ip = ''
+        self._local_try = 0.0
         self._entities = []
         self._entities_at = 0.0
 
@@ -52,8 +54,11 @@ class HomeAssistant:
 
     def local_ip(self):
         """Home Assistants adresse på hjemmenetværket, fx 192.168.1.50 (spørger Supervisor)."""
-        if self._local_ip is not None:
+        if self._local_ip:
             return self._local_ip
+        if time.time() - self._local_try < 60:      # spørg højst én gang i minuttet
+            return ''
+        self._local_try = time.time()
         ip = ''
         if self.enabled and self.base_url.endswith('/core/api'):
             try:
@@ -70,7 +75,20 @@ class HomeAssistant:
                     if ip:
                         break
             except Exception as err:  # noqa: BLE001
-                log.warning('Kunne ikke finde adressen på hjemmenetværket: %s', err)
+                log.warning('Kunne ikke spørge Supervisor om netværksadressen: %s', err)
+        if not ip and self.enabled:
+            # reserve: den interne adresse, du har skrevet i Home Assistants egne indstillinger
+            try:
+                cfg = json.loads(self._get(self.base_url + '/config'))
+                host = urllib.parse.urlsplit(cfg.get('internal_url') or '').hostname or ''
+                if re.match(r'^\d{1,3}(\.\d{1,3}){3}$', host) or host.endswith('.local'):
+                    ip = host
+            except Exception as err:  # noqa: BLE001
+                log.warning('Kunne ikke læse Home Assistants interne adresse: %s', err)
+        if ip:
+            log.info('Hjemmenetværkets adresse: %s', ip)
+        else:
+            log.warning('Fandt ikke hjemmenetværkets adresse. Skriv den i public_url.')
         self._local_ip = ip
         return ip
 
