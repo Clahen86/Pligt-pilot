@@ -3,3 +3,15 @@ Sprog || Language || Sprache || Språk || Språk
 Samme som huset || Same as the house || Wie im Haus || Samma som huset || Samme som huset
 er slået til || is on || ist an || är på || er på
 – pligter || – chores || – Pflichten || – sysslor || – plikter
+Forældre || Parents || Eltern || Föräldrar || Foreldre
+Hver forælder kan få sit eget link og styre alt det samme som her, fra sin egen telefon. Del kun linket med en voksen. || Each parent can get their own link and control everything the same as here, from their own phone. Only share the link with an adult. || Jeder Elternteil kann einen eigenen Link bekommen und von seinem Handy aus alles genauso steuern wie hier. Teile den Link nur mit Erwachsenen. || Varje förälder kan få sin egen länk och styra allt på samma sätt som här, från sin egen telefon. Dela bara länken med en vuxen. || Hver forelder kan få sin egen lenke og styre alt det samme som her, fra sin egen telefon. Del bare lenken med en voksen.
+Ny forælder || New parent || Neuer Elternteil || Ny förälder || Ny forelder
+Fx Mor || E.g. Mum || Z. B. Mama || T.ex. Mamma || F.eks. Mamma
+Tilføj forælder || Add parent || Elternteil hinzufügen || Lägg till förälder || Legg til forelder
+Fjern forælder || Remove parent || Elternteil entfernen || Ta bort förälder || Fjern forelder
+Forælderen er tilføjet || The parent was added || Der Elternteil wurde hinzugefügt || Föräldern har lagts till || Forelderen er lagt til
+Forælderen er fjernet || The parent was removed || Der Elternteil wurde entfernt || Föräldern har tagits bort || Forelderen er fjernet
+Fjerne denne forælder? Linket holder op med at virke. || Remove this parent? The link will stop working. || Diesen Elternteil entfernen? Der Link funktioniert dann nicht mehr. || Ta bort den här föräldern? Länken slutar fungera. || Fjerne denne forelderen? Lenken slutter å virke.
+Der kan højst være 6 forældre || There can be at most 6 parents || Es kann höchstens 6 Eltern geben || Det kan högst finnas 6 föräldrar || Det kan høyst være 6 foreldre
+Forælderen findes ikke || The parent does not exist || Der Elternteil existiert nicht || Föräldern finns inte || Forelderen finnes ikke
+Link || Link || Link || Länk || Lenke

@@ -25,6 +25,9 @@ Se `pligt-pilot/DOCS.md` for indstillinger.
 - **Rigtige kroner.** Pris pr. opgave, saldo pr. barn og ugegraf.
 - **Ugens helt.** Konkurrence med point efter alder og en bonus.
 
+## Nyt i 0.9
+- **Forældreside med eget link:** hver forælder kan få et personligt link og styre alt det samme som i Home Assistant, direkte fra sin telefon uden at logge ind.
+
 ## Nyt i 0.8
 - **Flere sprog:** dansk, engelsk, tysk, svensk og norsk. Forældresiden følger husets sprog, og hvert barn kan have sit eget. Beskeder på telefonen kommer på modtagerens sprog.
 

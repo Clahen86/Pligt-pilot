@@ -28,6 +28,7 @@ WEB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'web')
 MAX_BODY = 64 * 1024
 MAX_PHOTO_BODY = 700 * 1024
 
+PARENT = re.compile(r'^/p/([A-Za-z0-9_-]{8,64})(/.*)?$')
 KID_PAGE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/?$')
 KID_STATE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/state$')
 KID_DONE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/items/([a-f0-9]{10})/done$')
@@ -113,6 +114,8 @@ def make_handler(app, role, allow_from=None):
             self.wfile.write(body)
 
         def _json(self, payload, status=200):
+            if getattr(self, 'via_parent', None) and isinstance(payload, dict) and 'parents' in payload:
+                payload = dict(payload, parents=[])
             body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
             self._send(status, body, 'application/json; charset=utf-8')
 
@@ -168,6 +171,18 @@ def make_handler(app, role, allow_from=None):
         # ---- børn ------------------------------------------------------
         def _kid(self, method, path):
             store = app.store
+            m = PARENT.match(path)
+            if m:
+                parent = store.parent_by_token(m.group(1))
+                if not parent:
+                    return self._json({'error': 'Linket passer ikke'}, 404)
+                if m.group(2) is None:
+                    self.send_response(301)
+                    self.send_header('Location', path + '/')
+                    self.end_headers()
+                    return
+                self.via_parent = parent
+                return self._admin(method, m.group(2))
             m = KID_PAGE.match(path)
             if m and method == 'GET':
                 if not store.kid_by_token(m.group(1)):
@@ -285,6 +300,9 @@ def make_handler(app, role, allow_from=None):
         # ---- forældre --------------------------------------------------
         def _admin(self, method, path):
             store = app.store
+            via = getattr(self, 'via_parent', None)
+            if via and (path == '/api/backup' or path.startswith('/api/parents')):
+                return self._json({'error': 'Ikke tilladt'}, 403)
             if method == 'GET':
                 if path in ('/', '/index.html'):
                     return self._page('admin.html')
@@ -297,6 +315,10 @@ def make_handler(app, role, allow_from=None):
                     state['local_url'] = ('%s://%s:%d' % ('https' if app.options.get('https') else 'http',
                                                           ip, app.options.get('kid_port', 8099))) if ip else ''
                     state['push_on'] = bool(app.vapid)
+                    state['via_link'] = bool(via)
+                    if via:
+                        state['parents'] = []
+                        state['parent_name'] = via['name']
                     return self._json(state)
                 if path == '/api/backup':
                     name = 'pligt-pilot-%s.json' % dt.date.today().isoformat()
@@ -429,6 +451,16 @@ def make_handler(app, role, allow_from=None):
                 if wish:
                     app.ha.notify_kid(kid, 'Pligt-pilot', 'Dit ønske er et mål nu: %s!' % wish['title']
                                       if m.group(2) == 'accept' else 'Ønsket blev ikke til noget: %s' % wish['title'])
+                return self._json(store.admin_state())
+            if path == '/api/parents':
+                store.add_parent(body.get('name'))
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/parents/' + ID + r'/(delete|newlink)$', path)
+            if m:
+                if m.group(2) == 'delete':
+                    store.delete_parent(m.group(1))
+                else:
+                    store.renew_parent(m.group(1))
                 return self._json(store.admin_state())
             if path == '/api/starter':
                 store.add_starter_pack()

@@ -49,6 +49,11 @@ Beskederne går gennem den åbne tjeneste ntfy.sh. Emnet er et langt tilfældigt
 
 Har barnet Home Assistant-appen, kan du i stedet skrive barnets notifikationstjeneste, fx `mobile_app_emmas_tlf`.
 
+## Forældre med eget link
+Under Børn → Forældre kan du lave et personligt link til hver forælder (op til 6). Linket åbner den samme side, som du ser i Home Assistant, så man kan godkende, rette opgaver, udbetale og meget mere fra sin egen telefon uden at logge ind. Linket virker på samme adresse som børnenes (port 8099), så det virker kun hjemme på wifi, medmindre du har sat noget andet op.
+
+Linket er som en adgangskode. Del det kun med voksne, og brug **Nyt link** eller **Fjern forælder**, hvis det kommer til at ligge forkert. Forældre med et link kan ikke hente backup eller se og ændre andre forældres links.
+
 ## Sprog
 Dansk, engelsk, tysk, svensk og norsk. Husets sprog vælges under Indstillinger (Sprog), og hvert barn kan få sit eget under Børn. Beskeder sendes på modtagerens sprog. Startpakken og forslagene oprettes på husets sprog. Opgaver, du selv har skrevet, oversættes ikke.
 

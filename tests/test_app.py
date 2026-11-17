@@ -1197,6 +1197,39 @@ class ServerTests(unittest.TestCase):
         status, view = self.call(self.kid, '/k/%s/api/state' % token)
         self.assertEqual(view['balance'], 3)
 
+    def test_parent_link_gives_the_parent_page_without_login(self):
+        status, state = self.call(self.adm, '/api/parents', {'name': 'Mor'})
+        self.assertEqual(status, 200)
+        token = state['parents'][-1]['token']
+        status, page = self.call(self.kid, '/p/%s/' % token)
+        self.assertEqual(status, 200)
+        self.assertIn('Pligter', page)
+        status, state = self.call(self.kid, '/p/%s/api/state' % token)
+        self.assertEqual(status, 200)
+        self.assertTrue(state['via_link'])
+        self.assertEqual(state['parent_name'], 'Mor')
+        self.assertEqual(state['parents'], [])
+        status, state = self.call(self.kid, '/p/%s/api/tasks' % token, {'title': 'Fej løv', 'price': 4})
+        self.assertEqual(status, 200)
+        self.assertEqual(state['parents'], [])
+        self.assertTrue(any(t['title'] == 'Fej løv' for t in state['tasks']))
+
+    def test_parent_link_cannot_manage_parents_or_download_backup(self):
+        status, state = self.call(self.adm, '/api/parents', {'name': 'Far'})
+        token = state['parents'][-1]['token']
+        self.assertEqual(self.call(self.kid, '/p/%s/api/backup' % token)[0], 403)
+        self.assertEqual(self.call(self.kid, '/p/%s/api/parents' % token, {'name': 'X'})[0], 403)
+        self.assertEqual(self.call(self.adm, '/api/backup')[0], 200)
+
+    def test_wrong_or_renewed_parent_link_gives_404(self):
+        self.assertEqual(self.call(self.kid, '/p/abcdefghij1234567890/api/state')[0], 404)
+        status, state = self.call(self.adm, '/api/parents', {'name': 'Bedstefar'})
+        old = state['parents'][-1]
+        status, state = self.call(self.adm, '/api/parents/%s/newlink' % old['id'], {})
+        self.assertEqual(self.call(self.kid, '/p/%s/api/state' % old['token'])[0], 404)
+        new = [p for p in state['parents'] if p['id'] == old['id']][0]
+        self.assertEqual(self.call(self.kid, '/p/%s/api/state' % new['token'])[0], 200)
+
     def test_children_cannot_reach_parent_pages(self):
         for path in ('/', '/api/state', '/api/suggestions', '/api/kids'):
             status, _ = self.call(self.kid, path)

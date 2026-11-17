@@ -100,7 +100,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 <script>
 (function () {
   var state = null, found = null, entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
-  var qrKid = '';
+  var qrKid = '', qrParent = '';
   var draft = { rule: { preset: 'Vaskemaskine', entity: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false, season: '', surprise: false }, kid: { name: '', age: '', birthday: '' }, reward: { title: '', price: '10' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
   // ---- sprog: udskifter kendte danske tekststykker (samme metode som serverens i18n.py) ----
@@ -181,7 +181,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   }
   function post(path, body, okMsg) {
     return call(path, body || {}).then(function (s) {
-      if (state) { s.public_url = state.public_url; s.notify_on = state.notify_on; }
+      if (state) { ['public_url', 'notify_on', 'local_url', 'kid_https', 'push_on', 'via_link', 'parent_name'].forEach(function (key) { s[key] = state[key]; }); }
       state = s; render(); if (okMsg) { say(okMsg); } return s;
     }).catch(function (e) { say(e.message); throw e; });
   }
@@ -416,6 +416,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     return h === 'localhost' || /\.local$/.test(h) || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
   }
   function linkBase() {
+    if (state.via_link) { return location.origin; }
     if (state.public_url) { return state.public_url.replace(/\/$/, ''); }
     if (state.local_url) { return state.local_url; }
     if (privateHost(location.hostname)) { return 'http://' + location.hostname + ':8099'; }
@@ -649,6 +650,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         '<button class="btn small danger" data-delkid="' + k.id + '">Fjern barn</button></div></div>';
     });
     var d = draft.kid;
+    if (!s.via_link) {
+      out += '<h2>Forældre</h2><div class="card"><div class="note">Hver forælder kan få sit eget link og styre alt det samme som her, fra sin egen telefon. Del kun linket med en voksen.</div>';
+      s.parents.forEach(function (p) {
+        var url = linkBase() ? linkBase() + '/p/' + p.token + '/' : '';
+        out += '<div class="row"><div class="grow t"><b>' + esc(p.name) + '</b></div></div>' +
+          (url ? '<div class="linkbox"><input id="pl-' + p.id + '" type="text" readonly aria-label="Link" value="' + esc(url) + '"><button class="btn small" data-copyparent="' + p.id + '">Kopiér</button></div>' +
+            '<button class="btn small ghost" data-qrparent="' + p.id + '">' + (qrParent === p.id ? 'Skjul QR-kode' : 'Vis QR-kode') + '</button>' +
+            (qrParent === p.id ? '<div class="qr">' + QR.svg(url) + '</div>' : '') : '') +
+          '<div class="row" style="flex-wrap:wrap"><button class="btn small ghost" data-newparent="' + p.id + '">Nyt link</button><button class="btn small danger" data-delparent="' + p.id + '">Fjern forælder</button></div>';
+      });
+      out += '<div><label for="pa-name">Ny forælder</label><input id="pa-name" type="text" maxlength="30" placeholder="Fx Mor"></div>' +
+        '<button class="btn ghost" data-addparent="1">Tilføj forælder</button></div>';
+    }
     out += '<h2>Tilføj barn</h2><div class="card">' +
       '<div><label for="k-name">Navn</label><input id="k-name" type="text" data-draft="kid.name" value="' + esc(d.name) + '"></div>' +
       '<div><label for="k-bd-d">Fødselsdato</label>' + dateSelects('k-bd', d.birthday, 'kid.birthday') + '</div>' +
@@ -675,7 +689,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<div class="two"><div><label for="s-ft">Familiemål</label><input id="s-ft" type="text" placeholder="Fx Tivoli" value="' + (fam ? esc(fam.title) : '') + '"></div>' +
       '<div><label for="s-fa">Beløb (kr.)</label><input id="s-fa" type="number" min="1" max="1000" value="' + (fam ? fam.amount : '') + '"></div></div>' +
       '<button class="btn ghost" data-savesettings="1">Gem indstillinger</button>' +
-      '<a class="btn ghost linkbtn" href="api/backup" download>Hent backup af alt</a></div>';
+      (s.via_link ? '' : '<a class="btn ghost linkbtn" href="api/backup" download>Hent backup af alt</a>') + '</div>';
     return out;
   }
 
@@ -900,6 +914,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     }
     else if (d.cleargoal) { post('api/kids/' + d.cleargoal + '/goal', { title: '', amount: '' }, 'Sparemål fjernet'); }
     else if (d.undo) { if (confirm('Fortryd godkendelsen? Pengene trækkes tilbage.')) { post('api/items/' + d.undo + '/undo', {}, 'Fortrudt. Opgaven venter igen.'); } }
+    else if (d.addparent) {
+      post('api/parents', { name: document.getElementById('pa-name').value }, 'Forælderen er tilføjet').catch(function () {});
+    }
+    else if (d.qrparent) { qrParent = qrParent === d.qrparent ? '' : d.qrparent; render(); }
+    else if (d.copyparent) {
+      var pinput = document.getElementById('pl-' + d.copyparent);
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(pinput.value).then(function () { say('Linket er kopieret'); }, function () { pinput.select(); });
+      } else { pinput.select(); pinput.setSelectionRange(0, 9999); say('Tryk og hold for at kopiere'); }
+    }
+    else if (d.newparent) { if (confirm('Det gamle link holder op med at virke. Fortsæt?')) { post('api/parents/' + d.newparent + '/newlink', {}, 'Nyt link er lavet'); } }
+    else if (d.delparent) { if (confirm('Fjerne denne forælder? Linket holder op med at virke.')) { post('api/parents/' + d.delparent + '/delete', {}, 'Forælderen er fjernet'); } }
     else if (d.qr) { qrKid = qrKid === d.qr ? '' : d.qr; render(); }
     else if (d.copy) {
       var k = kidById(d.copy), input = document.getElementById('l-' + d.copy);

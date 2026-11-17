@@ -104,7 +104,7 @@ class Store:
                          'family_goal': None, 'hero_wins': {}, 'perfect_paid': {},
                          'boss_hp': 20, 'boss_bonus': 0, 'boss_paid_week': '',
                          'trading': True, 'surprise_plan': {}, 'streak_bonus': 5},
-            'trades': [], 'rewards': [], 'claims': [],
+            'trades': [], 'rewards': [], 'claims': [], 'parents': [],
         }
         self._photos = {}
         self.photo_dir = os.path.join(os.path.dirname(path) or '.', 'photos') if path else None
@@ -357,6 +357,38 @@ class Store:
         with self.lock:
             kid = self._kid(kid_id)
             kid['push'] = [x for x in kid.get('push', []) if x['endpoint'] != endpoint]
+            self._save()
+
+    # ---- forældre med eget link ----------------------------------------
+    def parent_by_token(self, token):
+        found = None
+        for p in self.data['parents']:
+            if secrets.compare_digest(p['token'], token or ''):
+                found = p
+        return found
+
+    def add_parent(self, name):
+        with self.lock:
+            if len(self.data['parents']) >= 6:
+                raise Problem('Der kan højst være 6 forældre')
+            parent = {'id': _id(), 'name': self._clean_text(name, 'Navn', 30),
+                      'token': secrets.token_urlsafe(18)}
+            self.data['parents'].append(parent)
+            self._save()
+            return parent
+
+    def renew_parent(self, parent_id):
+        with self.lock:
+            parent = next((p for p in self.data['parents'] if p['id'] == parent_id), None)
+            if not parent:
+                raise Problem('Forælderen findes ikke')
+            parent['token'] = secrets.token_urlsafe(18)
+            self._save()
+            return parent
+
+    def delete_parent(self, parent_id):
+        with self.lock:
+            self.data['parents'] = [p for p in self.data['parents'] if p['id'] != parent_id]
             self._save()
 
     def new_token(self, kid_id):
@@ -1071,6 +1103,7 @@ class Store:
                 'perfect': self._perfect_candidates(),
                 'family': self._family(),
                 'boss': self._boss(),
+                'parents': [dict(p) for p in self.data['parents']],
                 'lang': self.lang_of(),
                 'langs': [[c, i18n.NAMES[c]] for c in i18n.LANGS],
                 'locale': i18n.LOCALES[self.lang_of()],
