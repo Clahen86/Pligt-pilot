@@ -66,6 +66,7 @@ def main():
     else:
         logging.info('Intet certifikat fundet i %s: børnesiden bruger http', ssl_dir)
     app.options['https'] = tls is not None
+    app.options['kid_port'] = kid_port
     serve(app, 'kid', kid_port, tls=tls)
     serve(app, 'admin', admin_port, allow_from)
     logging.info('Pligt-pilot kører. Børn: port %d, forældre: port %d', kid_port, admin_port)

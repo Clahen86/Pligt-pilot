@@ -235,6 +235,9 @@ def make_handler(app, role, allow_from=None):
                     state['public_url'] = app.options.get('public_url', '')
                     state['notify_on'] = bool(app.ha.enabled and app.ha.notify_service)
                     state['kid_https'] = bool(app.options.get('https'))
+                    ip = app.ha.local_ip()
+                    state['local_url'] = ('%s://%s:%d' % ('https' if app.options.get('https') else 'http',
+                                                          ip, app.options.get('kid_port', 8099))) if ip else ''
                     state['push_on'] = bool(app.vapid)
                     return self._json(state)
                 m = re.match(r'^/photo/' + ID + r'$', path)

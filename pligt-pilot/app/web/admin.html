@@ -175,9 +175,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     return out;
   }
   function kidById(id) { return state.kids.filter(function (k) { return k.id === id; })[0]; }
+  function privateHost(h) {
+    return h === 'localhost' || /\.local$/.test(h) || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
+  }
+  function linkBase() {
+    if (state.public_url) { return state.public_url.replace(/\/$/, ''); }
+    if (state.local_url) { return state.local_url; }
+    if (privateHost(location.hostname)) { return 'http://' + location.hostname + ':8099'; }
+    return '';
+  }
   function linkFor(k) {
-    var base = state.public_url || ((location.protocol === 'https:' ? 'http:' : location.protocol) + '//' + location.hostname + ':8099');
-    return base.replace(/\/$/, '') + '/k/' + k.token + '/';
+    var base = linkBase();
+    return base ? base + '/k/' + k.token + '/' : '';
   }
   function miniBars(k) {
     return k.bars.map(function (b, i) {
@@ -331,9 +340,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     s.kids.forEach(function (k) {
       out += '<div class="card"><div class="kid-top"><div class="avatar big" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' +
         '<div class="grow"><div class="name">' + esc(k.name) + '</div><div class="sub">' + k.age + ' år</div></div></div>' +
-        '<div><label for="l-' + k.id + '">Personligt link</label><div class="linkbox"><input id="l-' + k.id + '" type="text" readonly value="' + esc(linkFor(k)) + '">' +
-        '<button class="btn small" data-copy="' + k.id + '">Kopiér</button></div></div>' +
-        '<div class="note">Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren.</div>' +
+        (linkFor(k)
+          ? '<div><label for="l-' + k.id + '">Personligt link</label><div class="linkbox"><input id="l-' + k.id + '" type="text" readonly value="' + esc(linkFor(k)) + '">' +
+            '<button class="btn small" data-copy="' + k.id + '">Kopiér</button></div></div>'
+          : '<div class="empty">Appen kan ikke se Home Assistants adresse derhjemme. Skriv den i indstillingen public_url, fx http://192.168.1.50:8099, så kommer linket frem.</div>') +
+        '<div class="note">Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren. Linket virker på jeres wifi derhjemme.</div>' +
         '<div class="row"><div class="grow t"><b>På pause</b><span>Ferie eller syg: ingen opgaver, og ugen tæller ikke som misset</span></div>' +
         '<button class="sw" role="switch" aria-checked="' + (k.paused ? 'true' : 'false') + '" aria-label="' + esc(k.name) + ' er på pause" data-pause="' + k.id + '"><span></span></button></div>' +
         '<div class="two"><div><label for="b-' + k.id + '">Fødselsdato</label><input id="b-' + k.id + '" type="date" value="' + esc(k.birthday) + '"></div>' +

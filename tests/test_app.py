@@ -764,6 +764,25 @@ class TlsPushTests(unittest.TestCase):
         self.assertEqual(post({'endpoint': 'http://x', 'keys': {}}), 400)
 
 
+class LocalIpTests(unittest.TestCase):
+    def test_finds_the_address_of_the_primary_network_card(self):
+        ha = HomeAssistant('http://supervisor/core/api', 'tok')
+        ha._get = lambda url: json.dumps({'data': {'interfaces': [
+            {'interface': 'hassio', 'primary': False, 'ipv4': {'address': ['172.30.32.1/23']}},
+            {'interface': 'eth0', 'primary': True,
+             'ipv4': {'address': ['169.254.3.3/16', '192.168.1.50/24']}}]}})
+        self.assertEqual(ha.local_ip(), '192.168.1.50')
+
+    def test_no_address_when_supervisor_does_not_answer(self):
+        ha = HomeAssistant('http://supervisor/core/api', 'tok')
+
+        def boom(url):
+            raise OSError('nej')
+        ha._get = boom
+        self.assertEqual(ha.local_ip(), '')
+        self.assertEqual(HomeAssistant().local_ip(), '')
+
+
 class FakeHA(BaseHTTPRequestHandler):
     calls = []
 

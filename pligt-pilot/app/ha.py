@@ -27,6 +27,7 @@ class HomeAssistant:
         self.public_url = (public_url or '').rstrip('/')
         self.pusher = None
         self._ingress = None
+        self._local_ip = None
         self._entities = []
         self._entities_at = 0.0
 
@@ -48,6 +49,30 @@ class HomeAssistant:
         req = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + self.token})
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return resp.read().decode('utf-8')
+
+    def local_ip(self):
+        """Home Assistants adresse på hjemmenetværket, fx 192.168.1.50 (spørger Supervisor)."""
+        if self._local_ip is not None:
+            return self._local_ip
+        ip = ''
+        if self.enabled and self.base_url.endswith('/core/api'):
+            try:
+                root = self.base_url[:-len('/core/api')]
+                info = json.loads(self._get(root + '/network/info'))
+                ifaces = (info.get('data') or {}).get('interfaces') or []
+                ifaces.sort(key=lambda i: not i.get('primary'))
+                for iface in ifaces:
+                    for addr in (iface.get('ipv4') or {}).get('address') or []:
+                        cand = str(addr).split('/')[0]
+                        if re.match(r'^\d{1,3}(\.\d{1,3}){3}$', cand) and not cand.startswith(('169.254.', '127.')):
+                            ip = cand
+                            break
+                    if ip:
+                        break
+            except Exception as err:  # noqa: BLE001
+                log.warning('Kunne ikke finde adressen på hjemmenetværket: %s', err)
+        self._local_ip = ip
+        return ip
 
     def ingress_path(self):
         """Stien til appen i Home Assistant, så en notifikation kan åbne den."""
