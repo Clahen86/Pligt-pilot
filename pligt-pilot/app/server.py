@@ -189,7 +189,7 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'$', path)
             if m:
-                allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids')
+                allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids', 'age_min')
                 store.update_task(m.group(1), **{k: v for k, v in body.items() if k in allowed})
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'/delete$', path)

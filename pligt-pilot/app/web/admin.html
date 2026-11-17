@@ -88,7 +88,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 <div class="toast" id="toast" hidden role="status"></div>
 <script>
 (function () {
-  var state = null, tab = 'home', suggestions = null, sugOn = {};
+  var state = null, sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
   var draft = { task: { title: '', price: '5', room: '', repeat: 'daily', open: false }, kid: { name: '', age: '' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
   var REPEAT = { daily: 'Hver dag', weekly: 'Hver uge', once: 'Én gang' };
@@ -124,6 +124,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   function typing() {
     var a = document.activeElement;
     return a && (a.tagName === 'INPUT' || a.tagName === 'SELECT');
+  }
+  function editForm(key, r) {
+    return '<div class="two"><div><label for="' + key + '-t">Navn</label><input id="' + key + '-t" type="text" value="' + esc(r.title) + '"></div>' +
+      '<div><label for="' + key + '-p">Pris (kr.)</label><input id="' + key + '-p" type="number" inputmode="numeric" min="0" max="1000" value="' + esc(r.price) + '"></div></div>' +
+      '<div class="two"><div><label for="' + key + '-a">Fra alder</label><input id="' + key + '-a" type="number" inputmode="numeric" min="0" max="25" value="' + esc(r.age_min || 0) + '"></div>' +
+      '<div><label for="' + key + '-r">Hvor tit</label><select id="' + key + '-r">' +
+      ['daily', 'weekly', 'once'].map(function (x) { return '<option value="' + x + '"' + (r.repeat === x ? ' selected' : '') + '>' + REPEAT[x] + '</option>'; }).join('') + '</select></div></div>' +
+      '<div class="row"><button class="btn small" data-save="' + key + '">Gem</button><button class="btn small ghost" data-cancel="1">Annullér</button></div>';
+  }
+  function readForm(key) {
+    return { title: document.getElementById(key + '-t').value, price: document.getElementById(key + '-p').value,
+      age_min: document.getElementById(key + '-a').value, repeat: document.getElementById(key + '-r').value };
   }
   function kidById(id) { return state.kids.filter(function (k) { return k.id === id; })[0]; }
   function linkFor(k) {
@@ -187,13 +199,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       suggestions.forEach(function (r) { if (rooms.indexOf(r.room) < 0) { rooms.push(r.room); } });
       var n = 0;
       suggestions.forEach(function (r, i) { if (sugOn[i]) { n++; } });
+      out += '<div class="row" style="flex-wrap:wrap"><button class="btn small ghost" data-sugall="1">Vælg alle</button><button class="btn small ghost" data-sugall="0">Fravælg alle</button></div>';
       rooms.forEach(function (room) {
         out += '<div class="group">' + esc(room) + (suggestions.some(function (r) { return r.room === room && r.found; }) ? ' · fundet i dit hjem' : '') + '</div><div class="list">';
         suggestions.forEach(function (r, i) {
           if (r.room !== room) { return; }
-          out += '<div class="row card"><div class="grow t"><b>' + esc(r.title) + '</b><span>' + (r.exists ? 'Findes allerede' : esc(REPEAT[r.repeat]) + ' · fra ' + r.age_min + ' år') + '</span></div>' +
+          if (r.exists) {
+            out += '<div class="row card"><div class="grow t"><b>' + esc(r.title) + '</b><span>Findes allerede</span></div></div>';
+            return;
+          }
+          out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(r.title) + '</b><span>' + esc(REPEAT[r.repeat]) + ' · fra ' + r.age_min + ' år</span></div>' +
             '<div class="price">' + r.price + ' kr</div>' +
-            (r.exists ? '' : '<button class="sw" role="switch" aria-checked="' + (sugOn[i] ? 'true' : 'false') + '" aria-label="' + esc(r.title) + '" data-sug="' + i + '"><span></span></button>') + '</div>';
+            '<button class="sw" role="switch" aria-checked="' + (sugOn[i] ? 'true' : 'false') + '" aria-label="' + esc(r.title) + '" data-sug="' + i + '"><span></span></button></div>' +
+            (sugEdit === i ? editForm('s' + i, r) : '<button class="btn small ghost" data-sugedit="' + i + '">Rediger</button>') + '</div>';
         });
         out += '</div>';
       });
@@ -206,10 +224,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       out += '<div class="group">' + esc(room) + '</div><div class="list">';
       s.tasks.forEach(function (t) {
         if ((t.room || 'Andet') !== room) { return; }
-        out += '<div class="row card"><div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
+        out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
           '<div class="price">' + t.price + ' kr</div>' +
           '<button class="sw" role="switch" aria-checked="' + (t.active ? 'true' : 'false') + '" aria-label="' + esc(t.title) + ' er slået til" data-active="' + t.id + '"><span></span></button>' +
-          '<button class="icon no" style="width:40px;height:40px" data-deltask="' + t.id + '" aria-label="Slet ' + esc(t.title) + '">' + CROSS + '</button></div>';
+          '<button class="icon no" style="width:40px;height:40px" data-deltask="' + t.id + '" aria-label="Slet ' + esc(t.title) + '">' + CROSS + '</button></div>' +
+          (taskEdit === t.id ? editForm('t' + t.id, t) : '<button class="btn small ghost" data-taskedit="' + t.id + '">Rediger</button>') + '</div>';
       });
       out += '</div>';
     });
@@ -283,9 +302,23 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     else if (d.suggest) {
       call('api/suggestions').then(function (r) {
         suggestions = r.rows; sugOn = {};
-        suggestions.forEach(function (row, i) { sugOn[i] = !!row.on; });
+        suggestions.forEach(function (row, i) { sugOn[i] = false; });
         render();
       }).catch(function (err) { say(err.message); });
+    }
+    else if (d.sugedit) { sugEdit = +d.sugedit; render(); }
+    else if (d.taskedit) { taskEdit = d.taskedit; render(); }
+    else if (d.cancel) { sugEdit = -1; taskEdit = ''; render(); }
+    else if (d.sugall) { suggestions.forEach(function (r, i) { sugOn[i] = d.sugall === '1' && !r.exists; }); render(); }
+    else if (d.save) {
+      var f = readForm(d.save);
+      if (d.save.charAt(0) === 's') {
+        var row = suggestions[+d.save.slice(1)];
+        row.title = f.title; row.price = f.price; row.age_min = f.age_min; row.repeat = f.repeat;
+        sugEdit = -1; render();
+      } else {
+        post('api/tasks/' + d.save.slice(1), f, 'Gemt').then(function () { taskEdit = ''; render(); }).catch(function () {});
+      }
     }
     else if (d.sug !== undefined) { sugOn[d.sug] = !sugOn[d.sug]; render(); }
     else if (d.setup) {

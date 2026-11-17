@@ -224,6 +224,11 @@ class Store:
                 task['active'] = bool(fields['active'])
             if 'kids' in fields:
                 task['kids'] = list(fields['kids'] or [])
+            if 'age_min' in fields:
+                try:
+                    task['age_min'] = max(0, min(25, int(fields['age_min'] or 0)))
+                except (TypeError, ValueError):
+                    raise Problem('Alder skal være et tal')
             self._save()
             return task
 
