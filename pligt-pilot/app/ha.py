@@ -15,13 +15,16 @@ import urllib.request
 
 log = logging.getLogger('pligt')
 ENTITY = re.compile(r'^[a-z_]+\.[a-z0-9_]+$')
+NTFY_TOPIC = re.compile(r'^[-_A-Za-z0-9]{8,64}$')
 
 
 class HomeAssistant:
-    def __init__(self, base_url=None, token=None, notify_service=''):
+    def __init__(self, base_url=None, token=None, notify_service='', ntfy_server='', public_url=''):
         self.base_url = (base_url or '').rstrip('/')
         self.token = token or ''
         self.notify_service = (notify_service or '').strip()
+        self.ntfy_server = (ntfy_server or 'https://ntfy.sh').rstrip('/')
+        self.public_url = (public_url or '').rstrip('/')
         self._ingress = None
         self._entities = []
         self._entities_at = 0.0
@@ -83,6 +86,36 @@ class HomeAssistant:
 
         threading.Thread(target=work, daemon=True).start()
         return True
+
+    def ntfy(self, topic, title, message, click=None):
+        """Sender en besked via ntfy (gratis app til telefonen). Svarer med det samme."""
+        if not NTFY_TOPIC.match(topic or ''):
+            return False
+        payload = {'topic': topic, 'title': title, 'message': message}
+        if click:
+            payload['click'] = click
+
+        def work():
+            try:
+                req = urllib.request.Request(
+                    self.ntfy_server, data=json.dumps(payload).encode('utf-8'),
+                    headers={'Content-Type': 'application/json'}, method='POST')
+                urllib.request.urlopen(req, timeout=10).read()
+            except Exception as err:  # noqa: BLE001
+                log.warning('Kunne ikke sende via ntfy: %s', err)
+
+        threading.Thread(target=work, daemon=True).start()
+        return True
+
+    def notify_kid(self, kid, title, message):
+        """Besked til et barn: via ntfy og/eller barnets notifikationstjeneste i HA."""
+        sent = False
+        if kid.get('ntfy_on') and kid.get('ntfy'):
+            click = '%s/k/%s/' % (self.public_url, kid['token']) if self.public_url else None
+            sent = self.ntfy(kid['ntfy'], title, message, click) or sent
+        if kid.get('notify'):
+            sent = self.notify_to(kid['notify'], title, message) or sent
+        return sent
 
     def notify(self, title, message):
         """Notifikation til forælderen. Et tryk åbner appen."""

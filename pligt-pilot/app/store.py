@@ -194,6 +194,7 @@ class Store:
                 'name': self._clean_text(name, 'Navn', 30),
                 'color': color or COLORS[len(self.data['kids']) % len(COLORS)],
                 'token': secrets.token_urlsafe(12),
+                'ntfy': 'pligt-' + secrets.token_urlsafe(12),
             }
             if str(birthday or '').strip():
                 kid['birthday'], kid['age'] = self._parse_birthday(birthday, self._now().date())
@@ -204,7 +205,7 @@ class Store:
             return kid
 
     def update_kid(self, kid_id, name=None, age=None, color=None, paused=None,
-                   birthday=None, notify=None, allowance=None):
+                   birthday=None, notify=None, allowance=None, ntfy_on=None):
         with self.lock:
             kid = self._kid(kid_id)
             if name is not None:
@@ -222,6 +223,8 @@ class Store:
                 kid['paused'] = bool(paused)
             if notify is not None:
                 kid['notify'] = self._clean_service(notify)
+            if ntfy_on is not None:
+                kid['ntfy_on'] = bool(ntfy_on)
             if allowance is not None:
                 amount = self._clean_price(allowance or 0)
                 kid['allowance'] = amount
@@ -408,6 +411,10 @@ class Store:
                 if age != kid['age']:
                     kid['age'] = age
                     changed = True
+        for kid in self.data['kids']:
+            if not kid.get('ntfy'):
+                kid['ntfy'] = 'pligt-' + secrets.token_urlsafe(12)
+                changed = True
         # lommepenge: én gang pr. uge
         wk = week_key(d)
         for kid in self.data['kids']:
@@ -719,6 +726,7 @@ class Store:
                     'saving': self._saving(k),
                     'birthday': k.get('birthday', ''),
                     'notify': k.get('notify', ''),
+                    'ntfy': k.get('ntfy', ''), 'ntfy_on': bool(k.get('ntfy_on')),
                     'allowance': k.get('allowance', 0),
                     'badges': self._badges(k),
                     'streak': self._best_streak(k['id']),

@@ -91,15 +91,13 @@ class Automation:
 
     def tell_kids(self, title, message, task=None):
         for kid in self.store.data['kids']:
-            if kid.get('notify') and not kid.get('paused') and (
-                    task is None or self.store._in_scope(task, kid)):
-                self.ha.notify_to(kid['notify'], title, message)
+            if not kid.get('paused') and (task is None or self.store._in_scope(task, kid)):
+                self.ha.notify_kid(kid, title, message)
 
     def _reminders(self):
         for kid, n in self.store.due_reminders():
-            if kid.get('notify'):
-                self.ha.notify_to(kid['notify'], 'Husk dine pligter',
-                                  'Du har %d opgave%s i dag.' % (n, '' if n == 1 else 'r'))
+            self.ha.notify_kid(kid, 'Husk dine pligter',
+                               'Du har %d opgave%s i dag.' % (n, '' if n == 1 else 'r'))
 
     def _birthdays(self):
         for kid, age in self.store.birthday_notices():

@@ -36,7 +36,8 @@ def main():
     token = os.environ.get('SUPERVISOR_TOKEN', '')
     base = os.environ.get('PP_HA_URL') or ('http://supervisor/core/api' if token else '')
     ha = HomeAssistant(base, token or os.environ.get('PP_HA_TOKEN', ''),
-                       options.get('notify_service', ''))
+                       options.get('notify_service', ''), options.get('ntfy_server', ''),
+                       options.get('public_url', ''))
     app = App(store, ha, options)
     Automation(store, ha).run()
 

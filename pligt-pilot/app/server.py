@@ -187,7 +187,13 @@ def make_handler(app, role, allow_from=None):
             if m:
                 store.update_kid(m.group(1), body.get('name'), body.get('age'),
                                  body.get('color'), body.get('paused'), body.get('birthday'),
-                                 body.get('notify'), body.get('allowance'))
+                                 body.get('notify'), body.get('allowance'), body.get('ntfy_on'))
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/kids/' + ID + r'/test$', path)
+            if m:
+                kid = store._kid(m.group(1))
+                if not app.ha.notify_kid(kid, 'Pligt-pilot', 'Det virker! Her kommer dine beskeder.'):
+                    raise Problem('Slå beskeder til og gem først')
                 return self._json(store.admin_state())
             m = re.match(r'^/api/kids/' + ID + r'/goal$', path)
             if m:
@@ -216,9 +222,9 @@ def make_handler(app, role, allow_from=None):
                 if body.get('open'):
                     task = store.data['tasks'][-1]
                     for kid in store.data['kids']:
-                        if kid.get('notify') and not kid.get('paused') and store._in_scope(task, kid):
-                            app.ha.notify_to(kid['notify'], 'Ny opgave',
-                                             '%s (%d kr.). Først til mølle!' % (task['title'], task['price']))
+                        if not kid.get('paused') and store._in_scope(task, kid):
+                            app.ha.notify_kid(kid, 'Ny opgave',
+                                              '%s (%d kr.). Først til mølle!' % (task['title'], task['price']))
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'$', path)
             if m:
@@ -234,10 +240,10 @@ def make_handler(app, role, allow_from=None):
                 approve = m.group(2) == 'approve'
                 item = store.decide(m.group(1), approve)
                 kid = next((k for k in store.data['kids'] if k['id'] == item['kid_id']), None)
-                if kid and kid.get('notify'):
-                    app.ha.notify_to(kid['notify'], 'Pligt-pilot',
-                                     'Godkendt: %s. Du fik %d kr.!' % (item['title'], item['price'])
-                                     if approve else 'Prøv igen: %s' % item['title'])
+                if kid:
+                    app.ha.notify_kid(kid, 'Pligt-pilot',
+                                      'Godkendt: %s. Du fik %d kr.!' % (item['title'], item['price'])
+                                      if approve else 'Prøv igen: %s' % item['title'])
                 if approve:
                     app.ha.celebrate(store.data['settings'].get('celebrate_light'))
                 return self._json(store.admin_state())

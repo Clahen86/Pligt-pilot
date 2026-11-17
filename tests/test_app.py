@@ -430,6 +430,14 @@ class StoreTests(unittest.TestCase):
         with self.assertRaises(Problem):
             self.store.set_setting('reminder_time', '25:99')
 
+    def test_every_child_has_a_private_ntfy_topic(self):
+        topics = {k['ntfy'] for k in self.store.data['kids']}
+        self.assertEqual(len(topics), 2)
+        self.assertTrue(all(len(x) > 12 for x in topics))
+        self.assertFalse(self.store.admin_state()['kids'][0]['ntfy_on'])
+        self.store.update_kid(self.emil['id'], ntfy_on=True)
+        self.assertTrue(self.store.admin_state()['kids'][0]['ntfy_on'])
+
     def test_data_survives_restart(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, 'pligt.json')
@@ -464,6 +472,10 @@ class StubHA:
     def notify_to(self, service, title, message, open_app=False):
         self.sent.append((service, title, message))
 
+    def notify_kid(self, kid, title, message):
+        if kid.get('notify') or kid.get('ntfy_on'):
+            self.sent.append((kid.get('notify') or 'ntfy:' + kid['ntfy'], title, message))
+
     def notify(self, title, message):
         self.sent.append((self.notify_service, title, message))
 
@@ -477,7 +489,7 @@ class AutomationTests(unittest.TestCase):
         store = Store(None, clock)
         store.add_kid('Emil', 8)
         kid = store.add_kid('Maja', 12)
-        store.update_kid(kid['id'], notify='mobile_app_maja')
+        store.update_kid(kid['id'], notify='mobile_app_maja', ntfy_on=True)
         store.add_rule('Vaskemaskine', 'sensor.vask_effekt', 'Flyt tøj til tørretumbleren', 5)
         ha = StubHA()
         auto = Automation(store, ha, clock)
@@ -509,6 +521,39 @@ class AutomationTests(unittest.TestCase):
         self.assertEqual([(m[0], m[1]) for m in ha.sent],
                          [('mobile_app_maja', 'Husk dine pligter'),
                           ('mobile_app_far', 'Fødselsdag i morgen')])
+
+
+class NtfyTests(unittest.TestCase):
+    def test_message_goes_to_ntfy_with_topic_and_link(self):
+        got = []
+
+        class Catch(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_POST(self):
+                got.append(json.loads(self.rfile.read(int(self.headers['Content-Length']))))
+                self.send_response(200)
+                self.send_header('Content-Length', '2')
+                self.end_headers()
+                self.wfile.write(b'{}')
+
+        srv = HTTPServer(('127.0.0.1', 0), Catch)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        ha = HomeAssistant(ntfy_server='http://127.0.0.1:%d' % srv.server_address[1],
+                           public_url='http://hjem:8099')
+        kid = {'token': 'abcdefgh', 'ntfy': 'pligt-hemmeligt1234', 'ntfy_on': True, 'notify': ''}
+        self.assertTrue(ha.notify_kid(kid, 'Ny opgave', 'Støvsug (15 kr.)'))
+        for _ in range(50):
+            if got:
+                break
+            threading.Event().wait(0.1)
+        srv.shutdown()
+        self.assertEqual(got[0]['topic'], 'pligt-hemmeligt1234')
+        self.assertEqual(got[0]['message'], 'Støvsug (15 kr.)')
+        self.assertEqual(got[0]['click'], 'http://hjem:8099/k/abcdefgh/')
+        self.assertFalse(ha.notify_kid(dict(kid, ntfy_on=False), 'x', 'y'))
+        self.assertFalse(ha.ntfy('../../ond', 'x', 'y'))
 
 
 class FakeHA(BaseHTTPRequestHandler):

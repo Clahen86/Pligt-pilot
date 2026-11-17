@@ -15,9 +15,13 @@ Lav fx to regler: vaskemaskinen giver "Flyt tøj til tørretumbleren", og tørre
 
 ## Beskeder til børnene
 
-Under hvert barn kan du skrive barnets notifikationstjeneste, fx `mobile_app_emmas_tlf`. Den findes, når barnet har Home Assistant-appen på sin telefon og er en bruger i HA. Uden den virker alt andet, men barnet får ingen beskeder.
+Under hvert barn slår du **Beskeder til barnets telefon** til. Så får barnet et hemmeligt emne. Barnet installerer den gratis app **ntfy** (App Store eller Google Play), trykker på + og skriver emnet. Det virker uden Home Assistant-appen og uden https.
 
-Beskeder sendes, når der er en ny ledig opgave, når du godkender eller afviser, og til den tid, du har valgt til påmindelse.
+Beskeder sendes, når der er en ny ledig opgave, når du godkender eller afviser, og til den tid, du har valgt til påmindelse. Er `public_url` udfyldt, åbner et tryk på beskeden barnets side.
+
+Beskederne går gennem den åbne tjeneste ntfy.sh. Emnet er et langt tilfældigt navn, men ikke en adgangskode, så beskederne bør ikke indeholde noget privat. Du kan bruge din egen ntfy-server ved at ændre `ntfy_server`.
+
+Har barnet Home Assistant-appen, kan du i stedet skrive barnets notifikationstjeneste, fx `mobile_app_emmas_tlf`.
 
 ## Indstillinger
 
@@ -25,6 +29,7 @@ Beskeder sendes, når der er en ny ledig opgave, når du godkender eller afviser
 | --- | --- |
 | `notify_service` | Navn på din notifikationstjeneste, fx `mobile_app_min_telefon`. Du får besked, når et barn er færdig. |
 | `weekly_goal` | Antal opgaver, der fylder ugens søjle helt. |
+| `ntfy_server` | Valgfri. Standard er `https://ntfy.sh`. |
 | `public_url` | Valgfri. Adressen børnene bruger, fx `http://homeassistant.local:8099`. Er den tom, bruges den adresse, du åbner siden fra. |
 
 ## Sikkerhed

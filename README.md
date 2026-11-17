@@ -29,7 +29,7 @@ Se `pligt-pilot/DOCS.md` for indstillinger.
 
 - Fødselsdato i stedet for alder. Alderen følger med, og opgaver låses op af sig selv.
 - Huset opretter opgaver: når vaskemaskinen er færdig, får børnene "Flyt tøj til tørretumbleren". Færdig tørretumbler giver "Tag ud og fold".
-- Besked til børnene ved ledige opgaver, godkendelse, afvisning og påmindelse (kræver en notifikationstjeneste pr. barn).
+- Besked til børnene ved ledige opgaver, godkendelse, afvisning og påmindelse. Gratis via appen ntfy, uden HA-app og uden https.
 - Tryk på forælderens besked åbner appen.
 - Foto som bevis, serier ("5 i træk"), mærker, familiemål, lommepenge, træk for glemte opgaver, bonus for perfekt uge og overblik pr. måned.
 - En lampe kan blinke grønt, når du godkender.

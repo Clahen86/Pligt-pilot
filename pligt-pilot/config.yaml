@@ -1,5 +1,5 @@
 name: "Pligt-pilot"
-version: "0.3.0"
+version: "0.3.1"
 slug: pligt_pilot
 description: "Pligter, penge og ugens helt til hele familien. Børnene bruger et personligt link, uden HA-konto."
 url: https://github.com/Clahen86/Pligt-pilot
@@ -21,7 +21,9 @@ options:
   notify_service: ""
   weekly_goal: 8
   public_url: ""
+  ntfy_server: "https://ntfy.sh"
 schema:
   notify_service: str?
   weekly_goal: int(1,50)
   public_url: str?
+  ntfy_server: str?

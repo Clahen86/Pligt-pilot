@@ -335,7 +335,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         '<button class="sw" role="switch" aria-checked="' + (k.paused ? 'true' : 'false') + '" aria-label="' + esc(k.name) + ' er på pause" data-pause="' + k.id + '"><span></span></button></div>' +
         '<div class="two"><div><label for="b-' + k.id + '">Fødselsdato</label><input id="b-' + k.id + '" type="date" value="' + esc(k.birthday) + '"></div>' +
         '<div><label for="al-' + k.id + '">Lommepenge pr. uge (kr.)</label><input id="al-' + k.id + '" type="number" inputmode="numeric" min="0" max="1000" value="' + k.allowance + '"></div></div>' +
-        '<div><label for="n-' + k.id + '">Barnets notifikationstjeneste (valgfri)</label><input id="n-' + k.id + '" type="text" placeholder="Fx mobile_app_emmas_tlf" value="' + esc(k.notify) + '"></div>' +
+        '<div class="row"><div class="grow t"><b>Beskeder til barnets telefon</b><span>Gratis med appen ntfy. Virker uden HA-app og uden https.</span></div>' +
+        '<button class="sw" role="switch" aria-checked="' + (k.ntfy_on ? 'true' : 'false') + '" aria-label="Beskeder til ' + esc(k.name) + '" data-ntfy="' + k.id + '"><span></span></button></div>' +
+        (k.ntfy_on ? '<div class="card" style="background:#FFF6E9;gap:6px"><div class="note">1. Installér appen <b>ntfy</b> på ' + esc(k.name) + 's telefon (gratis, App Store eller Google Play).<br>2. Tryk på + og vælg <b>Subscribe to topic</b>.<br>3. Skriv dette emne:</div>' +
+        '<div class="linkbox"><input type="text" readonly aria-label="Emne" value="' + esc(k.ntfy) + '"></div>' +
+        '<button class="btn small" data-testntfy="' + k.id + '">Send en prøvebesked</button></div>' : '') +
+        '<div><label for="n-' + k.id + '">Eller: barnets notifikationstjeneste i HA (valgfri)</label><input id="n-' + k.id + '" type="text" placeholder="Fx mobile_app_emmas_tlf" value="' + esc(k.notify) + '"></div>' +
         '<div class="note">' + (k.birthday ? 'Alderen (' + k.age + ' år) følger fødselsdatoen.' : 'Skriv fødselsdato, så skifter alderen af sig selv.') + '</div>' +
         '<button class="btn small" data-savekid="' + k.id + '">Gem oplysninger</button>' +
         goalBox(k) +
@@ -511,6 +516,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         allowance: document.getElementById('al-' + d.savekid).value
       }, 'Gemt');
     }
+    else if (d.ntfy) {
+      var nk = kidById(d.ntfy);
+      post('api/kids/' + d.ntfy, { ntfy_on: !nk.ntfy_on }, nk.ntfy_on ? 'Beskeder er slået fra' : 'Beskeder er slået til');
+    }
+    else if (d.testntfy) { post('api/kids/' + d.testntfy + '/test', {}, 'Prøvebesked er sendt'); }
     else if (d.pause) {
       var pk = kidById(d.pause);
       post('api/kids/' + d.pause, { paused: !pk.paused }, pk.paused ? pk.name + ' er med igen' : pk.name + ' er sat på pause');
