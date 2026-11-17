@@ -5,6 +5,7 @@
   indbyggede panel (ingress), så HA's egen login beskytter den.
 """
 import base64
+import datetime as dt
 import binascii
 import json
 import logging
@@ -31,6 +32,9 @@ KID_STATE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/state$')
 KID_DONE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/items/([a-f0-9]{10})/done$')
 KID_TRADE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/items/([a-f0-9]{10})/trade$')
 KID_TRADE_END = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/trades/([a-f0-9]{10})/(accept|end)$')
+KID_BUY = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/rewards/([a-f0-9]{10})/buy$')
+KID_UNBUY = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/claims/([a-f0-9]{10})/cancel$')
+KID_WISH = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/wish$')
 KID_CLAIM = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/tasks/([a-f0-9]{10})/claim$')
 
 KID_FILE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/(sw\.js|manifest\.json|icon\.png)$')
@@ -202,6 +206,7 @@ def make_handler(app, role, allow_from=None):
                 return self._json({'ok': True})
             m = KID_STATE.match(path)
             if m and method == 'GET':
+                store.touch(m.group(1))
                 return self._json(store.kid_view(m.group(1)))
             m = KID_DONE.match(path)
             if m and method == 'POST':
@@ -237,6 +242,26 @@ def make_handler(app, role, allow_from=None):
                 else:
                     store.end_trade(m.group(1), m.group(2))
                 return self._json(store.kid_view(m.group(1)))
+            m = KID_BUY.match(path)
+            if m and method == 'POST':
+                self._body()
+                kid, claim = store.buy_reward(m.group(1), m.group(2))
+                app.ha.notify('Pligt-pilot', '%s vil bruge %d kr. på: %s. Åbn Pligter for at svare.'
+                              % (kid['name'], claim['price'], claim['title']))
+                return self._json(store.kid_view(m.group(1)))
+            m = KID_UNBUY.match(path)
+            if m and method == 'POST':
+                self._body()
+                store.cancel_claim(m.group(1), m.group(2))
+                return self._json(store.kid_view(m.group(1)))
+            m = KID_WISH.match(path)
+            if m and method == 'POST':
+                body = self._body()
+                kid = store.make_wish(m.group(1), body.get('title'), body.get('price'))
+                if kid.get('wish'):
+                    app.ha.notify('Pligt-pilot', '%s ønsker sig: %s (%d kr.). Åbn Pligter for at svare.'
+                                  % (kid['name'], kid['wish']['title'], kid['wish']['price']))
+                return self._json(store.kid_view(m.group(1)))
             m = KID_CLAIM.match(path)
             if m and method == 'POST':
                 self._body()
@@ -263,6 +288,17 @@ def make_handler(app, role, allow_from=None):
                                                           ip, app.options.get('kid_port', 8099))) if ip else ''
                     state['push_on'] = bool(app.vapid)
                     return self._json(state)
+                if path == '/api/backup':
+                    name = 'pligt-pilot-%s.json' % dt.date.today().isoformat()
+                    body = store.backup()
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json; charset=utf-8')
+                    self.send_header('Content-Disposition', 'attachment; filename="%s"' % name)
+                    self.send_header('Content-Length', str(len(body)))
+                    self.send_header('Cache-Control', 'no-store')
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
                 m = re.match(r'^/photo/' + ID + r'$', path)
                 if m:
                     data = store.photo(m.group(1))
@@ -345,6 +381,35 @@ def make_handler(app, role, allow_from=None):
             if m:
                 store.delete_task(m.group(1))
                 return self._json(store.admin_state())
+            if path == '/api/pay_all':
+                store.pay_all()
+                return self._json(store.admin_state())
+            if path == '/api/rewards':
+                store.add_reward(body.get('title'), body.get('price'))
+                return self._json(store.admin_state())
+            if path == '/api/rewards/examples':
+                store.add_reward_examples()
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/rewards/' + ID + r'/delete$', path)
+            if m:
+                store.delete_reward(m.group(1))
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/claims/' + ID + r'/(approve|reject)$', path)
+            if m:
+                approve = m.group(2) == 'approve'
+                claim = store.decide_claim(m.group(1), approve)
+                kid = next((k for k in store.data['kids'] if k['id'] == claim['kid_id']), None)
+                if kid:
+                    app.ha.notify_kid(kid, 'Pligt-pilot', 'Du fik lov: %s!' % claim['title'] if approve
+                                      else 'Ikke i dag: %s' % claim['title'])
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/kids/' + ID + r'/wish/(accept|reject)$', path)
+            if m:
+                kid, wish = store.decide_wish(m.group(1), m.group(2) == 'accept')
+                if wish:
+                    app.ha.notify_kid(kid, 'Pligt-pilot', 'Dit ønske er et mål nu: %s!' % wish['title']
+                                      if m.group(2) == 'accept' else 'Ønsket blev ikke til noget: %s' % wish['title'])
+                return self._json(store.admin_state())
             if path == '/api/starter':
                 store.add_starter_pack()
                 return self._json(store.admin_state())
@@ -376,7 +441,7 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.admin_state())
             if path == '/api/settings':
                 for key in ('goal', 'hero_bonus', 'penalty', 'perfect_bonus',
-                            'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading', 'weekly_summary'):
+                            'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading', 'weekly_summary', 'streak_bonus'):
                     if key in body:
                         store.set_setting(key, body[key])
                 if 'family_title' in body or 'family_amount' in body:

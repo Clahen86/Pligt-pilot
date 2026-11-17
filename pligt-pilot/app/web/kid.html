@@ -58,6 +58,10 @@ button { font: inherit; cursor: pointer; }
 .tradeform { display: flex; flex-direction: column; gap: 8px; border: 2px dashed var(--accent); }
 .tradeform label { font-size: 13px; font-weight: 800; color: var(--muted); }
 .tradeform select, .tradeform input { height: 44px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 0 12px; font: inherit; font-size: 16px; font-weight: 700; color: var(--ink); background: #fff; }
+.shop { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #EFE6D6; }
+.shop .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.shop .t span { font-size: 13px; color: var(--muted); font-weight: 700; }
+.streak b { color: var(--accent); }
 .row2 { display: flex; gap: 8px; }
 .row2 .btn { flex: 1; }
 .btn.small { height: 36px; min-width: 0; padding: 0 10px; font-size: 13px; }
@@ -93,7 +97,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 </main>
 <script>
 (function () {
-  var state = null, busy = false, tradeOpen = '';
+  var state = null, busy = false, tradeOpen = '', wishOpen = false;
   var app = document.getElementById('app'), errBox = document.getElementById('err');
 
   function esc(s) {
@@ -179,6 +183,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       bossCard(s.boss) +
       tradeCards(s) +
       saving(s) +
+      spendCard(s) +
       goalCard(s.family, 'Familiens mål') +
       (s.badges && s.badges.length ? '<div class="chips">' + s.badges.map(function (b) { return '<span class="chip">' + esc(b.title) + '</span>'; }).join('') + '</div>' : '') +
       '<div class="card"><div class="row"><b>Din uge</b><span>Mål: ' + s.goal + ' opgaver</span></div>' +
@@ -225,6 +230,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     return '<div class="card pet"><div class="petart">' + character(s) + '</div><div class="petinfo"><b>' + esc(l.name) + '</b>' +
       '<div class="sub">Niveau ' + l.n + ' · ' + l.count + (l.count === 1 ? ' opgave' : ' opgaver') + '</div>' +
       '<div class="meter" style="margin:8px 0 4px"><i style="width:' + Math.max(pct, 4) + '%"></i></div>' +
+      (s.streak && s.streak.days > 0 ? '<div class="sub streak"><b>' + s.streak.days + (s.streak.days === 1 ? ' dag' : ' dage') + ' i træk</b>' + (s.streak.bonus ? ' · bonus om ' + s.streak.to_go + (s.streak.to_go === 1 ? ' dag' : ' dage') : '') + '</div>' : '') +
       '<div class="sub">' + (l.next ? l.left + (l.left === 1 ? ' opgave' : ' opgaver') + ' til næste niveau' : 'Du er på det højeste niveau!') + '</div></div></div>';
   }
   function prevNeed(l) { var steps = [0, 3, 10, 25, 50, 100, 200]; return steps[l.n - 1] || 0; }
@@ -240,6 +246,31 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       '<path d="M30 40 L38 14 L52 34 M90 40 L82 14 L68 34" fill="#6C4AB6"></path><ellipse cx="60" cy="68" rx="38" ry="36" fill="#6C4AB6"></ellipse>' + face + '</g></svg>' +
       '<div class="grow"><div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="' + b.hp + '" aria-valuenow="' + b.hits + '"><i style="width:' + pct + '%;background:#C73A30"></i></div>' +
       '<div class="sub" style="margin-top:6px">' + (dead ? 'Bossen er besejret! Godt gået, alle sammen.' : 'Bossen har ' + left + ' liv tilbage. Hver godkendt opgave er et slag.') + '</div></div></div></div>';
+  }
+
+  // ---- butik og ønsker ----
+  function spendCard(s) {
+    if (!s.rewards.length && (s.saving || s.wish)) { return wishPart(s) ? '<div class="card">' + wishPart(s) + '</div>' : ''; }
+    var out = '<div class="card"><b>Brug dine penge</b><div class="sub" style="margin:2px 0 8px">Du kan bruge ' + s.spendable + ' kr.</div>';
+    s.rewards.forEach(function (r) {
+      var claim = s.claims.filter(function (c) { return c.title === r.title; })[0], act;
+      if (claim) { act = '<button class="btn small ghost" data-unbuy="' + claim.id + '">Træk tilbage</button>'; }
+      else if (s.spendable >= r.price) { act = '<button class="btn small" data-buy="' + r.id + '">Køb</button>'; }
+      else { act = '<span class="sub">Mangler ' + (r.price - s.spendable) + ' kr.</span>'; }
+      out += '<div class="shop"><div class="t"><b>' + esc(r.title) + '</b><span>' + r.price + ' kr.' + (claim ? ' · venter på svar' : '') + '</span></div>' + act + '</div>';
+    });
+    return out + wishPart(s) + '</div>';
+  }
+  function wishPart(s) {
+    if (s.wish) {
+      return '<div class="shop"><div class="t"><b>Du ønsker dig: ' + esc(s.wish.title) + '</b><span>' + s.wish.price + ' kr. · venter på svar</span></div><button class="btn small ghost" data-wishdel="1">Træk tilbage</button></div>';
+    }
+    if (wishOpen) {
+      return '<div class="tradeform"><label for="w-t">Hvad ønsker du dig?</label><input id="w-t" type="text" maxlength="40" placeholder="Fx ny bold">' +
+        '<label for="w-p">Hvad koster det? (kr.)</label><input id="w-p" type="number" inputmode="numeric" min="1" max="1000">' +
+        '<div class="row2"><button class="btn" data-wishsend="1">Send ønske</button><button class="btn ghost" data-wishcancel="1">Annullér</button></div></div>';
+    }
+    return s.saving ? '' : '<button class="btn ghost" style="margin-top:8px;width:100%" data-wishopen="1">Jeg ønsker mig noget</button>';
   }
 
   // ---- bytte ----
@@ -346,6 +377,16 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     var b = e.target.closest('button');
     if (!b) { return; }
     if (b.dataset.pushon) { enablePush(); }
+    if (b.dataset.buy) { act('api/rewards/' + b.dataset.buy + '/buy'); }
+    if (b.dataset.unbuy) { act('api/claims/' + b.dataset.unbuy + '/cancel'); }
+    if (b.dataset.wishopen) { wishOpen = true; render(); }
+    if (b.dataset.wishcancel) { wishOpen = false; render(); }
+    if (b.dataset.wishdel) { act('api/wish', { title: '', price: '' }); }
+    if (b.dataset.wishsend) {
+      var wt = document.getElementById('w-t').value, wp = document.getElementById('w-p').value;
+      wishOpen = false;
+      act('api/wish', { title: wt, price: wp });
+    }
     if (b.dataset.trade) { tradeOpen = b.dataset.trade; render(); }
     if (b.dataset.tradecancel) { tradeOpen = ''; render(); }
     if (b.dataset.tradesend) {
@@ -360,7 +401,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     if (b.dataset.claim) { act('api/tasks/' + b.dataset.claim + '/claim'); }
   });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { load(); } });
-  setInterval(function () { if (!tradeOpen) { load(); } }, 15000);
+  setInterval(function () { if (!tradeOpen && !wishOpen) { load(); } }, 15000);
   load().then(detectPush).then(render);
 })();
 </script>

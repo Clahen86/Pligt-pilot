@@ -67,6 +67,7 @@ input[type=text], input[type=number], input[type=date], input[type=time], select
 .qr { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
 .qrsvg { border-radius: 14px; border: 2px solid #D9CFBE; max-width: 100%; height: auto; }
 .col { display: flex; flex-direction: column; gap: 6px; }
+.linkbtn { display: flex; align-items: center; justify-content: center; text-decoration: none; margin-top: 8px; }
 .two { display: flex; gap: 10px; }
 .two > div { flex: 1; min-width: 0; }
 .check { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: var(--ink); margin: 0; }
@@ -100,7 +101,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 (function () {
   var state = null, found = null, entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
   var qrKid = '';
-  var draft = { rule: { preset: 'Vaskemaskine', entity: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false, season: '', surprise: false }, kid: { name: '', age: '', birthday: '' } };
+  var draft = { rule: { preset: 'Vaskemaskine', entity: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false, season: '', surprise: false }, kid: { name: '', age: '', birthday: '' }, reward: { title: '', price: '10' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
   var REPEAT = { daily: 'Hver dag', weekly: 'Hver uge', once: 'Én gang' };
   var CHECK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"></path></svg>';
@@ -411,12 +412,30 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       out += '</div>';
     }
     out += '</div>';
+    if (s.claims.length || s.wishes.length) {
+      out += '<h2>Køb og ønsker</h2><div class="list">';
+      s.claims.forEach(function (c) {
+        out += '<div class="card"><div class="row"><div class="avatar" style="background:' + esc(c.color) + '" aria-hidden="true">' + esc(c.name.charAt(0).toUpperCase()) + '</div>' +
+          '<div class="grow t"><b>' + esc(c.name) + ' vil have: ' + esc(c.title) + '</b><span>Koster ' + c.price + ' kr.</span></div>' +
+          '<button class="icon no" data-claimno="' + c.id + '" aria-label="Nej til ' + esc(c.title) + '">' + CROSS + '</button>' +
+          '<button class="icon yes" data-claimyes="' + c.id + '" aria-label="Ja til ' + esc(c.title) + '">' + CHECK + '</button></div></div>';
+      });
+      s.wishes.forEach(function (w) {
+        out += '<div class="card"><div class="row"><div class="avatar" style="background:' + esc(w.color) + '" aria-hidden="true">' + esc(w.name.charAt(0).toUpperCase()) + '</div>' +
+          '<div class="grow t"><b>' + esc(w.name) + ' ønsker sig: ' + esc(w.title) + '</b><span>' + w.price + ' kr. Sæt det som sparemål?</span></div></div>' +
+          '<div class="row" style="margin-top:8px"><button class="btn small" data-wishyes="' + w.kid_id + '">Sæt som mål</button><button class="btn small ghost" data-wishno="' + w.kid_id + '">Nej tak</button></div></div>';
+      });
+      out += '</div>';
+    }
+    if (s.advice && s.advice.length) {
+      out += '<h2>Gode råd</h2><div class="list">' + s.advice.map(function (t) { return '<div class="card note">' + esc(t) + '</div>'; }).join('') + '</div>';
+    }
     if (s.boss) {
       out += '<h2>Ugens boss</h2><div class="card"><div class="row"><div class="grow t"><b>' + esc(s.boss.name) + '</b><span>' + s.boss.hits + ' af ' + s.boss.hp + ' opgaver klaret sammen' + (s.boss.defeated ? ' – besejret!' : '') + '</span></div></div>' +
         '<div class="meter"><i style="width:' + Math.round(100 * s.boss.hits / s.boss.hp) + '%"></i></div>' +
         (s.boss.defeated && !s.boss.paid && s.boss.bonus > 0 ? '<button class="btn small sun" data-boss="1">Giv ' + s.boss.bonus + ' kr til dem, der hjalp</button>' : '') + '</div>';
     }
-    out += '<h2>Børnene</h2><div class="list">';
+    out += '<h2>Børnene</h2>' + (s.to_pay > 0 && s.kids.filter(function (k) { return k.balance > 0; }).length > 1 ? '<button class="btn" data-payall="1">Udbetal til alle (' + s.to_pay + ' kr)</button>' : '') + '<div class="list">';
     s.kids.forEach(function (k) {
       out += '<div class="card"><div class="kid-top"><div class="avatar big" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' +
         '<div class="grow"><div class="name">' + esc(k.name) + (k.paused ? ' <span class="badge" style="font-size:12px;padding:3px 8px">På pause</span>' : '') + '</div><div class="sub">' + k.age + ' år · ' + k.tasks_week + (k.tasks_week === 1 ? ' opgave' : ' opgaver') + ' i ugen' + (k.level ? ' · ' + esc(k.level.name) : '') + '</div></div>' +
@@ -449,7 +468,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     if (s.history && s.history.length) {
       out += '<h2>Seneste</h2><div class="list">';
       s.history.slice(0, 12).forEach(function (h) {
-        var label = h.kind === 'task' ? h.note : h.kind === 'payout' ? 'Udbetalt' : h.kind === 'allowance' ? 'Lommepenge' : h.kind === 'penalty' ? 'Træk: ' + h.note : h.note || 'Bonus';
+        var label = h.kind === 'task' ? h.note : h.kind === 'payout' ? 'Udbetalt' : h.kind === 'allowance' ? 'Lommepenge' : h.kind === 'penalty' ? 'Træk: ' + h.note : h.kind === 'reward' ? 'Belønning: ' + h.note : h.note || 'Bonus';
         var when = new Date(h.at);
         var day = isNaN(when) ? '' : when.toLocaleDateString('da-DK', { weekday: 'short', day: 'numeric', month: 'short' });
         out += '<div class="row card"><div class="avatar" style="background:' + esc(h.color) + '" aria-hidden="true">' + esc(h.name.charAt(0).toUpperCase()) + '</div>' +
@@ -510,6 +529,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       });
       out += '</div>';
     });
+    out += '<h2>Belønninger</h2><div class="card"><div class="note">Børnene kan bruge kroner på dem. Du siger ja eller nej, hver gang.</div>';
+    s.rewards.forEach(function (r) {
+      out += '<div class="row"><div class="grow t"><b>' + esc(r.title) + '</b><span>' + r.price + ' kr.</span></div>' +
+        '<button class="icon no" style="width:40px;height:40px" data-delreward="' + r.id + '" aria-label="Slet ' + esc(r.title) + '">' + CROSS + '</button></div>';
+    });
+    if (!s.rewards.length) { out += '<button class="btn" data-rewardex="1">Tilføj tre eksempler</button>'; }
+    out += '<div class="two"><div><label for="rw-title">Ny belønning</label><input id="rw-title" type="text" data-draft="reward.title" placeholder="Fx Biograftur" value="' + esc(draft.reward.title) + '"></div>' +
+      '<div style="max-width:110px"><label for="rw-price">Pris (kr.)</label><input id="rw-price" type="number" inputmode="numeric" min="1" max="1000" data-draft="reward.price" value="' + esc(draft.reward.price) + '"></div></div>' +
+      '<button class="btn ghost" data-addreward="1">Tilføj belønning</button></div>';
     var d = draft.task;
     out += '<h2>Skriv din egen opgave</h2><div class="card">' +
       '<div><label for="t-title">Navn på opgaven</label><input id="t-title" type="text" data-draft="task.title" value="' + esc(d.title) + '" placeholder="Fx Fodr kaninen"></div>' +
@@ -580,6 +608,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<div class="two"><div><label for="s-bosshp">Ugens boss: antal opgaver</label><input id="s-bosshp" type="number" min="0" max="500" value="' + (cfg.boss_hp == null ? 20 : cfg.boss_hp) + '"></div>' +
       '<div><label for="s-bossbonus">Bossbonus til hver (kr.)</label><input id="s-bossbonus" type="number" min="0" max="1000" value="' + (cfg.boss_bonus || 0) + '"></div></div>' +
       '<div class="note">Boss: 0 opgaver slår den fra. Børnene slår bossen sammen.</div>' +
+      '<div><label for="s-streak">Bonus for 5 dage i træk (kr.)</label><input id="s-streak" type="number" min="0" max="1000" value="' + (cfg.streak_bonus == null ? 5 : cfg.streak_bonus) + '"></div>' +
       '<label class="check"><input type="checkbox" id="s-summary"' + (cfg.weekly_summary === false ? '' : ' checked') + '> Send mig en opsummering hver søndag kl. 18</label>' +
       '<label class="check"><input type="checkbox" id="s-trading"' + (cfg.trading === false ? '' : ' checked') + '> Børnene må bytte opgaver med hinanden</label>' +
       '<div><label for="s-remind">Påmind børnene kl.</label><input id="s-remind" type="time" value="' + esc(cfg.reminder_time || '') + '"></div>' +
@@ -587,7 +616,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<datalist id="lights">' + lights.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[1]) + '</option>'; }).join('') + '</datalist></div>' +
       '<div class="two"><div><label for="s-ft">Familiemål</label><input id="s-ft" type="text" placeholder="Fx Tivoli" value="' + (fam ? esc(fam.title) : '') + '"></div>' +
       '<div><label for="s-fa">Beløb (kr.)</label><input id="s-fa" type="number" min="1" max="1000" value="' + (fam ? fam.amount : '') + '"></div></div>' +
-      '<button class="btn ghost" data-savesettings="1">Gem indstillinger</button></div>';
+      '<button class="btn ghost" data-savesettings="1">Gem indstillinger</button>' +
+      '<a class="btn ghost linkbtn" href="api/backup" download>Hent backup af alt</a></div>';
     return out;
   }
 
@@ -713,6 +743,17 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var d = b.dataset;
     if (d.tab) { tab = d.tab; render(); window.scrollTo(0, 0); if ((d.tab === 'house' || d.tab === 'kids') && entitiesOn === null) { loadEntities(); }
       if (d.tab === 'house') { loadFound(); } }
+    else if (d.claimyes) { post('api/claims/' + d.claimyes + '/approve', {}, 'Godkendt'); }
+    else if (d.claimno) { post('api/claims/' + d.claimno + '/reject', {}, 'Afvist'); }
+    else if (d.wishyes) { post('api/kids/' + d.wishyes + '/wish/accept', {}, 'Sat som sparemål'); }
+    else if (d.wishno) { post('api/kids/' + d.wishno + '/wish/reject', {}, 'Ønsket er fjernet'); }
+    else if (d.payall) { if (confirm('Udbetale til alle børn?')) { post('api/pay_all', {}, 'Udbetalt'); } }
+    else if (d.rewardex) { post('api/rewards/examples', {}, 'Eksempler tilføjet'); }
+    else if (d.delreward) { post('api/rewards/' + d.delreward + '/delete', {}, 'Slettet'); }
+    else if (d.addreward) {
+      post('api/rewards', { title: draft.reward.title, price: draft.reward.price }, 'Belønningen er tilføjet')
+        .then(function () { draft.reward = { title: '', price: '10' }; render(); }).catch(function () {});
+    }
     else if (d.starter) { post('api/starter', {}, 'Startpakken er oprettet. Slå det fra, du ikke vil have.'); }
     else if (d.approveall) { post('api/approve_all', {}, 'Alt er godkendt'); }
     else if (d.approve) { post('api/items/' + d.approve + '/approve', {}, 'Godkendt'); }
@@ -813,7 +854,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         goal: document.getElementById('s-goal').value, hero_bonus: document.getElementById('s-bonus').value,
         perfect_bonus: document.getElementById('s-perfect').value, penalty: document.getElementById('s-penalty').value,
         reminder_time: document.getElementById('s-remind').value, celebrate_light: document.getElementById('s-light').value,
-        boss_hp: document.getElementById('s-bosshp').value, boss_bonus: document.getElementById('s-bossbonus').value,
+        streak_bonus: document.getElementById('s-streak').value, boss_hp: document.getElementById('s-bosshp').value, boss_bonus: document.getElementById('s-bossbonus').value,
         trading: document.getElementById('s-trading').checked,
           weekly_summary: document.getElementById('s-summary').checked
       };

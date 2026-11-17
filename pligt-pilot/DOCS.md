@@ -49,6 +49,12 @@ Beskederne går gennem den åbne tjeneste ntfy.sh. Emnet er et langt tilfældigt
 
 Har barnet Home Assistant-appen, kan du i stedet skrive barnets notifikationstjeneste, fx `mobile_app_emmas_tlf`.
 
+## Penge og belønninger
+- **Belønninger:** under Opgaver, nederst. Tryk "Tilføj tre eksempler" for at komme i gang. Barnet trykker Køb, og du får en besked og svarer under Køb og ønsker på Oversigt. Pengene trækkes først, når du siger ja.
+- **Ønsker:** barnet skriver, hvad det ønsker sig og hvad det koster. Du kan sætte det som sparemål.
+- **Dage i træk:** bonussen (som standard 5 kr.) gives hver 5. dag i træk. Sæt den til 0 under Indstillinger for at slå den fra.
+- **Backup:** "Hent backup af alt" nederst under Børn henter en fil med al data (ikke billederne). Gem den et sikkert sted. Den indeholder børnenes links.
+
 ## Gør det nemt
 - **Startpakke:** på Oversigt (før du har opgaver) opretter knappen "Startpakke" opgaver, der passer til børnenes alder. Du kan slå dem fra eller ændre dem bagefter.
 - **Godkend alle:** knappen vises over de ventende opgaver. Opgaver med billede godkendes ikke automatisk.

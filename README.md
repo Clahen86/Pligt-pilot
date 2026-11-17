@@ -25,6 +25,14 @@ Se `pligt-pilot/DOCS.md` for indstillinger.
 - **Rigtige kroner.** Pris pr. opgave, saldo pr. barn og ugegraf.
 - **Ugens helt.** Konkurrence med point efter alder og en bonus.
 
+## Nyt i 0.7
+- **Belønninger:** børnene kan bruge kroner på ting, du selv vælger (skærmtid, fredagsfilm). Du svarer ja eller nej.
+- **Ønsker:** et barn kan skrive et ønske, og du kan med ét tryk gøre det til barnets sparemål.
+- **Dage i træk:** en lille bonus, når et barn har gjort noget 5 dage i træk.
+- **Udbetal til alle** med ét tryk.
+- **Backup:** hent al data som en fil.
+- **Gode råd:** korte hint, fx hvis et barn ikke har åbnet siden i flere dage, eller en opgave tit bliver misset.
+
 ## Nyt i 0.6
 - **Startpakke:** ét tryk opretter opgaver, der passer til børnenes alder.
 - **Godkend alle:** godkend alt, der venter, med ét tryk (billeder ses først).

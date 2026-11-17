@@ -553,6 +553,67 @@ class StoreTests(unittest.TestCase):
         self.store.data['settings']['summary_week'] = ''
         self.assertIsNone(self.store.weekly_summary())
 
+    def test_rewards_are_reserved_and_paid_after_approval(self):
+        self.store.add_task('Dæk bord', 20)
+        item = self.kid_items(self.emil)[0]
+        self.store.mark_done(self.emil['token'], item['id'])
+        self.store.decide(item['id'], True)
+        reward = self.store.add_reward('Fredagsfilm', 15)
+        with self.assertRaises(Problem):
+            self.store.buy_reward(self.emil['token'], self.store.add_reward('Dyr ting', 500)['id'])
+        self.store.buy_reward(self.emil['token'], reward['id'])
+        with self.assertRaises(Problem):
+            self.store.buy_reward(self.emil['token'], reward['id'])      # kun én ad gangen
+        self.assertEqual(self.store.kid_view(self.emil['token'])['spendable'], 5)
+        self.store.decide_claim(self.store.data['claims'][0]['id'], True)
+        self.assertEqual(self.store.balance(self.emil['id']), 5)
+        self.assertEqual(self.store.data['ledger'][-1]['kind'], 'reward')
+
+    def test_rejected_reward_costs_nothing(self):
+        self.store.add_task('Dæk bord', 20)
+        item = self.kid_items(self.emil)[0]
+        self.store.mark_done(self.emil['token'], item['id'])
+        self.store.decide(item['id'], True)
+        reward = self.store.add_reward('Fredagsfilm', 15)
+        self.store.buy_reward(self.emil['token'], reward['id'])
+        self.store.decide_claim(self.store.data['claims'][0]['id'], False)
+        self.assertEqual(self.store.balance(self.emil['id']), 20)
+        self.assertEqual(self.store.data['claims'], [])
+
+    def test_wish_becomes_a_saving_goal_when_accepted(self):
+        self.store.make_wish(self.emil['token'], 'Ny bold', 150)
+        self.assertEqual(self.store.admin_state()['wishes'][0]['title'], 'Ny bold')
+        self.store.decide_wish(self.emil['id'], True)
+        self.assertEqual(self.store.kid_view(self.emil['token'])['saving']['title'], 'Ny bold')
+        self.assertEqual(self.store.admin_state()['wishes'], [])
+
+    def test_five_days_in_a_row_pays_a_bonus_once(self):
+        self.store.add_task('Dæk bord', 5)
+        for day in range(5):
+            for item in self.kid_items(self.emil):
+                if item['status'] == 'todo':
+                    self.store.mark_done(self.emil['token'], item['id'])
+                    self.store.decide(item['id'], True)
+            self.clock.advance(days=1)
+        bonuses = [e for e in self.store.data['ledger'] if e['kind'] == 'bonus']
+        self.assertEqual(len(bonuses), 1)
+        self.assertEqual(bonuses[0]['amount'], 5)
+        self.assertIn('5 dage', bonuses[0]['note'])
+
+    def test_pay_all_and_advice(self):
+        self.store.add_task('Dæk bord', 6)
+        for k in (self.emil,):
+            for item in self.kid_items(k):
+                self.store.mark_done(k['token'], item['id'])
+                self.store.decide(item['id'], True)
+        self.assertEqual(self.store.pay_all(), 6)
+        with self.assertRaises(Problem):
+            self.store.pay_all()
+        self.store.touch(self.emil['token'])
+        self.clock.advance(days=4)
+        self.assertTrue(any('ikke åbnet' in a for a in self.store.advice()))
+        self.assertIn(b'"kids"', self.store.backup())
+
     def test_surprise_day_can_be_a_quiet_day(self):
         import random
 

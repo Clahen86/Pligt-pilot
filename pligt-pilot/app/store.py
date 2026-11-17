@@ -101,8 +101,8 @@ class Store:
                          'reminder_sent': '', 'celebrate_light': '',
                          'family_goal': None, 'hero_wins': {}, 'perfect_paid': {},
                          'boss_hp': 20, 'boss_bonus': 0, 'boss_paid_week': '',
-                         'trading': True, 'surprise_plan': {}},
-            'trades': [],
+                         'trading': True, 'surprise_plan': {}, 'streak_bonus': 5},
+            'trades': [], 'rewards': [], 'claims': [],
         }
         self._photos = {}
         self.photo_dir = os.path.join(os.path.dirname(path) or '.', 'photos') if path else None
@@ -468,6 +468,178 @@ class Store:
             ids = [i['id'] for i in self.data['items'] if i['status'] == 'wait' and not i.get('photo')]
         return [self.decide(item_id, True) for item_id in ids]
 
+    # ---- dage i træk ----------------------------------------------------
+    STREAK_EVERY = 5
+
+    def _day_streak(self, kid_id):
+        """Antal dage i træk (til og med i dag, eller til og med i går), hvor barnet har meldt noget færdigt."""
+        days = {i['done_at'][:10] for i in self.data['items']
+                if i['kid_id'] == kid_id and i['status'] in ('wait', 'done') and i.get('done_at')}
+        d = self._now().date()
+        if d.isoformat() not in days:
+            d -= dt.timedelta(days=1)
+        n = 0
+        while d.isoformat() in days:
+            n += 1
+            d -= dt.timedelta(days=1)
+        return n
+
+    def _streak_view(self, kid):
+        n = self._day_streak(kid['id'])
+        bonus = int(self.data['settings'].get('streak_bonus') or 0)
+        return {'days': n, 'bonus': bonus,
+                'to_go': self.STREAK_EVERY - n % self.STREAK_EVERY if bonus else 0}
+
+    def _streak_bonus(self, kid_id):
+        bonus = int(self.data['settings'].get('streak_bonus') or 0)
+        kid = self._kid(kid_id)
+        today = self._now().date().isoformat()
+        n = self._day_streak(kid_id)
+        if bonus > 0 and n >= self.STREAK_EVERY and n % self.STREAK_EVERY == 0 \
+                and kid.get('streak_paid') != today:
+            kid['streak_paid'] = today
+            self._credit(kid_id, bonus, 'bonus', '%d dage i træk' % n)
+
+    # ---- belønninger -----------------------------------------------------
+    def add_reward(self, title, price):
+        with self.lock:
+            cost = self._clean_price(price)
+            if cost < 1:
+                raise Problem('Prisen skal være mindst 1 kr.')
+            reward = {'id': _id(), 'title': self._clean_text(title, 'Navn på belønningen', 40), 'price': cost}
+            self.data['rewards'].append(reward)
+            self._save()
+            return reward
+
+    def add_reward_examples(self):
+        for title, price in (('30 minutters ekstra skærmtid', 15), ('Vælg fredagsfilmen', 10),
+                             ('Blive oppe 30 minutter længere', 20)):
+            if not any(r['title'] == title for r in self.data['rewards']):
+                self.add_reward(title, price)
+
+    def delete_reward(self, reward_id):
+        with self.lock:
+            self.data['rewards'] = [r for r in self.data['rewards'] if r['id'] != reward_id]
+            self.data['claims'] = [c for c in self.data['claims'] if c['reward_id'] != reward_id]
+            self._save()
+
+    def _reserved(self, kid_id):
+        return sum(c['price'] for c in self.data['claims'] if c['kid_id'] == kid_id)
+
+    def buy_reward(self, token, reward_id):
+        with self.lock:
+            kid = self.kid_by_token(token)
+            if not kid:
+                raise Problem('Linket passer ikke', 404)
+            reward = next((r for r in self.data['rewards'] if r['id'] == reward_id), None)
+            if not reward:
+                raise Problem('Belønningen findes ikke længere')
+            if any(c['kid_id'] == kid['id'] and c['reward_id'] == reward_id for c in self.data['claims']):
+                raise Problem('Du har allerede bedt om den')
+            if self.balance(kid['id']) - self._reserved(kid['id']) < reward['price']:
+                raise Problem('Du har ikke penge nok endnu')
+            claim = {'id': _id(), 'kid_id': kid['id'], 'reward_id': reward_id, 'title': reward['title'],
+                     'price': reward['price'], 'at': self._now().isoformat(timespec='seconds')}
+            self.data['claims'].append(claim)
+            self._save()
+            return kid, claim
+
+    def decide_claim(self, claim_id, approve):
+        with self.lock:
+            claim = next((c for c in self.data['claims'] if c['id'] == claim_id), None)
+            if not claim:
+                raise Problem('Anmodningen findes ikke længere')
+            if approve:
+                if self.balance(claim['kid_id']) < claim['price']:
+                    raise Problem('Barnet har ikke penge nok længere')
+                self._credit(claim['kid_id'], -claim['price'], 'reward', claim['title'])
+            self.data['claims'] = [c for c in self.data['claims'] if c['id'] != claim_id]
+            self._save()
+            return claim
+
+    def cancel_claim(self, token, claim_id):
+        with self.lock:
+            kid = self.kid_by_token(token)
+            if not kid:
+                raise Problem('Linket passer ikke', 404)
+            self.data['claims'] = [c for c in self.data['claims']
+                                   if not (c['id'] == claim_id and c['kid_id'] == kid['id'])]
+            self._save()
+
+    # ---- ønsker ------------------------------------------------------------
+    def make_wish(self, token, title, price):
+        with self.lock:
+            kid = self.kid_by_token(token)
+            if not kid:
+                raise Problem('Linket passer ikke', 404)
+            if not (title or '').strip() and not str(price or '').strip():
+                kid.pop('wish', None)
+            else:
+                cost = self._clean_price(price)
+                if cost < 1:
+                    raise Problem('Skriv, hvad det koster')
+                kid['wish'] = {'title': self._clean_text(title, 'Hvad ønsker du dig', 40), 'price': cost}
+            self._save()
+            return kid
+
+    def decide_wish(self, kid_id, accept):
+        with self.lock:
+            kid = self._kid(kid_id)
+            wish = kid.pop('wish', None)
+            if wish and accept:
+                self.set_goal(kid_id, wish['title'], wish['price'])
+            self._save()
+            return kid, wish
+
+    def pay_all(self):
+        with self.lock:
+            total = 0
+            for k in self.data['kids']:
+                amount = self.balance(k['id'])
+                if amount > 0:
+                    self._credit(k['id'], -amount, 'payout', 'Udbetalt')
+                    total += amount
+            if not total:
+                raise Problem('Der er ikke noget at udbetale')
+            self._save()
+            return total
+
+    def touch(self, token):
+        """Husker, hvornår barnet sidst åbnede siden (kun datoen)."""
+        with self.lock:
+            kid = self.kid_by_token(token)
+            today = self._now().date().isoformat()
+            if kid and kid.get('seen') != today:
+                kid['seen'] = today
+                self._save()
+
+    def advice(self):
+        """Få, korte råd til forælderen."""
+        out = []
+        today = self._now().date()
+        for k in self.data['kids']:
+            if k.get('paused'):
+                continue
+            seen = k.get('seen')
+            if seen and (today - dt.date.fromisoformat(seen)).days >= 3:
+                out.append('%s har ikke åbnet siden i %d dage. Send linket igen.'
+                           % (k['name'], (today - dt.date.fromisoformat(seen)).days))
+            elif not seen and any(i['kid_id'] == k['id'] and (i['created'] or '')[:10] < today.isoformat()
+                                  for i in self.data['items']):
+                out.append('%s har endnu ikke åbnet sit link. Send det igen.' % k['name'])
+        since = (today - dt.timedelta(days=14)).isoformat()
+        for t in self.data['tasks']:
+            n = sum(1 for i in self.data['items']
+                    if i['task_id'] == t['id'] and i['status'] == 'missed' and (i['created'] or '')[:10] >= since)
+            if n >= 3:
+                out.append('"%s" er misset %d gange de sidste 14 dage. Prøv at sætte prisen op eller fjern den.'
+                           % (t['title'], n))
+        return out[:3]
+
+    def backup(self):
+        with self.lock:
+            return json.dumps(self.data, ensure_ascii=False, indent=1).encode('utf-8')
+
     def has_task_titled(self, title):
         wanted = (title or '').strip().lower()
         return any(t['title'].strip().lower() == wanted for t in self.data['tasks'])
@@ -746,6 +918,15 @@ class Store:
                 'badges': self._badges(kid),
                 'level': self._level(kid),
                 'boss': self._boss_view(),
+                'streak': self._streak_view(kid),
+                'rewards': [{'id': r['id'], 'title': r['title'], 'price': r['price'],
+                             'asked': any(c['kid_id'] == kid['id'] and c['reward_id'] == r['id']
+                                          for c in self.data['claims'])}
+                            for r in self.data['rewards']],
+                'claims': [{'id': c['id'], 'title': c['title'], 'price': c['price']}
+                           for c in self.data['claims'] if c['kid_id'] == kid['id']],
+                'spendable': self.balance(kid['id']) - self._reserved(kid['id']),
+                'wish': kid.get('wish'),
                 'trading': bool(self.data['settings'].get('trading', True)),
                 'siblings': [{'id': k['id'], 'name': k['name']} for k in self.data['kids']
                              if k['id'] != kid['id'] and not k.get('paused')],
@@ -875,10 +1056,18 @@ class Store:
                 'perfect': self._perfect_candidates(),
                 'family': self._family(),
                 'boss': self._boss(),
+                'advice': self.advice(),
+                'rewards': [dict(r) for r in self.data['rewards']],
+                'claims': [dict(c, name=next((k['name'] for k in self.data['kids'] if k['id'] == c['kid_id']), ''),
+                                color=next((k['color'] for k in self.data['kids'] if k['id'] == c['kid_id']), '#888'))
+                           for c in self.data['claims']],
+                'wishes': [{'kid_id': k['id'], 'name': k['name'], 'color': k['color'], 'title': k['wish']['title'],
+                            'price': k['wish']['price']} for k in self.data['kids'] if k.get('wish')],
+                'to_pay': sum(max(0, self.balance(k['id'])) for k in self.data['kids']),
                 'rules': [dict(r) for r in self.data['rules']],
                 'settings': dict({k: settings.get(k) for k in
                                   ('penalty', 'perfect_bonus', 'reminder_time', 'celebrate_light',
-                                   'boss_hp', 'boss_bonus', 'trading')},
+                                   'boss_hp', 'boss_bonus', 'trading', 'streak_bonus')},
                                  weekly_summary=bool(settings.get('weekly_summary', True))),
                 'pending': pending,
                 'tasks': [dict(t, fair=self.fairness(t['price'], t['repeat'], t.get('times', 1), t['id']))
@@ -1314,6 +1503,7 @@ class Store:
                 item['status'] = 'done'
                 item['decided_at'] = self._now().isoformat(timespec='seconds')
                 self._credit(item['kid_id'], item['price'], 'task', item['title'], item['id'])
+                self._streak_bonus(item['kid_id'])
             else:
                 item['status'] = 'todo'
                 item['done_at'] = None
@@ -1362,7 +1552,7 @@ class Store:
                 value = int(value or 0)
                 if value < 0 or value > 500:
                     raise Problem('Bossens liv skal være mellem 0 og 500')
-            elif key in ('hero_bonus', 'penalty', 'perfect_bonus', 'boss_bonus'):
+            elif key in ('hero_bonus', 'penalty', 'perfect_bonus', 'boss_bonus', 'streak_bonus'):
                 value = self._clean_price(value or 0)
             elif key == 'reminder_time':
                 value = (value or '').strip()
