@@ -13,6 +13,7 @@ import re
 import ssl
 import struct
 import threading
+import urllib.parse
 import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -28,6 +29,8 @@ MAX_PHOTO_BODY = 700 * 1024
 KID_PAGE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/?$')
 KID_STATE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/state$')
 KID_DONE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/items/([a-f0-9]{10})/done$')
+KID_TRADE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/items/([a-f0-9]{10})/trade$')
+KID_TRADE_END = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/trades/([a-f0-9]{10})/(accept|end)$')
 KID_CLAIM = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/tasks/([a-f0-9]{10})/claim$')
 
 KID_FILE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/(sw\.js|manifest\.json|icon\.png)$')
@@ -140,7 +143,8 @@ def make_handler(app, role, allow_from=None):
             self._route('POST')
 
         def _route(self, method):
-            path = self.path.split('?', 1)[0]
+            path, _, query = self.path.partition('?')
+            self.query = urllib.parse.parse_qs(query)
             try:
                 if not self._allowed():
                     return self._json({'error': 'Ikke tilladt'}, 403)
@@ -214,6 +218,25 @@ def make_handler(app, role, allow_from=None):
                     '%s er færdig med: %s (%d kr.). Åbn Pligter for at godkende.'
                     % (kid['name'], item['title'], item['price']))
                 return self._json(store.kid_view(m.group(1)))
+            m = KID_TRADE.match(path)
+            if m and method == 'POST':
+                body = self._body()
+                kid, receiver, trade, item = store.offer_trade(m.group(1), m.group(2), body.get('to'),
+                                                               body.get('amount', 0))
+                text = '%s vil give dig: %s' % (kid['name'], item['title'])
+                if trade['amount']:
+                    text += ' og betaler %d kr.' % trade['amount']
+                app.ha.notify_kid(receiver, 'Bytte', text)
+                return self._json(store.kid_view(m.group(1)))
+            m = KID_TRADE_END.match(path)
+            if m and method == 'POST':
+                self._body()
+                if m.group(3) == 'accept':
+                    sender, kid, item = store.accept_trade(m.group(1), m.group(2))
+                    app.ha.notify_kid(sender, 'Bytte', '%s tog imod: %s' % (kid['name'], item['title']))
+                else:
+                    store.end_trade(m.group(1), m.group(2))
+                return self._json(store.kid_view(m.group(1)))
             m = KID_CLAIM.match(path)
             if m and method == 'POST':
                 self._body()
@@ -250,6 +273,11 @@ def make_handler(app, role, allow_from=None):
                     names = [r['name'] for r in store.data['rules']]
                     return self._json({'found': find_sensors(app.ha.entities(), names),
                                        'on': app.ha.enabled and bool(app.ha.entities())})
+                if path == '/api/fairness':
+                    q = self.query
+                    one = lambda k, d='': (q.get(k) or [d])[0]
+                    return self._json(store.fairness(one('price'), one('repeat', 'daily'),
+                                                     one('times', '1'), one('skip') or None))
                 if path == '/api/entities':
                     return self._json({'entities': app.ha.entities(), 'on': app.ha.enabled})
                 if path == '/api/suggestions':
@@ -298,7 +326,8 @@ def make_handler(app, role, allow_from=None):
                                body.get('repeat', 'daily'), body.get('open', False),
                                body.get('kids'), body.get('age_min', 0),
                                body.get('age_max', 99), body.get('times', 1),
-                               body.get('photo', False))
+                               body.get('photo', False), None, body.get('season', ''),
+                               body.get('surprise', False))
                 if body.get('open'):
                     task = store.data['tasks'][-1]
                     for kid in store.data['kids']:
@@ -308,7 +337,8 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'$', path)
             if m:
-                allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids', 'age_min', 'times', 'photo')
+                allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids', 'age_min', 'times', 'photo', 'season',
+                           'surprise')
                 store.update_task(m.group(1), **{k: v for k, v in body.items() if k in allowed})
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'/delete$', path)
@@ -332,11 +362,14 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.admin_state())
             if path == '/api/settings':
                 for key in ('goal', 'hero_bonus', 'penalty', 'perfect_bonus',
-                            'reminder_time', 'celebrate_light'):
+                            'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading'):
                     if key in body:
                         store.set_setting(key, body[key])
                 if 'family_title' in body or 'family_amount' in body:
                     store.set_family_goal(body.get('family_title'), body.get('family_amount'))
+                return self._json(store.admin_state())
+            if path == '/api/boss_bonus':
+                store.pay_boss_bonus()
                 return self._json(store.admin_state())
             m = re.match(r'^/api/perfect/' + ID + r'$', path)
             if m:
@@ -363,7 +396,8 @@ def make_handler(app, role, allow_from=None):
                         continue
                     store.add_task(r.get('title'), r.get('price', 0), r.get('room', ''),
                                    r.get('repeat', 'daily'), False, None,
-                                   r.get('age_min', 0), 99, r.get('times', 1))
+                                   r.get('age_min', 0), 99, r.get('times', 1), False, None,
+                                   r.get('season', ''))
                 return self._json(store.admin_state())
             self._json({'error': 'Findes ikke'}, 404)
 

@@ -441,6 +441,142 @@ class StoreTests(unittest.TestCase):
         self.store.update_kid(self.emil['id'], ntfy_on=True)
         self.assertTrue(self.store.admin_state()['kids'][0]['ntfy_on'])
 
+    def test_fairness_check_flags_odd_prices(self):
+        self.assertEqual(self.store.fairness(5, 'daily')['level'], 'ok')
+        self.assertEqual(self.store.fairness(80, 'daily')['level'], 'high')
+        self.assertEqual(self.store.fairness(0, 'weekly')['level'], 'low')
+        self.assertEqual(self.store.fairness('abc')['text'], '')
+        for title in ('A', 'B', 'C'):
+            self.store.add_task(title, 10, repeat='weekly')
+        self.assertEqual(self.store.fairness(35, 'weekly')['level'], 'high')   # > 2,5 x median
+        self.assertEqual(self.store.fairness(2, 'weekly')['level'], 'low')
+        self.assertEqual(self.store.fairness(10, 'weekly')['level'], 'ok')
+        state = self.store.admin_state()
+        self.assertTrue(all(t['fair']['level'] == 'ok' for t in state['tasks']))
+
+    def test_seasonal_task_only_in_its_season(self):
+        self.store.add_task('Skovl sne', 15, repeat='weekly', season='vinter')
+        self.store.add_task('Fej blade', 15, repeat='weekly', season='efterår')
+        titles = [i['title'] for i in self.kid_items(self.emil)]
+        self.assertEqual(titles, ['Fej blade'])                  # november er efterår
+        self.clock.advance(days=30)                              # december
+        titles = [i['title'] for i in self.kid_items(self.emil)]
+        self.assertEqual(titles, ['Skovl sne'])
+        with self.assertRaises(Problem):
+            self.store.add_task('X', 1, season='regntid')
+
+    def test_boss_is_beaten_together_and_bonus_goes_to_those_who_helped(self):
+        self.store.set_setting('boss_hp', 3)
+        self.store.set_setting('boss_bonus', 5)
+        self.store.add_task('Dæk bord', 3)
+        self.store.add_task('Ryd op', 3)
+        self.finish(self.emil, 'Dæk bord')
+        self.finish(self.emil, 'Ryd op')
+        boss = self.store.admin_state()['boss']
+        self.assertEqual((boss['hits'], boss['hp'], boss['defeated']), (2, 3, False))
+        with self.assertRaises(Problem):
+            self.store.pay_boss_bonus()
+        self.finish(self.maja, 'Dæk bord')
+        self.assertTrue(self.store.admin_state()['boss']['defeated'])
+        self.assertTrue(self.store.kid_view(self.maja['token'])['boss']['defeated'])
+        self.store.pay_boss_bonus()
+        self.assertEqual(self.store.balance(self.maja['id']), 3 + 5)
+        with self.assertRaises(Problem):
+            self.store.pay_boss_bonus()
+        self.store.set_setting('boss_hp', 0)
+        self.assertIsNone(self.store.admin_state()['boss'])
+
+    def test_surprise_task_appears_once_with_double_price_and_expires(self):
+        import random
+        self.store.add_task('Vask bilen', 10, surprise=True)
+        self.assertEqual(self.kid_items(self.emil), [])           # skabelonen vises aldrig selv
+        self.assertEqual(self.store.kid_view(self.emil['token'])['jobs'], [])
+
+        class Rng(random.Random):
+            def random(self):
+                return 0.1                                          # i dag er en overraskelsesdag
+            def randint(self, a, b):
+                return a                                            # kl. 15:00
+        rng = Rng()
+        self.assertIsNone(self.store.due_surprise(rng))             # kl. 08 er for tidligt
+        self.clock.advance(hours=7, minutes=1)
+        task = self.store.due_surprise(rng)
+        self.assertEqual((task['price'], task['open']), (20, True))
+        self.assertIsNone(self.store.due_surprise(rng))             # kun én gang om dagen
+        jobs = self.store.kid_view(self.emil['token'])['jobs']
+        self.assertEqual([(j['title'], j['price']) for j in jobs], [('Vask bilen', 20)])
+        self.assertTrue(jobs[0]['expires'])
+        self.clock.advance(minutes=91)                              # ingen tog den
+        self.store.admin_state()
+        self.assertEqual(self.store.kid_view(self.emil['token'])['jobs'], [])
+
+    def test_surprise_day_can_be_a_quiet_day(self):
+        import random
+
+        class Quiet(random.Random):
+            def random(self):
+                return 0.9
+        self.store.add_task('Vask bilen', 10, surprise=True)
+        self.clock.advance(hours=12)
+        self.assertIsNone(self.store.due_surprise(Quiet()))
+
+    def test_trade_moves_the_task_and_money_but_does_not_double_it(self):
+        self.store.add_task('Dæk bord', 6)
+        self.store.add_task('Betaler', 10)
+        self.finish(self.emil, 'Betaler')                           # Emil har nu 10 kr.
+        item = [i for i in self.kid_items(self.emil) if i['title'] == 'Dæk bord'][0]
+        kid, receiver, trade, _ = self.store.offer_trade(self.emil['token'], item['id'],
+                                                         self.maja['id'], 4)
+        view = self.store.kid_view(self.maja['token'])
+        self.assertEqual([(t['title'], t['amount']) for t in view['trades_in']], [('Dæk bord', 4)])
+        self.assertEqual(len(self.store.kid_view(self.emil['token'])['trades_out']), 1)
+        with self.assertRaises(Problem):
+            self.store.accept_trade(self.emil['token'], trade['id'])   # ikke hans tilbud
+        self.store.accept_trade(self.maja['token'], trade['id'])
+        self.assertEqual(self.store.balance(self.emil['id']), 10 - 4)
+        self.assertEqual(self.store.balance(self.maja['id']), 4)
+        mine = [i['title'] for i in self.kid_items(self.emil)]
+        self.assertNotIn('Dæk bord', mine)                          # og kommer ikke tilbage
+        self.assertEqual([i['title'] for i in self.kid_items(self.maja)].count('Dæk bord'), 2)
+        self.assertEqual(self.store.kid_view(self.maja['token'])['trades_in'], [])
+
+    def test_trade_rules(self):
+        self.store.add_task('Dæk bord', 6)
+        self.store.add_task('Støvsug', 15, age_min=10)
+        emil_items = {i['title']: i for i in self.kid_items(self.emil)}
+        maja_items = {i['title']: i for i in self.kid_items(self.maja)}
+        with self.assertRaises(Problem):                            # kan ikke betale uden penge
+            self.store.offer_trade(self.emil['token'], emil_items['Dæk bord']['id'], self.maja['id'], 3)
+        with self.assertRaises(Problem):                            # for lille til opgaven
+            self.store.offer_trade(self.maja['token'], maja_items['Støvsug']['id'], self.emil['id'], 0)
+        with self.assertRaises(Problem):                            # sin søsters opgave
+            self.store.offer_trade(self.emil['token'], maja_items['Dæk bord']['id'], self.maja['id'], 0)
+        with self.assertRaises(Problem):                            # sig selv
+            self.store.offer_trade(self.emil['token'], emil_items['Dæk bord']['id'], self.emil['id'], 0)
+        _, _, trade, _ = self.store.offer_trade(self.emil['token'], emil_items['Dæk bord']['id'],
+                                                self.maja['id'], 0)
+        with self.assertRaises(Problem):                            # to tilbud på samme opgave
+            self.store.offer_trade(self.emil['token'], emil_items['Dæk bord']['id'], self.maja['id'], 0)
+        self.store.end_trade(self.maja['token'], trade['id'])      # afvist
+        self.assertEqual(self.store.kid_view(self.maja['token'])['trades_in'], [])
+        _, _, trade, _ = self.store.offer_trade(self.emil['token'], emil_items['Dæk bord']['id'],
+                                                self.maja['id'], 0)
+        self.store.mark_done(self.emil['token'], emil_items['Dæk bord']['id'])   # selv lavet
+        self.assertEqual(self.store.kid_view(self.maja['token'])['trades_in'], [])
+        with self.assertRaises(Problem):
+            self.store.accept_trade(self.maja['token'], trade['id'])
+        self.store.set_setting('trading', False)
+        with self.assertRaises(Problem):
+            self.store.offer_trade(self.maja['token'], maja_items['Dæk bord']['id'], self.emil['id'], 0)
+
+    def test_level_grows_with_approved_tasks(self):
+        self.store.add_task('Dæk bord', 3, times=3)
+        self.assertEqual(self.store.kid_view(self.emil['token'])['level']['name'], 'Ægget')
+        for _ in range(3):
+            self.finish(self.emil)
+        level = self.store.kid_view(self.emil['token'])['level']
+        self.assertEqual((level['n'], level['name'], level['next'], level['left']), (2, 'Ungen', 10, 7))
+
     def test_data_survives_restart(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, 'pligt.json')
@@ -921,7 +1057,9 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         rooms = {r['room'] for r in data['rows']}
         self.assertEqual(rooms, {'Køkken', 'Bryggers', 'Have', 'Vaskemaskine', 'Tørretumbler',
-                                 'Hele huset'})
+                                 'Hele huset', 'Forår', 'Sommer', 'Efterår', 'Vinter'})
+        seasonal = [r for r in data['rows'] if r['season']]
+        self.assertTrue(seasonal and not any(r['on'] for r in seasonal))
         titles = {r['title'] for r in data['rows']}
         self.assertIn('Hæng vasketøjet op', titles)
         self.assertNotIn('Tøm opvaskemaskinen', titles)

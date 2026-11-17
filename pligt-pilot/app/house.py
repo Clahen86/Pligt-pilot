@@ -6,6 +6,8 @@ import datetime as dt
 import logging
 import threading
 
+from store import SURPRISE_MINUTES
+
 log = logging.getLogger('pligt')
 
 RUNNING = {'on', 'running', 'washing', 'drying', 'active', 'in_use', 'working', 'cycle',
@@ -70,6 +72,7 @@ class Automation:
         now = self.clock()
         self.store.housekeeping()
         self._rules(now)
+        self._surprise()
         self._reminders()
         self._birthdays()
 
@@ -93,6 +96,12 @@ class Automation:
         for kid in self.store.data['kids']:
             if not kid.get('paused') and (task is None or self.store._in_scope(task, kid)):
                 self.ha.notify_kid(kid, title, message)
+
+    def _surprise(self):
+        task = self.store.due_surprise()
+        if task:
+            self.tell_kids('Overraskelse!', '%s: %d kr. (dobbelt pris) de næste %d minutter. Først til mølle!'
+                           % (task['title'], task['price'], SURPRISE_MINUTES), task)
 
     def _reminders(self):
         for kid, n in self.store.due_reminders():

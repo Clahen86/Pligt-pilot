@@ -21,6 +21,12 @@ DAYS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
 REPEATS = ('daily', 'weekly', 'once')
 MONTHS = ['januar', 'februar', 'marts', 'april', 'maj', 'juni', 'juli', 'august',
           'september', 'oktober', 'november', 'december']
+SEASONS = {'forår': (3, 4, 5), 'sommer': (6, 7, 8), 'efterår': (9, 10, 11), 'vinter': (12, 1, 2)}
+BOSSES = ['Støvdragen', 'Opvaskemonsteret', 'Vasketøjstrolden', 'Rodebunke-Rasmus',
+          'Snavsedjævelen', 'Krummeuhyret', 'Sokkespøgelset', 'Skraldegiganten']
+LEVELS = [(0, 'Ægget'), (3, 'Ungen'), (10, 'Pligtfuglen'), (25, 'Pligtfuglen med kasket'),
+          (50, 'Pligtmesteren'), (100, 'Pligtkongen'), (200, 'Pligtlegenden')]
+SURPRISE_MINUTES = 90
 ENTITY = re.compile(r'^[a-z_]+\.[a-z0-9_]+$')
 SERVICE = re.compile(r'^(notify\.)?[a-z0-9_]+$')
 MAX_PHOTO = 450 * 1024
@@ -76,7 +82,10 @@ class Store:
             'settings': {'goal': 8, 'hero_bonus': 20, 'hero_paid_week': '',
                          'penalty': 0, 'perfect_bonus': 0, 'reminder_time': '',
                          'reminder_sent': '', 'celebrate_light': '',
-                         'family_goal': None, 'hero_wins': {}, 'perfect_paid': {}},
+                         'family_goal': None, 'hero_wins': {}, 'perfect_paid': {},
+                         'boss_hp': 20, 'boss_bonus': 0, 'boss_paid_week': '',
+                         'trading': True, 'surprise_plan': {}},
+            'trades': [],
         }
         self._photos = {}
         self.photo_dir = os.path.join(os.path.dirname(path) or '.', 'photos') if path else None
@@ -147,6 +156,18 @@ class Store:
         if price < 0 or price > 1000:
             raise Problem('Prisen skal være mellem 0 og 1000 kr.')
         return price
+
+    @staticmethod
+    def _clean_season(value):
+        value = (value or '').strip().lower()
+        if value and value not in SEASONS:
+            raise Problem('Ukendt sæson')
+        return value
+
+    @staticmethod
+    def _in_season(task, d):
+        season = task.get('season') or ''
+        return not season or d.month in SEASONS[season]
 
     @staticmethod
     def _clean_times(value):
@@ -334,7 +355,8 @@ class Store:
 
     # ---- opgaver -------------------------------------------------------
     def add_task(self, title, price, room='', repeat='daily', open_job=False,
-                 kids=None, age_min=0, age_max=99, times=1, photo=False, auto_rule=None):
+                 kids=None, age_min=0, age_max=99, times=1, photo=False, auto_rule=None,
+                 season='', surprise=False):
         with self.lock:
             if repeat not in REPEATS:
                 raise Problem('Ukendt gentagelse')
@@ -350,6 +372,8 @@ class Store:
                 'age_max': int(age_max or 99),
                 'times': self._clean_times(times),
                 'photo': bool(photo),
+                'season': self._clean_season(season),
+                'surprise': bool(surprise),
                 'created': self._now().isoformat(timespec='seconds'),
                 'active': True,
             }
@@ -382,6 +406,10 @@ class Store:
                 task['times'] = self._clean_times(fields['times'])
             if 'photo' in fields:
                 task['photo'] = bool(fields['photo'])
+            if 'season' in fields:
+                task['season'] = self._clean_season(fields['season'])
+            if 'surprise' in fields:
+                task['surprise'] = bool(fields['surprise'])
             if 'age_min' in fields:
                 try:
                     task['age_min'] = max(0, min(25, int(fields['age_min'] or 0)))
@@ -456,9 +484,18 @@ class Store:
             finished = any(i['status'] == 'done' for i in mine) and not any(
                 i['status'] in ('todo', 'wait') for i in mine)
             age = d - dt.datetime.fromisoformat(t.get('created') or d.isoformat())
-            if finished or (not mine and age > dt.timedelta(days=2)):
+            lapsed = t.get('expires') and d > dt.datetime.fromisoformat(t['expires'])
+            if finished or (not mine and (age > dt.timedelta(days=2) or lapsed)):
                 self.data['tasks'].remove(t)
                 changed = True
+        live = {i['id']: i for i in self.data['items']}
+        keep = [t for t in self.data['trades']
+                if t['item_id'] in live and live[t['item_id']]['status'] == 'todo'
+                and live[t['item_id']]['kid_id'] == t['from']
+                and d - dt.datetime.fromisoformat(t['at']) < dt.timedelta(days=1)]
+        if len(keep) != len(self.data['trades']):
+            self.data['trades'] = keep
+            changed = True
         tasks = {t['id']: t for t in self.data['tasks']}
         kids = {k['id']: k for k in self.data['kids']}
         penalty = int(self.data['settings'].get('penalty') or 0)
@@ -470,12 +507,14 @@ class Store:
             paused = bool(kid and kid.get('paused'))
             expired = (t is not None and t['repeat'] != 'once' and
                        it['period'] != period_key(t['repeat'], d))
-            stale = t is None or not t['active'] or paused or expired
+            off_season = t is not None and not self._in_season(t, d)
+            stale = t is None or not t['active'] or paused or expired or off_season
             if stale:
                 it['status'] = 'missed'
                 self.delete_photo(it['id'])
                 changed = True
-                if penalty and expired and t['active'] and not paused and not t.get('open'):
+                if penalty and expired and t['active'] and not paused and not off_season \
+                        and not t.get('open'):
                     cut = min(penalty, max(0, self.balance(it['kid_id'])))
                     if cut:
                         self._credit(it['kid_id'], -cut, 'penalty', it['title'])
@@ -485,7 +524,7 @@ class Store:
                 key = (i['task_id'], i['kid_id'], i['period'])
                 existing[key] = existing.get(key, 0) + 1
         for t in self.data['tasks']:
-            if not t['active'] or t['open']:
+            if not t['active'] or t['open'] or t.get('surprise') or not self._in_season(t, d):
                 continue
             period = period_key(t['repeat'], d)
             for kid in self.data['kids']:
@@ -508,7 +547,8 @@ class Store:
         if kid.get('paused'):
             return jobs
         for t in self.data['tasks']:
-            if not t['active'] or not t['open'] or not self._in_scope(t, kid):
+            if not t['active'] or not t['open'] or t.get('surprise') or not self._in_scope(t, kid) \
+                    or not self._in_season(t, d):
                 continue
             period = period_key(t['repeat'], d)
             taken = sum(1 for i in self.data['items'] if i['task_id'] == t['id']
@@ -660,6 +700,13 @@ class Store:
                 'saving': self._saving(kid),
                 'family': self._family(),
                 'badges': self._badges(kid),
+                'level': self._level(kid),
+                'boss': self._boss_view(),
+                'trading': bool(self.data['settings'].get('trading', True)),
+                'siblings': [{'id': k['id'], 'name': k['name']} for k in self.data['kids']
+                             if k['id'] != kid['id'] and not k.get('paused')],
+                'trades_in': self._trade_views(kid)[0],
+                'trades_out': self._trade_views(kid)[1],
                 'birthday_today': self._birthday_today(kid),
                 'balance': self.balance(kid['id']),
                 'waiting': sum(i['price'] for i in self.data['items']
@@ -675,8 +722,15 @@ class Store:
                            'need_photo': i['status'] == 'todo' and self._needs_photo(i),
                            'streak': self._item_streak(kid['id'], i)} for i in items],
                 'jobs': [{'task_id': t['id'], 'title': t['title'], 'room': t['room'],
-                          'price': t['price']} for t in self._open_jobs_for(kid)],
+                          'price': t['price'], 'expires': t.get('expires', '')}
+                         for t in self._open_jobs_for(kid)],
             }
+
+    def _boss_view(self):
+        boss = self._boss()
+        if not boss:
+            return None
+        return {k: boss[k] for k in ('name', 'hp', 'hits', 'defeated')}
 
     def _needs_photo(self, item):
         task = next((t for t in self.data['tasks'] if t['id'] == item['task_id']), None)
@@ -756,6 +810,7 @@ class Store:
                     'push': len(k.get('push') or []),
                     'allowance': k.get('allowance', 0),
                     'badges': self._badges(k),
+                    'level': self._level(k),
                     'streak': self._best_streak(k['id']),
                 })
             kid_names = {k['id']: k for k in self.data['kids']}
@@ -775,11 +830,14 @@ class Store:
                 'months': self._months(),
                 'perfect': self._perfect_candidates(),
                 'family': self._family(),
+                'boss': self._boss(),
                 'rules': [dict(r) for r in self.data['rules']],
                 'settings': {k: settings.get(k) for k in
-                             ('penalty', 'perfect_bonus', 'reminder_time', 'celebrate_light')},
+                             ('penalty', 'perfect_bonus', 'reminder_time', 'celebrate_light',
+                              'boss_hp', 'boss_bonus', 'trading')},
                 'pending': pending,
-                'tasks': [dict(t) for t in self.data['tasks']],
+                'tasks': [dict(t, fair=self.fairness(t['price'], t['repeat'], t.get('times', 1), t['id']))
+                          for t in self.data['tasks']],
                 'total': sum(k['balance'] for k in kids),
                 'goal': settings['goal'],
                 'hero_bonus': settings['hero_bonus'],
@@ -879,6 +937,212 @@ class Store:
             self._credit(kid_id, cand[0]['amount'], 'bonus', 'Perfekt uge')
             self._save()
             return kid, cand[0]['amount']
+
+    # ---- rimelighedstjek -----------------------------------------------
+    TYPICAL = {'daily': (2, 12), 'weekly': (5, 40), 'once': (5, 80)}
+
+    def fairness(self, price, repeat='daily', times=1, skip_id=None):
+        """Er prisen rimelig? {'level': 'ok'|'high'|'low', 'text': ...}"""
+        try:
+            price = int(round(float(str(price).replace(',', '.'))))
+        except (TypeError, ValueError):
+            return {'level': 'ok', 'text': ''}
+        repeat = repeat if repeat in REPEATS else 'daily'
+        times = max(1, min(5, int(times or 1)))
+        lo, hi = self.TYPICAL[repeat]
+        label = {'daily': 'daglige', 'weekly': 'ugentlige', 'once': 'enkeltstående'}[repeat]
+        others = sorted(t['price'] for t in self.data['tasks']
+                        if t['repeat'] == repeat and t['id'] != skip_id and t['price'] > 0
+                        and not t.get('auto_rule') and not t.get('surprise'))
+        if price <= 0:
+            return {'level': 'low', 'text': 'Opgaven er gratis. Er det meningen?'}
+        if price > hi:
+            return {'level': 'high', 'text': 'Højt: %s opgaver ligger ofte på %d–%d kr.' % (label, lo, hi)}
+        if len(others) >= 3:
+            median = others[len(others) // 2]
+            if price > 2.5 * median:
+                return {'level': 'high', 'text': 'Højt: dine andre %s opgaver koster typisk %d kr.' % (label, median)}
+            if price < 0.4 * median:
+                return {'level': 'low', 'text': 'Lavt: dine andre %s opgaver koster typisk %d kr.' % (label, median)}
+        if price * times > 2 * hi:
+            return {'level': 'high', 'text': 'Højt: %d gange %d kr. er meget for en %s opgave.' % (times, price, label[:-1])}
+        return {'level': 'ok', 'text': 'Rimeligt.'}
+
+    # ---- ugens boss ----------------------------------------------------
+    def _boss(self):
+        hp = int(self.data['settings'].get('boss_hp') or 0)
+        if hp <= 0:
+            return None
+        now = self._now()
+        week = week_key(now)
+        hits = 0
+        contributors = []
+        for k in self.data['kids']:
+            n = len(self._week_items(k['id'], ('done',)))
+            hits += n
+            if n:
+                contributors.append(k['id'])
+        year, wk, _ = now.isocalendar()
+        return {'name': BOSSES[(year * 53 + wk) % len(BOSSES)], 'hp': hp, 'hits': min(hits, hp),
+                'defeated': hits >= hp, 'bonus': int(self.data['settings'].get('boss_bonus') or 0),
+                'paid': self.data['settings'].get('boss_paid_week') == week,
+                'contributors': contributors}
+
+    def pay_boss_bonus(self):
+        with self.lock:
+            self._refresh()
+            boss = self._boss()
+            if not boss or not boss['defeated']:
+                raise Problem('Bossen er ikke besejret endnu')
+            if boss['paid']:
+                raise Problem('Bossbonussen er allerede givet')
+            if boss['bonus'] <= 0:
+                raise Problem('Der er ikke valgt en bonus')
+            for kid_id in boss['contributors']:
+                self._credit(kid_id, boss['bonus'], 'bonus', 'Besejrede ' + boss['name'])
+            self.data['settings']['boss_paid_week'] = week_key(self._now())
+            self._save()
+            return boss
+
+    # ---- overraskelsesopgaver -----------------------------------------
+    def due_surprise(self, rng=None):
+        """Opretter en ledig opgave til dobbelt pris, når dagens tilfældige tidspunkt er nået."""
+        import random
+        rng = rng or random
+        with self.lock:
+            self._refresh()
+            now = self._now()
+            templates = [t for t in self.data['tasks'] if t.get('surprise') and t['active']
+                         and self._in_season(t, now)]
+            if not templates:
+                return None
+            today = now.strftime('%Y-%m-%d')
+            plan = self.data['settings'].get('surprise_plan') or {}
+            if plan.get('date') != today:
+                at = ''
+                if rng.random() < 0.5:                      # cirka hver anden dag
+                    at = '%02d:%02d' % (rng.randint(15, 17), rng.randint(0, 59))
+                plan = {'date': today, 'at': at, 'done': False}
+                self.data['settings']['surprise_plan'] = plan
+                self._save()
+            if not plan['at'] or plan['done'] or now.strftime('%H:%M') < plan['at']:
+                return None
+            plan['done'] = True
+            if any(t.get('auto_rule') == 'surprise' for t in self.data['tasks']):
+                self._save()
+                return None
+            base = rng.choice(templates)
+            task = self.add_task(base['title'], base['price'] * 2, 'Overraskelse', 'once', True,
+                                 base.get('kids'), base.get('age_min', 0), base.get('age_max', 99),
+                                 photo=base.get('photo', False), auto_rule='surprise')
+            task['expires'] = (now + dt.timedelta(minutes=SURPRISE_MINUTES)).isoformat(timespec='seconds')
+            self._save()
+            return task
+
+    # ---- bytte ---------------------------------------------------------
+    def _trade_ok(self, item, sender, receiver, amount):
+        task = next((t for t in self.data['tasks'] if t['id'] == item['task_id']), None)
+        if not self.data['settings'].get('trading', True):
+            raise Problem('Bytte er slået fra')
+        if item['kid_id'] != sender['id'] or item['status'] != 'todo':
+            raise Problem('Den opgave kan ikke byttes')
+        if receiver['id'] == sender['id'] or receiver.get('paused'):
+            raise Problem('Det barn kan ikke tage den')
+        if task and not self._in_scope(task, receiver):
+            raise Problem('%s er ikke gammel nok til den opgave' % receiver['name'])
+        if amount < 0 or amount > item['price']:
+            raise Problem('Beløbet skal være mellem 0 og %d kr.' % item['price'])
+        if amount > self.balance(sender['id']):
+            raise Problem('Du har ikke penge nok til at betale for et bytte')
+
+    def offer_trade(self, token, item_id, to_kid_id, amount):
+        with self.lock:
+            kid = self.kid_by_token(token)
+            if not kid:
+                raise Problem('Linket passer ikke', 404)
+            self._refresh()
+            item = self._item(item_id)
+            receiver = self._kid(to_kid_id)
+            try:
+                amount = int(amount or 0)
+            except (TypeError, ValueError):
+                raise Problem('Beløbet skal være et tal')
+            self._trade_ok(item, kid, receiver, amount)
+            if any(t['item_id'] == item_id for t in self.data['trades']):
+                raise Problem('Du har allerede tilbudt den opgave')
+            trade = {'id': _id(), 'item_id': item_id, 'from': kid['id'], 'to': receiver['id'],
+                     'amount': amount, 'at': self._now().isoformat(timespec='seconds')}
+            self.data['trades'].append(trade)
+            self._save()
+            return kid, receiver, trade, item
+
+    def _trade(self, trade_id):
+        for t in self.data['trades']:
+            if t['id'] == trade_id:
+                return t
+        raise Problem('Tilbuddet findes ikke længere', 404)
+
+    def accept_trade(self, token, trade_id):
+        with self.lock:
+            kid = self.kid_by_token(token)
+            if not kid:
+                raise Problem('Linket passer ikke', 404)
+            self._refresh()
+            trade = self._trade(trade_id)
+            if trade['to'] != kid['id']:
+                raise Problem('Det tilbud er ikke til dig', 403)
+            item = self._item(trade['item_id'])
+            sender = self._kid(trade['from'])
+            self._trade_ok(item, sender, kid, trade['amount'])
+            item['status'] = 'traded'
+            new = dict(item, id=_id(), kid_id=kid['id'], status='todo', done_at=None,
+                       decided_at=None, rejected=0, slot=item.get('slot', 1))
+            new.pop('photo', None)
+            self.data['items'].append(new)
+            if trade['amount']:
+                self._credit(sender['id'], -trade['amount'], 'trade', 'Bytte: ' + item['title'])
+                self._credit(kid['id'], trade['amount'], 'trade', 'Bytte: ' + item['title'])
+            self.data['trades'].remove(trade)
+            self._save()
+            return sender, kid, new
+
+    def end_trade(self, token, trade_id):
+        """Afviser (modtageren) eller trækker tilbage (afsenderen)."""
+        with self.lock:
+            kid = self.kid_by_token(token)
+            if not kid:
+                raise Problem('Linket passer ikke', 404)
+            trade = self._trade(trade_id)
+            if kid['id'] not in (trade['from'], trade['to']):
+                raise Problem('Det tilbud er ikke dit', 403)
+            self.data['trades'].remove(trade)
+            self._save()
+            return kid, trade
+
+    def _trade_views(self, kid):
+        items = {i['id']: i for i in self.data['items']}
+        kids = {k['id']: k for k in self.data['kids']}
+        incoming, outgoing = [], []
+        for t in self.data['trades']:
+            item = items.get(t['item_id'])
+            if not item or item['status'] != 'todo' or t['from'] not in kids or t['to'] not in kids:
+                continue
+            view = {'id': t['id'], 'title': item['title'], 'price': item['price'],
+                    'amount': t['amount'], 'from': kids[t['from']]['name'], 'to': kids[t['to']]['name'],
+                    'item_id': item['id']}
+            if t['to'] == kid['id']:
+                incoming.append(view)
+            elif t['from'] == kid['id']:
+                outgoing.append(view)
+        return incoming, outgoing
+
+    # ---- niveau --------------------------------------------------------
+    def _level(self, kid):
+        count = sum(1 for e in self.data['ledger'] if e['kid_id'] == kid['id'] and e['kind'] == 'task')
+        n = max(i for i, (need, _) in enumerate(LEVELS) if count >= need)
+        nxt = LEVELS[n + 1][0] if n + 1 < len(LEVELS) else None
+        return {'n': n + 1, 'name': LEVELS[n][1], 'count': count, 'next': nxt,
+                'left': (nxt - count) if nxt else 0}
 
     # ---- huset-regler --------------------------------------------------
     def add_rule(self, name, entity, title, price):
@@ -1020,7 +1284,13 @@ class Store:
                 value = int(value)
                 if value < 1 or value > 50:
                     raise Problem('Målet skal være mellem 1 og 50')
-            elif key in ('hero_bonus', 'penalty', 'perfect_bonus'):
+            elif key == 'trading':
+                value = bool(value)
+            elif key == 'boss_hp':
+                value = int(value or 0)
+                if value < 0 or value > 500:
+                    raise Problem('Bossens liv skal være mellem 0 og 500')
+            elif key in ('hero_bonus', 'penalty', 'perfect_bonus', 'boss_bonus'):
                 value = self._clean_price(value or 0)
             elif key == 'reminder_time':
                 value = (value or '').strip()

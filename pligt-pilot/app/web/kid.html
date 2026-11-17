@@ -49,6 +49,18 @@ button { font: inherit; cursor: pointer; }
 .bar small { font-size: 12px; color: var(--muted); font-weight: 600; }
 .meter { height: 14px; border-radius: 999px; background: #E8DFD0; overflow: hidden; }
 .meter i { display: block; height: 100%; border-radius: 999px; background: var(--accent); min-width: 6px; }
+.pet { display: flex; align-items: center; gap: 12px; }
+.petart { flex: none; }
+.petinfo { flex: 1; min-width: 0; }
+.petinfo b { font-size: 17px; font-weight: 900; }
+.boss .bossrow { display: flex; align-items: center; gap: 12px; }
+.grow { flex: 1; min-width: 0; }
+.tradeform { display: flex; flex-direction: column; gap: 8px; border: 2px dashed var(--accent); }
+.tradeform label { font-size: 13px; font-weight: 800; color: var(--muted); }
+.tradeform select, .tradeform input { height: 44px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 0 12px; font: inherit; font-size: 16px; font-weight: 700; color: var(--ink); background: #fff; }
+.row2 { display: flex; gap: 8px; }
+.row2 .btn { flex: 1; }
+.btn.small { height: 36px; min-width: 0; padding: 0 10px; font-size: 13px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .bar.today small { font-weight: 900; color: var(--ink); }
 h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; display: flex; align-items: center; gap: 8px; }
@@ -81,7 +93,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 </main>
 <script>
 (function () {
-  var state = null, busy = false;
+  var state = null, busy = false, tradeOpen = '';
   var app = document.getElementById('app'), errBox = document.getElementById('err');
 
   function esc(s) {
@@ -139,12 +151,15 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
         : i.status === 'wait'
           ? '<div class="state wait">' + CLOCK + 'Venter</div>'
           : '<div class="state done">' + CHECK + 'Godkendt</div>';
+      var swap = i.status === 'todo' && s.trading && s.siblings.length && !i.need_photo
+        ? '<button class="btn ghost small" data-trade="' + i.id + '" aria-label="Byt: ' + esc(i.title) + '">Byt</button>' : '';
       return '<div class="task"><div class="t"><b>' + esc(i.title) + '</b><span>' + esc(sub) +
-        '</span></div><div class="price">' + i.price + ' kr</div>' + right + '</div>';
+        '</span></div><div class="price">' + i.price + ' kr</div>' + swap + right + '</div>' +
+        (tradeOpen === i.id ? tradeForm(i, s) : '');
     }).join('');
     var jobs = s.jobs.map(function (j) {
       return '<div class="task open"><div class="t"><b>' + esc(j.title) + '</b><span>' +
-        esc(j.room || 'Først til mølle') + '</span></div><div class="price">' + j.price +
+        esc(j.expires ? 'Overraskelse! Slutter kl. ' + j.expires.slice(11, 16) : (j.room || 'Først til mølle')) + '</span></div><div class="price">' + j.price +
         ' kr</div><button class="btn ghost" data-claim="' + j.task_id + '">Tag den</button></div>';
     }).join('');
     app.innerHTML =
@@ -160,6 +175,9 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       (s.birthday_today ? '<div class="card"><b>Tillykke med fødselsdagen, ' + esc(k.name) + '!</b><div class="sub">Du er ' + k.age + ' år i dag.</div></div>' : '') +
       (s.paused ? '<div class="card"><b>Du har pause</b><div class="sub">Ingen opgaver lige nu. God fornøjelse!</div></div>' : '') +
       pushCard() +
+      characterCard(s) +
+      bossCard(s.boss) +
+      tradeCards(s) +
       saving(s) +
       goalCard(s.family, 'Familiens mål') +
       (s.badges && s.badges.length ? '<div class="chips">' + s.badges.map(function (b) { return '<span class="chip">' + esc(b.title) + '</span>'; }).join('') + '</div>' : '') +
@@ -177,6 +195,74 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       '<div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="' + g.amount + '" aria-valuenow="' + g.saved + '"><i style="width:' + pct + '%"></i></div>' +
       (g.reached ? '<div class="sub" style="margin-top:6px">Målet er nået! Sig det til mor eller far.</div>' : '') + '</div>';
   }
+  // ---- karakter og boss ----
+  function badgeSet(s) { var o = {}; (s.badges || []).forEach(function (b) { o[b.id] = true; }); return o; }
+  function character(s) {
+    var lv = s.level.n, has = badgeSet(s), col = s.kid.color, ink = '#22304A', sun = '#FFC247';
+    var svg = '<svg viewBox="0 0 120 120" width="104" height="104" role="img" aria-label="Din pligtfugl, niveau ' + lv + '">';
+    if (has.n50) { svg += '<path d="M34 62 Q60 112 86 62 L92 100 Q60 118 28 100 Z" fill="#C73A30"></path>'; }
+    if (lv === 1) {
+      svg += '<ellipse cx="60" cy="68" rx="32" ry="40" fill="#FFF" stroke="' + ink + '" stroke-width="3"></ellipse>' +
+        '<path d="M32 66 L44 58 L52 68 L62 56 L72 68 L82 58 L90 66" fill="none" stroke="' + ink + '" stroke-width="3" stroke-linejoin="round"></path>' +
+        '<circle cx="46" cy="90" r="5" fill="' + col + '"></circle><circle cx="74" cy="84" r="4" fill="' + col + '"></circle><circle cx="62" cy="96" r="3" fill="' + col + '"></circle>';
+    } else {
+      if (lv >= 3) { svg += '<ellipse cx="26" cy="74" rx="9" ry="16" fill="' + col + '" transform="rotate(20 26 74)"></ellipse><ellipse cx="94" cy="74" rx="9" ry="16" fill="' + col + '" transform="rotate(-20 94 74)"></ellipse>'; }
+      svg += '<ellipse cx="60" cy="68" rx="34" ry="34" fill="' + col + '"></ellipse>' +
+        '<ellipse cx="60" cy="80" rx="22" ry="20" fill="#FFF6E9"></ellipse>' +
+        '<circle cx="48" cy="58" r="6" fill="#FFF"></circle><circle cx="72" cy="58" r="6" fill="#FFF"></circle>' +
+        '<circle cx="49" cy="59" r="3" fill="' + ink + '"></circle><circle cx="73" cy="59" r="3" fill="' + ink + '"></circle>' +
+        '<polygon points="54,68 66,68 60,77" fill="' + sun + '"></polygon>' +
+        '<rect x="48" y="100" width="6" height="8" rx="2" fill="' + sun + '"></rect><rect x="66" y="100" width="6" height="8" rx="2" fill="' + sun + '"></rect>';
+    }
+    if (has.n25 && lv > 1) { svg += '<rect x="39" y="52" width="19" height="12" rx="4" fill="' + ink + '"></rect><rect x="62" y="52" width="19" height="12" rx="4" fill="' + ink + '"></rect><rect x="56" y="55" width="8" height="3" fill="' + ink + '"></rect>'; }
+    if (has.n10 && lv > 1) { svg += '<path d="M34 46 Q60 14 86 46 Z" fill="' + ink + '"></path><rect x="30" y="44" width="38" height="6" rx="3" fill="' + ink + '"></rect>'; }
+    if (has.hero) { svg += '<polygon points="42,22 48,8 60,20 72,8 78,22" fill="' + sun + '" stroke="' + ink + '" stroke-width="2" stroke-linejoin="round"></polygon>'; }
+    if (has.n100 && lv > 1) { svg += '<polygon points="60,84 63,91 71,91 65,96 67,104 60,99 53,104 55,96 49,91 57,91" fill="' + sun + '" stroke="' + ink + '" stroke-width="1.5"></polygon>'; }
+    return svg + '</svg>';
+  }
+  function characterCard(s) {
+    var l = s.level, pct = l.next ? Math.round(100 * (l.count - prevNeed(l)) / (l.next - prevNeed(l))) : 100;
+    return '<div class="card pet"><div class="petart">' + character(s) + '</div><div class="petinfo"><b>' + esc(l.name) + '</b>' +
+      '<div class="sub">Niveau ' + l.n + ' · ' + l.count + (l.count === 1 ? ' opgave' : ' opgaver') + '</div>' +
+      '<div class="meter" style="margin:8px 0 4px"><i style="width:' + Math.max(pct, 4) + '%"></i></div>' +
+      '<div class="sub">' + (l.next ? l.left + (l.left === 1 ? ' opgave' : ' opgaver') + ' til næste niveau' : 'Du er på det højeste niveau!') + '</div></div></div>';
+  }
+  function prevNeed(l) { var steps = [0, 3, 10, 25, 50, 100, 200]; return steps[l.n - 1] || 0; }
+  function bossCard(b) {
+    if (!b) { return ''; }
+    var left = Math.max(0, b.hp - b.hits), pct = Math.round(100 * left / b.hp), dead = b.defeated;
+    var scale = dead ? 0.6 : 0.7 + 0.5 * pct / 100;
+    var face = dead
+      ? '<path d="M40 54 L50 62 M50 54 L40 62 M70 54 L80 62 M80 54 L70 62" stroke="#22304A" stroke-width="4" stroke-linecap="round"></path><path d="M46 80 Q60 72 74 80" fill="none" stroke="#22304A" stroke-width="4" stroke-linecap="round"></path>'
+      : '<circle cx="46" cy="58" r="7" fill="#FFF"></circle><circle cx="74" cy="58" r="7" fill="#FFF"></circle><circle cx="47" cy="60" r="3.5" fill="#22304A"></circle><circle cx="73" cy="60" r="3.5" fill="#22304A"></circle><path d="M36 46 L54 54 M84 46 L66 54" stroke="#22304A" stroke-width="4" stroke-linecap="round"></path><path d="M44 80 L50 74 L56 80 L62 74 L68 80 L74 74 L78 80" fill="#FFF" stroke="#22304A" stroke-width="2" stroke-linejoin="round"></path>';
+    return '<div class="card boss"><div class="row"><b>Ugens boss: ' + esc(b.name) + '</b><span>' + b.hits + ' af ' + b.hp + '</span></div>' +
+      '<div class="bossrow"><svg viewBox="0 0 120 120" width="84" height="84" aria-hidden="true"><g transform="translate(60 66) scale(' + scale.toFixed(2) + ') translate(-60 -66)">' +
+      '<path d="M30 40 L38 14 L52 34 M90 40 L82 14 L68 34" fill="#6C4AB6"></path><ellipse cx="60" cy="68" rx="38" ry="36" fill="#6C4AB6"></ellipse>' + face + '</g></svg>' +
+      '<div class="grow"><div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="' + b.hp + '" aria-valuenow="' + b.hits + '"><i style="width:' + pct + '%;background:#C73A30"></i></div>' +
+      '<div class="sub" style="margin-top:6px">' + (dead ? 'Bossen er besejret! Godt gået, alle sammen.' : 'Bossen har ' + left + ' liv tilbage. Hver godkendt opgave er et slag.') + '</div></div></div></div>';
+  }
+
+  // ---- bytte ----
+  function tradeForm(i, s) {
+    var maxAmt = Math.min(i.price, s.balance);
+    return '<div class="card tradeform"><b>Byt "' + esc(i.title) + '"</b>' +
+      '<label for="tr-to">Giv den til</label><select id="tr-to">' + s.siblings.map(function (x) { return '<option value="' + x.id + '">' + esc(x.name) + '</option>'; }).join('') + '</select>' +
+      '<label for="tr-amt">Du betaler (0 til ' + maxAmt + ' kr.)</label><input id="tr-amt" type="number" inputmode="numeric" min="0" max="' + maxAmt + '" value="0">' +
+      '<div class="row2"><button class="btn" data-tradesend="' + i.id + '">Send tilbud</button><button class="btn ghost" data-tradecancel="1">Annullér</button></div></div>';
+  }
+  function tradeCards(s) {
+    var out = '';
+    s.trades_in.forEach(function (t) {
+      out += '<div class="card"><b>' + esc(t.from) + ' vil bytte</b><div class="sub" style="margin:4px 0 10px">Tag "' + esc(t.title) + '" (' + t.price + ' kr)' + (t.amount ? ' og få ' + t.amount + ' kr af ' + esc(t.from) : '') + '.</div>' +
+        '<div class="row2"><button class="btn" data-tradeyes="' + t.id + '">Tag imod</button><button class="btn ghost" data-tradeno="' + t.id + '">Nej tak</button></div></div>';
+    });
+    s.trades_out.forEach(function (t) {
+      out += '<div class="card"><div class="row"><b>Du har tilbudt "' + esc(t.title) + '"</b></div><div class="sub">Venter på svar fra ' + esc(t.to) + '.</div>' +
+        '<button class="btn ghost" style="margin-top:8px" data-tradeno="' + t.id + '">Træk tilbage</button></div>';
+    });
+    return out;
+  }
+
   // ---- beskeder på telefonen (web-push) ----
   var pushState = 'unknown';   // unknown | ready | on | blocked | ios | none
   function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
@@ -260,12 +346,21 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     var b = e.target.closest('button');
     if (!b) { return; }
     if (b.dataset.pushon) { enablePush(); }
+    if (b.dataset.trade) { tradeOpen = b.dataset.trade; render(); }
+    if (b.dataset.tradecancel) { tradeOpen = ''; render(); }
+    if (b.dataset.tradesend) {
+      var to = document.getElementById('tr-to').value, amt = document.getElementById('tr-amt').value, id = b.dataset.tradesend;
+      tradeOpen = '';
+      act('api/items/' + id + '/trade', { to: to, amount: amt });
+    }
+    if (b.dataset.tradeyes) { act('api/trades/' + b.dataset.tradeyes + '/accept'); }
+    if (b.dataset.tradeno) { act('api/trades/' + b.dataset.tradeno + '/end'); }
     if (b.dataset.pick) { pickFor = b.dataset.pick; picker.click(); }
     if (b.dataset.done) { act('api/items/' + b.dataset.done + '/done'); }
     if (b.dataset.claim) { act('api/tasks/' + b.dataset.claim + '/claim'); }
   });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { load(); } });
-  setInterval(load, 15000);
+  setInterval(function () { if (!tradeOpen) { load(); } }, 15000);
   load().then(detectPush).then(render);
 })();
 </script>

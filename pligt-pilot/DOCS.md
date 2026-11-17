@@ -49,6 +49,13 @@ Beskederne går gennem den åbne tjeneste ntfy.sh. Emnet er et langt tilfældigt
 
 Har barnet Home Assistant-appen, kan du i stedet skrive barnets notifikationstjeneste, fx `mobile_app_emmas_tlf`.
 
+## Sjove ting
+- **Ugens boss:** antal liv og bonus kan ændres under Indstillinger. Bonussen udbetales manuelt fra boss-kortet på Oversigt, når bossen er besejret.
+- **Overraskelse:** sæt kryds ved "Overraskelse" på en opgave. Den bliver ikke en fast opgave, men dukker af og til op som en ledig opgave med dobbelt pris, der udløber efter 90 minutter.
+- **Bytte:** børn kan tilbyde en opgave til en søskende. Det kan slås fra under Indstillinger.
+- **Sæson:** vælg "Hvornår på året" på en opgave. Uden for sæsonen er den skjult uden straf.
+- **Rimelighedstjek:** under prisen vises en note, hvis prisen afviger meget fra det typiske eller fra dine andre opgaver.
+
 ## Indstillinger
 
 | Indstilling | Betydning |

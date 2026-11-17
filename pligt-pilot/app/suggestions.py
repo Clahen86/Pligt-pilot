@@ -112,6 +112,22 @@ DEVICES = [
     },
 ]
 
+# Opgaver, der hører til årstiden. De vises altid, men tændes kun i deres sæson.
+SEASONAL = [
+    {'room': 'Efterår', 'season': 'efterår', 'tasks': [
+        ('Fej blade op', 15, 9, 'weekly'), ('Tag havemøbler ind', 10, 10, 'once'),
+        ('Ryd tagrenden for blade', 25, 14, 'once')]},
+    {'room': 'Vinter', 'season': 'vinter', 'tasks': [
+        ('Skovl sne', 15, 9, 'weekly'), ('Drys salt på trappen', 8, 8, 'daily'),
+        ('Fyld brændekurven', 6, 7, 'daily')]},
+    {'room': 'Forår', 'season': 'forår', 'tasks': [
+        ('Luge i bedene', 15, 8, 'weekly'), ('Gør terrassen klar', 20, 10, 'once'),
+        ('Vask havemøblerne', 10, 9, 'once')]},
+    {'room': 'Sommer', 'season': 'sommer', 'tasks': [
+        ('Vand haven', 6, 7, 'daily'), ('Fyld fuglebadet', 3, 6, 'daily'),
+        ('Klip græsset', 30, 13, 'weekly')]},
+]
+
 WHOLE_HOUSE = {
     'room': 'Hele huset',
     'tasks': [
@@ -124,7 +140,8 @@ WHOLE_HOUSE = {
 
 def _rows(group, found):
     return [{'room': group['room'], 'title': t, 'price': p, 'age_min': a,
-             'repeat': r, 'found': found} for (t, p, a, r) in group['tasks']]
+             'repeat': r, 'found': found, 'season': group.get('season', '')}
+            for (t, p, a, r) in group['tasks']]
 
 
 def suggest(areas, kid_ages, existing_titles, devices=None):
@@ -145,8 +162,10 @@ def suggest(areas, kid_ages, existing_titles, devices=None):
             continue
         rows += _rows(group, found)
     rows += _rows(WHOLE_HOUSE, False)
+    for group in SEASONAL:
+        rows += _rows(group, False)
     taken = {t.strip().lower() for t in existing_titles}
     for r in rows:
         r['exists'] = r['title'].strip().lower() in taken
-        r['on'] = (not r['exists']) and r['age_min'] <= oldest
+        r['on'] = (not r['exists']) and r['age_min'] <= oldest and not r['season']
     return rows

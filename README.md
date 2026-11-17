@@ -25,6 +25,14 @@ Se `pligt-pilot/DOCS.md` for indstillinger.
 - **Rigtige kroner.** Pris pr. opgave, saldo pr. barn og ugegraf.
 - **Ugens helt.** Konkurrence med point efter alder og en bonus.
 
+## Nyt i 0.5
+- **Ugens boss:** hele familien slår en boss sammen. Hver godkendt opgave er et slag, og når bossen er besejret kan forælderen give en bonus til dem, der hjalp.
+- **Karakter der vokser:** hvert barn har en fugl, der udvikler sig fra æg til Pligtlegende og får kasket, solbriller, kappe og krone.
+- **Overraskelsesopgave:** nogle dage dukker en ekstra opgave op med dobbelt pris, der kun er åben i 90 minutter.
+- **Bytte:** børn kan give en opgave til en søskende, evt. mod betaling.
+- **Rimelighedstjek:** appen siger til, hvis en pris virker for høj eller for lav.
+- **Sæsonopgaver:** fx løv om efteråret og snerydning om vinteren, kun aktive i deres sæson.
+
 ## Nyt i 0.4
 
 - Beskeder direkte fra børnenes link, uden app: web-push over https med et gratis DuckDNS-certifikat (ingen åbne porte). Se `pligt-pilot/DOCS.md`.
