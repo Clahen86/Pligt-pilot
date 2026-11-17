@@ -1,8 +1,5 @@
-ARG BUILD_FROM
-FROM $BUILD_FROM
-
-RUN apk add --no-cache python3
+FROM docker.io/library/python:3.13-slim-bookworm
 
 COPY app /app
-
+ENV PYTHONUNBUFFERED=1
 CMD ["python3", "/app/main.py"]
