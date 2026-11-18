@@ -484,6 +484,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     if (privateHost(location.hostname)) { return 'http://' + location.hostname + ':8099'; }
     return '';
   }
+  function outsideLink() {  // an https address that isn't on the home network: works away from home too
+    var m = /^https:\/\/([^/:]+)/.exec(linkBase());
+    return !!m && !privateHost(m[1]) && !/duckdns\.org$/.test(m[1]);
+  }
   function linkFor(k) {
     var base = linkBase();
     return base ? base + '/k/' + k.token + '/' : '';
@@ -690,7 +694,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
             '<button class="btn small ghost" style="margin-top:8px" data-qr="' + k.id + '">' + (qrKid === k.id ? 'Skjul QR-kode' : 'Vis QR-kode') + '</button>' +
             (qrKid === k.id ? '<div class="qr">' + QR.svg(linkFor(k)) + '<div class="note">Hold barnets telefon hen foran skærmen, så åbner linket.</div></div>' : '') + '</div>'
           : '<div class="empty">Appen kan ikke se Home Assistants adresse derhjemme. Skriv den i indstillingen public_url, fx http://192.168.1.50:8099, så kommer linket frem.</div>') +
-        '<div class="note">Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren. Linket virker på jeres wifi derhjemme.</div>' +
+        '<div class="note">' + (outsideLink() ? 'Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren. Linket virker både hjemme og ude.'
+          : 'Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren. Linket virker på jeres wifi derhjemme.') + '</div>' +
         '<div class="row"><div class="grow t"><b>På pause</b><span>Ferie eller syg: ingen opgaver, og ugen tæller ikke som misset</span></div>' +
         '<button class="sw" role="switch" aria-checked="' + (k.paused ? 'true' : 'false') + '" aria-label="' + esc(k.name) + ' er på pause" data-pause="' + k.id + '"><span></span></button></div>' +
         '<div><label for="b-' + k.id + '-d">Fødselsdato</label>' + dateSelects('b-' + k.id, k.birthday) + '</div>' +
@@ -701,7 +706,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         (k.ntfy_on ? '<div class="card" style="background:#FFF6E9;gap:6px"><div class="note">1. Installér appen <b>ntfy</b> på ' + esc(k.name) + 's telefon (gratis, App Store eller Google Play).<br>2. Tryk på + og vælg <b>Subscribe to topic</b>.<br>3. Skriv dette emne:</div>' +
         '<div class="linkbox"><input type="text" readonly aria-label="Emne" value="' + esc(k.ntfy) + '"></div>' +
         '<button class="btn small" data-testntfy="' + k.id + '">Send en prøvebesked</button></div>' : '') +
-        '<div class="note">' + (state.kid_https
+        '<div class="note">' + (state.kid_https || outsideLink()
           ? (k.push ? 'Beskeder i browseren: ' + k.push + (k.push === 1 ? ' telefon er' : ' telefoner er') + ' tilmeldt.' : 'Beskeder i browseren: ingen telefon er tilmeldt endnu. ' + esc(k.name) + ' trykker Slå beskeder til på sin side.')
           : 'Beskeder i browseren kræver et https-link. Se vejledningen under Beskeder i dokumentationen.') + '</div>' +
         (k.push ? '<button class="btn small ghost" data-testntfy="' + k.id + '">Send en prøvebesked</button>' : '') +
