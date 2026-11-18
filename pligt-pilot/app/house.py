@@ -240,9 +240,10 @@ DOOR_WORDS = ('dør', 'door', 'låge', 'lage', 'luge', 'contact', 'kontakt')
 NOT_DOOR = ('batteri', 'battery', 'problem', 'tamper', 'sabotage')
 
 
-def door_candidates(entities, near=''):
+def door_candidates(entities, near='', machine=''):
     """Binary sensors to pick a machine's door sensor from: door sensors in the machine's room first, then other door
     sensors, then the rest - battery and problem sensors left out. near: the machine's own sensor (for the room)."""
+    from store import machine_type
     area = next((row[4] for row in entities if row[0] == near), '') if near else ''
     out = []
     for row in entities:
@@ -254,8 +255,12 @@ def door_candidates(entities, near=''):
             continue
         door = dclass in DOOR_CLASSES or any(w in text for w in DOOR_WORDS)
         same = bool(area) and room == area
-        out.append({'entity': eid, 'name': name or eid, 'area': room, 'door': door, 'same': same})
-    out.sort(key=lambda d: (not (d['same'] and d['door']), not d['door'], not d['same'], d['name'].lower()))
+        kind = machine_type(name)
+        named = bool(machine) and machine != 'other' and (kind if kind != 'other' else machine_type(eid)) == machine
+        out.append({'entity': eid, 'name': name or eid, 'area': room, 'door': door, 'same': same, 'named': named})
+    # named after the machine first (Vaskemaskine låge), then door sensors in its room, other doors, the rest
+    out.sort(key=lambda d: (not (d['named'] and d['door']), not (d['same'] and d['door']), not d['door'], not d['same'],
+                            d['name'].lower()))
     return out[:400]
 
 

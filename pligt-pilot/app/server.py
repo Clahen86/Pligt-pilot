@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import i18n
 import icons
 from house import door_candidates, find_sensors, power_sensors
-from store import Problem
+from store import Problem, machine_type
 from suggestions import suggest
 
 log = logging.getLogger('pligt')
@@ -441,7 +441,8 @@ def make_handler(app, role, allow_from=None):
                 if path == '/api/doors':
                     rid = (self.query.get('rule') or [''])[0]
                     rule = next((r for r in store.data['rules'] if r['id'] == rid), None)
-                    doors = door_candidates(app.ha.entities(), rule['entity'] if rule else '')
+                    doors = door_candidates(app.ha.entities(), rule['entity'] if rule else '',
+                                            machine_type(rule['name']) if rule else '')
                     vals = app.ha.states([d['entity'] for d in doors])
                     for d in doors:
                         d['state'] = vals.get(d['entity'], '')
