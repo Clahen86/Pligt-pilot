@@ -101,8 +101,25 @@ class App:
             task = self.store.add_meal(data)
             if task:
                 self.store.housekeeping()       # er det i dag, kommer opgaven frem med det samme
+                self._tell_cook(task)
             return bool(task)
         return False
+
+    def _tell_cook(self, task):
+        """Barnet får besked om sin maddag på selve dagen - én gang, også når Madplan sender den igen."""
+        meal = task.get('meal') or {}
+        today = self.store._now().date().isoformat()
+        if meal.get('date') != today or meal.get('told') == today:
+            return
+        kid = next((k for k in self.store.data['kids'] if k['id'] == meal.get('kid_id')), None)
+        if not kid or kid.get('paused'):
+            return
+        meal['told'] = today
+        self.store._save()
+        text = 'Du laver mad i dag: %s.' % meal.get('meal', '')
+        if meal.get('time'):
+            text += ' Klar kl. %s.' % meal['time']
+        self.ha.notify_kid(kid, 'Maddag', text + ' Tryk for at se opskriften.')
 
     def outside_url(self):
         """The address that works away from home: the one Home Assistant gave (Nabu Casa or its own), else public_url."""

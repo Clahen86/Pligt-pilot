@@ -9,7 +9,9 @@
 
 ## Giv en opgave hurtigt
 
-Øverst på **Oversigt** står **Giv en opgave** med de 5 opgaver, I bruger mest. Tryk på en, og vælg barnet eller **Først til mølle**. Så er den sendt for i dag. En opgave kommer altid med som knap, hvis du slår **Vis som hurtigknap** til på den.
+Øverst på **Oversigt** står **Giv en opgave** med op til 8 knapper: dem, du har fastgjort, først, og derefter dem, I bruger mest. Tryk på en, og vælg barnet eller **Først til mølle**. Så er den sendt for i dag.
+
+Tryk på **+ Tilføj** for at vælge, hvilke opgaver der altid skal stå som knap. Et flueben betyder fastgjort. Tryk igen for at fjerne det, og tryk **Færdig**. Du fjerner også en fastgjort knap ved at holde den inde et øjeblik, eller med **Fjern fra hurtigknapperne**, når du har trykket på den. Det samme valg findes som **Vis som hurtigknap** på opgaven.
 
 Hver knap har et lille mærke:
 

@@ -1225,6 +1225,21 @@ class MealTests(unittest.TestCase):
         task = self.meal(url='javascript:alert(1)', time='sen', ingredients='ikke en liste')
         self.assertEqual((task['meal']['url'], task['meal']['time'], task['meal']['ingredients']), ('', '', []))
 
+    def test_cook_is_told_once_on_the_day(self):
+        sent = []
+
+        class Ha(HomeAssistant):
+            def notify_kid(self, kid, title, message):
+                sent.append((kid['name'], title, message))
+                return True
+        app = App(self.store, Ha())
+        today = self.clock().date().isoformat()
+        app.ha_event('madplan_cook', {'kid': 'Silas', 'date': '2099-01-01', 'meal': 'Suppe'})
+        self.assertEqual(sent, [])                      # ikke i dag: ingen besked endnu
+        app.ha_event('madplan_cook', {'kid': 'Silas', 'date': today, 'meal': 'Lasagne', 'time': '18:00'})
+        app.ha_event('madplan_cook', {'kid': 'Silas', 'date': today, 'meal': 'Lasagne', 'time': '18:00'})
+        self.assertEqual(sent, [('Silas', 'Maddag', 'Du laver mad i dag: Lasagne. Klar kl. 18:00. Tryk for at se opskriften.')])
+
     def test_meal_day_is_not_left_hanging(self):
         self.meal(date='2026-11-16')
         self.assertEqual(len(self.store.kid_view(self.silas['token'])['items']), 1)
@@ -1296,6 +1311,15 @@ class LanguageTests(unittest.TestCase):
         for key in tables['en']:
             for lang in ('de', 'sv', 'nb'):
                 self.assertIn(key, tables[lang], '%s mangler %s' % (key, lang))
+
+    def test_quick_button_texts_in_five_languages(self):
+        import i18n
+        self.assertEqual(i18n.translate('en', '+ Tilføj'), '+ Add')
+        self.assertEqual(i18n.translate('de', '+ Tilføj'), '+ Hinzufügen')
+        self.assertEqual(i18n.translate('sv', 'Hurtigknapper'), 'Snabbknappar')
+        self.assertEqual(i18n.translate('nb', 'Fjernet fra hurtigknapperne'), 'Fjernet fra hurtigknappene')
+        self.assertEqual(i18n.translate('en', 'Færdig'), 'Done')
+        self.assertEqual(i18n.translate('en', 'Tilføj barn'), 'Add child')        # længste nøgle vinder stadig
 
     def test_kid_language_overrides_the_house_language(self):
         self.store.set_setting('lang', 'de')
@@ -1457,22 +1481,66 @@ class QuickTests(unittest.TestCase):
         return [q['title'] for q in self.store.admin_state()['quick']]
 
     def test_pinned_first_then_most_used_then_task_order(self):
-        for title in ('A', 'B', 'C', 'D', 'E', 'F', 'G'):
+        letters = 'ABCDEFGHIJ'
+        for title in letters:
             self.store.add_task(title, 3, open_job=True)
         self.store.add_duty('Pligt', [self.emil['id']], '2026-11-20')
         off = self.store.add_task('Slukket', 3, open_job=True)
         self.store.update_task(off['id'], active=False)
-        self.assertEqual(self.quick(), ['A', 'B', 'C', 'D', 'E'])          # ingen historik: rækkefølgen
+        self.assertEqual(self.quick(), list('ABCDEFGH'))                     # ingen historik: rækkefølgen, højst 8
         ids = {t['title']: t['id'] for t in self.store.data['tasks']}
         for _ in range(2):
-            self.store.give_task(ids['F'], self.emil['id'])
-        self.store.update_task(ids['G'], quick=True)
-        self.assertEqual(self.quick(), ['G', 'F', 'A', 'B', 'C'])
+            self.store.give_task(ids['I'], self.emil['id'])
+        self.store.update_task(ids['J'], quick=True)
+        self.assertEqual(self.quick(), ['J', 'I'] + list('ABCDEF'))
         self.clock.advance(days=31)                                          # brug ældre end 30 dage tæller ikke
-        self.assertEqual(self.quick(), ['G', 'A', 'B', 'C', 'D'])
+        self.assertEqual(self.quick(), ['J'] + list('ABCDEFG'))
         q = self.store.admin_state()['quick'][0]
         self.assertEqual((q['price'], q['quick'], sorted(q['kids'])), (3, True, sorted([self.emil['id'], self.maja['id']])))
         self.assertTrue(q['icon_shown'])
+
+    def test_pinned_always_first_and_at_most_eight_in_all(self):
+        tasks = [self.store.add_task('Opgave %d' % n, 2) for n in range(10)]
+        for t in tasks[::-1][:9]:                                            # 9 fastgjorte: de 8 første vises
+            self.store.update_task(t['id'], quick=True)
+        quick = self.store.admin_state()['quick']
+        self.assertEqual(len(quick), 8)
+        self.assertTrue(all(q['quick'] for q in quick))
+        self.assertNotIn('Opgave 0', [q['title'] for q in quick])
+
+    def test_choices_list_every_giveable_task_with_its_pin(self):
+        normal = self.store.add_task('Dæk bord', 3)
+        self.store.update_task(normal['id'], quick=True)
+        self.store.add_duty('Pligt', [self.emil['id']], '2026-11-20')
+        self.store.add_task('Ryd sne', 30, season='vinter', auto_season=False)   # ikke i sæson i november
+        off = self.store.add_task('Slukket', 3)
+        self.store.update_task(off['id'], active=False)
+        self.store.add_task('Tøm vaskemaskinen', 5, 'Fra huset', 'once', True, auto_rule='abcdef1234')   # husets
+        choices = self.store.admin_state()['quick_choices']
+        self.assertEqual([(c['title'], c['price'], c['quick']) for c in choices], [('Dæk bord', 3, True)])
+        self.assertTrue(choices[0]['icon_shown'])
+        self.store.update_task(normal['id'], quick=False)
+        self.assertFalse(self.store.admin_state()['quick_choices'][0]['quick'])
+
+    def test_quick_buttons_from_data_saved_by_older_versions(self):
+        """Gemt af en ældre version: opgaver uden auto_season/quick/each/icon/season, items uden given/from_task."""
+        old = {'kids': [dict(self.emil)],
+               'tasks': [{'id': 'aaaaaa0001', 'title': 'Dæk bord', 'room': 'Køkken', 'price': 3, 'repeat': 'daily',
+                          'open': False, 'kids': [], 'age_min': 4, 'age_max': 99, 'times': 1, 'active': True},
+                         {'id': 'aaaaaa0002', 'title': 'Tøm opvaskeren', 'room': '', 'price': 4, 'repeat': 'daily',
+                          'open': False, 'kids': None, 'active': True, 'quick': None}],
+               'items': [{'id': 'bbbbbb0001', 'task_id': 'aaaaaa0002', 'kid_id': self.emil['id'], 'title': 'Tøm opvaskeren',
+                          'price': 4, 'period': '2026-11-15', 'status': 'done', 'created': None,
+                          'done_at': '2026-11-15T18:00:00'}],
+               'ledger': []}
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, 'pligt.json')
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(old, f)
+            store = Store(path, self.clock)
+            state = store.admin_state()
+        self.assertEqual(sorted(q['title'] for q in state['quick']), ['Dæk bord', 'Tøm opvaskeren'])
+        self.assertEqual(len(state['quick_choices']), 2)
 
     def test_give_to_one_child_is_for_today_only(self):
         self.store.set_setting('penalty', 0)
@@ -2107,6 +2175,10 @@ class ServerTests(unittest.TestCase):
         status, state = self.call(self.adm, '/api/tasks/%s' % task['id'], {'quick': True})
         self.assertTrue([t for t in state['tasks'] if t['id'] == task['id']][0]['quick'])
         self.assertEqual(state['quick'][0]['id'], task['id'])
+        mine = [c for c in state['quick_choices'] if c['id'] == task['id']][0]
+        self.assertTrue(mine['quick'])
+        status, state = self.call(self.adm, '/api/tasks/%s' % task['id'], {'quick': False})   # langt tryk / Tilføj-arket
+        self.assertFalse([c for c in state['quick_choices'] if c['id'] == task['id']][0]['quick'])
 
     def test_parent_server_can_be_limited_to_ingress(self):
         locked, _ = serve(self.app, 'admin', 0, allow_from={'172.30.32.2'}, host='127.0.0.1')

@@ -90,3 +90,17 @@ september || September || September || september || september
 oktober || October || Oktober || oktober || oktober
 november || November || November || november || november
 december || December || Dezember || december || desember
+# Hurtigknapper: Tilføj-arket og langt tryk
++ Tilføj || + Add || + Hinzufügen || + Lägg till || + Legg til
+Vælg hurtigknapper || Choose quick buttons || Schnelltasten wählen || Välj snabbknappar || Velg hurtigknapper
+Hurtigknapper || Quick buttons || Schnelltasten || Snabbknappar || Hurtigknapper
+Fastgjorte står først. Hold en knap inde for at fjerne den igen. || Pinned ones come first. Press and hold a button to remove it again. || Angeheftete stehen zuerst. Halte eine Taste gedrückt, um sie wieder zu entfernen. || Fästa kommer först. Håll in en knapp för att ta bort den igen. || Festede står først. Hold inne en knapp for å fjerne den igjen.
+Ingen opgaver kan gives lige nu || No chores can be given right now || Gerade kann keine Aufgabe vergeben werden || Inga uppgifter kan ges just nu || Ingen oppgaver kan gis nå
+Der vises højst 8 hurtigknapper || At most 8 quick buttons are shown || Es werden höchstens 8 Schnelltasten gezeigt || Högst 8 snabbknappar visas || Det vises høyst 8 hurtigknapper
+Fjern fra hurtigknapperne || Remove from quick buttons || Aus den Schnelltasten entfernen || Ta bort från snabbknapparna || Fjern fra hurtigknappene
+Fjernet fra hurtigknapperne || Removed from quick buttons || Aus den Schnelltasten entfernt || Borttagen från snabbknapparna || Fjernet fra hurtigknappene
+Den står her, fordi den bruges meget || It is here because it is used a lot || Sie steht hier, weil sie oft benutzt wird || Den står här för att den används mycket || Den står her fordi den brukes mye
+Du laver mad i dag: || You are cooking today: || Du kochst heute: || Du lagar mat i dag: || Du lager mat i dag:
+ Tryk for at se opskriften. ||  Tap to see the recipe. ||  Tippe, um das Rezept zu sehen. ||  Tryck för att se receptet. ||  Trykk for å se oppskriften.
+=Maddag || Cooking day || Kochtag || Matlagningsdag || Middagsdag
+Klar kl. || Ready at || Fertig um || Klart kl. || Klar kl.

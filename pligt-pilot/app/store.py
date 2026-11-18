@@ -53,7 +53,7 @@ SERVICE = re.compile(r'^(notify\.)?[a-z0-9_]+$')
 MAX_PHOTO = 450 * 1024
 MACHINES = ('washer', 'dryer', 'dishwasher')
 DOOR_OPEN = ('on', 'open')
-QUICK = 5                   # antal hurtigknapper på Oversigt (fastgjorte kommer oveni)
+QUICK = 8                   # højst så mange hurtigknapper på Oversigt, fastgjorte først
 USE_DAYS = 30               # hurtigknapperne følger, hvad der er brugt de sidste 30 dage
 # "Hver sin" eller "én gør det", gættet ud fra titlen (dansk, engelsk, tysk, svensk og norsk).
 # Ord med * til sidst er ordstammer; resten skal stå som hele ord.
@@ -1404,14 +1404,23 @@ class Store:
                                                       or i['status'] in ('wait', 'done')):
                 tid = i.get('from_task') or i['task_id']
                 use[tid] = use.get(tid, 0) + 1
-        ok = [t for t in self.data['tasks'] if self._giveable(t) and self._in_season(t, now)]
+        ok = self._giveable_now(now)
         pinned = [t for t in ok if t.get('quick')]
         rest = sorted((t for t in ok if not t.get('quick')), key=lambda t: -use.get(t['id'], 0))
-        pick = pinned + rest[:max(0, QUICK - len(pinned))]
+        pick = (pinned + rest)[:QUICK]
         return [{'id': t['id'], 'title': t['title'], 'price': t['price'], 'quick': bool(t.get('quick')),
                  'each': self._each(t),
                  'icon_shown': t.get('icon') or icons.guess(t['title'], t['room']),
                  'kids': [k['id'] for k in self._kids_for(t)]} for t in pick]
+
+    def _giveable_now(self, now):
+        return [t for t in self.data['tasks'] if self._giveable(t) and self._in_season(t, now)]
+
+    def _quick_choices(self):
+        """Arket "Tilføj": alle opgaver, der kan gives nu, og om de er fastgjort som hurtigknap."""
+        return [{'id': t['id'], 'title': t['title'], 'price': t['price'], 'quick': bool(t.get('quick')),
+                 'icon_shown': t.get('icon') or icons.guess(t['title'], t['room'])}
+                for t in self._giveable_now(self._now())]
 
     # ---- forældrenes visning ------------------------------------------
     def admin_state(self):
@@ -1490,6 +1499,7 @@ class Store:
                                snow=not t.get('auto_rule') and outdoor.is_snow(t['title'], t['room']))
                           for t in self.data['tasks']],
                 'quick': self._quick(),
+                'quick_choices': self._quick_choices(),
                 'weather': self._weather_view(),
                 'total': sum(k['balance'] for k in kids),
                 'goal': settings['goal'],
@@ -1951,6 +1961,8 @@ class Store:
             task = next((t for t in self.data['tasks'] if t.get('meal') and t['meal']['kid_id'] == kid['id']
                          and t['meal']['date'] == date), None)
             if task:
+                if task['meal'].get('told'):
+                    meal['told'] = task['meal']['told']     # beskeden er sendt: ikke igen samme dag
                 task.update(title=title[:60], price=price, meal=meal)
                 for i in self.data['items']:
                     if i['task_id'] == task['id'] and i['status'] == 'todo':
