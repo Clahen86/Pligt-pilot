@@ -49,3 +49,35 @@ Dørsensoren skal ligne binary_sensor.vaskemaskine_dor || The door sensor must l
 En ledig opgave fra huset forsvinder igen, når lågen åbnes (med dørsensor), når maskinen starter igen, eller når den har ligget for længe. Har et barn taget den, bliver den liggende. || An open chore from the house disappears again when the door is opened (with a door sensor), when the machine starts again, or when it has been there too long. If a child has taken it, it stays. || Eine freie Aufgabe vom Haus verschwindet wieder, wenn die Tür geöffnet wird (mit Türsensor), wenn die Maschine wieder startet oder wenn sie zu lange liegt. Hat ein Kind sie genommen, bleibt sie. || En ledig uppgift från huset försvinner igen när luckan öppnas (med dörrsensor), när maskinen startar igen eller när den har legat för länge. Har ett barn tagit den ligger den kvar. || En ledig oppgave fra huset forsvinner igjen når luken åpnes (med dørsensor), når maskinen starter igjen, eller når den har ligget for lenge. Har et barn tatt den, blir den liggende.
 Fjern ledig opgave efter (timer) || Remove open chore after (hours) || Freie Aufgabe entfernen nach (Stunden) || Ta bort ledig uppgift efter (timmar) || Fjern ledig oppgave etter (timer)
 0 betyder efter 2 dage. || 0 means after 2 days. || 0 bedeutet nach 2 Tagen. || 0 betyder efter 2 dagar. || 0 betyr etter 2 dager.
+# Hurtigknapper, årstid af sig selv og vejr
+Giv en opgave || Give a chore || Eine Aufgabe geben || Ge en uppgift || Gi en oppgave
+Alle opgaver || All chores || Alle Aufgaben || Alla uppgifter || Alle oppgaver
+Vælg en anden || Pick another || Eine andere wählen || Välj en annan || Velg en annen
+Først til mølle – alle kan tage den || First come – anyone can take it || Wer zuerst kommt – alle dürfen sie nehmen || Först till kvarn – alla kan ta den || Først til mølla – alle kan ta den
+=Annuller || Cancel || Abbrechen || Avbryt || Avbryt
+Intet barn kan få den opgave lige nu || No child can get this chore right now || Gerade kann kein Kind diese Aufgabe bekommen || Inget barn kan få den uppgiften just nu || Ingen barn kan få denne oppgaven nå
+Sendt til alle || Sent to everyone || An alle geschickt || Skickad till alla || Sendt til alle
+Sendt til || Sent to || Geschickt an || Skickad till || Sendt til
+Vis som hurtigknap || Show as a quick button || Als Schnelltaste zeigen || Visa som snabbknapp || Vis som hurtigknapp
+hurtigknap || quick button || Schnelltaste || snabbknapp || hurtigknapp
+én gang om ugen || once a week || einmal pro Woche || en gång i veckan || én gang i uken
+hver 3. uge || every 3rd week || jede 3. Woche || var 3:e vecka || hver 3. uke
+Kommer kun, når det har sneet det sidste døgn. || Only comes when it has snowed in the last 24 hours. || Kommt nur, wenn es in den letzten 24 Stunden geschneit hat. || Kommer bara när det har snöat det senaste dygnet. || Kommer bare når det har snødd det siste døgnet.
+Udendørs: venter, hvis det regner eller stormer. || Outdoors: waits if it rains or storms. || Draußen: wartet, wenn es regnet oder stürmt. || Utomhus: väntar om det regnar eller stormar. || Utendørs: venter hvis det regner eller stormer.
+Den opgave kan ikke gives herfra || That chore cannot be given from here || Diese Aufgabe kann man hier nicht geben || Den uppgiften kan inte ges härifrån || Den oppgaven kan ikke gis herfra
+Opgaven hører ikke til på denne tid af året || The chore does not belong to this time of year || Die Aufgabe passt nicht zu dieser Jahreszeit || Uppgiften hör inte till den här tiden på året || Oppgaven hører ikke til på denne tiden av året
+kan ikke få den opgave || cannot get that chore || kann diese Aufgabe nicht bekommen || kan inte få den uppgiften || kan ikke få den oppgaven
+Intet barn kan tage den opgave || No child can take that chore || Kein Kind kann diese Aufgabe nehmen || Inget barn kan ta den uppgiften || Ingen barn kan ta den oppgaven
+er på pause || is paused || ist pausiert || är pausad || er på pause
+januar || January || Januar || januari || januar
+februar || February || Februar || februari || februar
+marts || March || März || mars || mars
+april || April || April || april || april
+maj || May || Mai || maj || mai
+juni || June || Juni || juni || juni
+juli || July || Juli || juli || juli
+august || August || August || augusti || august
+september || September || September || september || september
+oktober || October || Oktober || oktober || oktober
+november || November || November || november || november
+december || December || Dezember || december || desember

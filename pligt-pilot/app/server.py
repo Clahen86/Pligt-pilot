@@ -472,12 +472,20 @@ def make_handler(app, role, allow_from=None):
             m = re.match(r'^/api/tasks/' + ID + r'$', path)
             if m:
                 allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids', 'age_min', 'times', 'photo', 'season',
-                           'surprise', 'icon')
+                           'surprise', 'icon', 'quick')
                 store.update_task(m.group(1), **{k: v for k, v in body.items() if k in allowed})
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'/delete$', path)
             if m:
                 store.delete_task(m.group(1))
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/tasks/' + ID + r'/give$', path)
+            if m:
+                kid_id = body.get('kid_id')
+                task, kids, item = store.give_task(m.group(1), str(kid_id) if kid_id else None)
+                for kid in kids:
+                    app.ha.notify_kid(kid, 'Ny opgave', '%s (%d kr.)%s' % (
+                        task['title'], task['price'], '' if item else '. Først til mølle!'))
                 return self._json(store.admin_state())
             if path == '/api/pay_all':
                 store.pay_all()
@@ -593,7 +601,7 @@ def make_handler(app, role, allow_from=None):
                     store.add_task(r.get('title'), r.get('price', 0), r.get('room', ''),
                                    r.get('repeat', 'daily'), False, None,
                                    r.get('age_min', 0), 99, r.get('times', 1), False, None,
-                                   r.get('season', ''))
+                                   r.get('season', ''), auto_season=True)
                 return self._json(store.admin_state())
             self._json({'error': 'Findes ikke'}, 404)
 

@@ -18,6 +18,7 @@ import uuid
 
 import i18n
 import icons
+import outdoor
 
 COLORS = ['#0B7A70', '#C73A30', '#6C4AB6', '#B05A00', '#1F6FB2', '#B03A83']
 DAYS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
@@ -52,6 +53,8 @@ SERVICE = re.compile(r'^(notify\.)?[a-z0-9_]+$')
 MAX_PHOTO = 450 * 1024
 MACHINES = ('washer', 'dryer', 'dishwasher')
 DOOR_OPEN = ('on', 'open')
+QUICK = 5                   # antal hurtigknapper på Oversigt (fastgjorte kommer oveni)
+USE_DAYS = 30               # hurtigknapperne følger, hvad der er brugt de sidste 30 dage
 
 
 def machine_type(name):
@@ -100,6 +103,11 @@ def week_key(d):
     return period_key('weekly', d)
 
 
+def _period_kind(period):
+    """Dag, uge eller blok af uger. Skifter en opgave slags periode, er det ikke barnets skyld."""
+    return 'B' if period.startswith('B') else 'W' if '-W' in period else 'D'
+
+
 def age_factor(age):
     """Yngre børn får lidt flere point, så konkurrencen er til at være med i."""
     return max(1.0, 1.0 + (12 - int(age)) * 0.1)
@@ -134,6 +142,9 @@ class Store:
                     self.data['settings'].update(value)
                 else:
                     self.data[key] = value
+        for t in self.data['tasks']:
+            if 'auto_season' not in t:
+                t['auto_season'] = self._legacy_auto(t)
 
     # ---- lagring -------------------------------------------------------
     def lang_of(self, kid=None):
@@ -178,7 +189,7 @@ class Store:
             payload.update(source='meal', meal=task['meal'].get('meal', ''))
         elif task.get('duty'):
             payload['source'] = 'duty'
-        elif rule_id and rule_id != 'surprise':
+        elif rule_id and rule_id not in ('surprise', 'given'):
             rule = next((r for r in self.data['rules'] if r['id'] == rule_id), None)
             payload.update(source='machine', machine=machine_type(rule['name'] if rule else ''))
         else:
@@ -236,9 +247,69 @@ class Store:
         return value
 
     @staticmethod
-    def _in_season(task, d):
+    def _legacy_auto(task):
+        """Opgaver fra før auto-sæson: automatik, medmindre forælderen selv har valgt en sæson.
+        En sæson fra startpakken tæller ikke som forælderens valg."""
+        season = task.get('season') or ''
+        if not season:
+            return True
+        title = task['title'].strip().lower()
+        for row in STARTER:
+            if row[7] == season and title in {i18n.translate(lang, row[0]).lower() for lang in i18n.LANGS}:
+                return True
+        return False
+
+    @staticmethod
+    def _auto_rule(task):
+        """Den automatiske regel for årstid og hyppighed ud fra titlen (uanset om den er slået til)."""
+        if task.get('duty') or task.get('meal') or task.get('auto_rule'):
+            return None
+        return outdoor.auto_rule(task['title'], task.get('room', ''))
+
+    def _auto(self, task):
+        """Reglen, hvis den gælder: forælderens eget valg af sæson vinder."""
+        return self._auto_rule(task) if task.get('auto_season', True) else None
+
+    def _in_season(self, task, d):
+        rule = self._auto(task)
+        if rule:
+            return d.month in rule['months']
         season = task.get('season') or ''
         return not season or d.month in SEASONS[season]
+
+    def _period(self, task, d):
+        """Opgavens periode. Græs og blade højst hver uge, hæk højst hver 3. uge."""
+        if task['repeat'] == 'once':
+            return 'once'
+        rule = self._auto(task)
+        every = rule['every'] if rule else 0
+        if every >= 14:
+            weeks = every // 7
+            return 'B%d-%d' % (weeks, (d.toordinal() - 1) // 7 // weeks)   # dag 1 er en mandag
+        if every >= 7:
+            return period_key('weekly', d)
+        return period_key(task['repeat'], d)
+
+    def _weather_blocks(self, task, d):
+        """Vejret holder opgaven tilbage (regn for udendørs opgaver, sne-opgaver uden sne)."""
+        if task.get('duty') or task.get('meal') or task.get('auto_rule'):
+            return False
+        return outdoor.blocks(self.data['settings'].get('weather'), task['title'], task.get('room', ''), d)
+
+    def set_weather(self, entity, state):
+        """Husets vejr fra Home Assistant. Sne huskes i et døgn, også over en genstart."""
+        with self.lock:
+            now = self._now()
+            state = (state or '').strip().lower()
+            w = self.data['settings'].get('weather') or {}
+            changed = w.get('entity') != (entity or '') or w.get('state') != state
+            w.update(entity=entity or '', state=state, at=now.isoformat(timespec='seconds'))
+            if entity and state in outdoor.SNOWY:
+                w['snow_at'] = now.isoformat(timespec='seconds')
+                changed = True
+            self.data['settings']['weather'] = w
+            if changed:
+                self._save()
 
     @staticmethod
     def _clean_times(value):
@@ -461,7 +532,7 @@ class Store:
     # ---- opgaver -------------------------------------------------------
     def add_task(self, title, price, room='', repeat='daily', open_job=False,
                  kids=None, age_min=0, age_max=99, times=1, photo=False, auto_rule=None,
-                 season='', surprise=False, icon=''):
+                 season='', surprise=False, icon='', auto_season=None):
         with self.lock:
             if repeat not in REPEATS:
                 raise Problem('Ukendt gentagelse')
@@ -479,6 +550,7 @@ class Store:
                 'photo': bool(photo),
                 'season': self._clean_season(season), 'icon': icons.valid(icon),
                 'surprise': bool(surprise),
+                'auto_season': (not season) if auto_season is None else bool(auto_season),
                 'created': self._now().isoformat(timespec='seconds'),
                 'active': True,
             }
@@ -512,7 +584,13 @@ class Store:
             if 'photo' in fields:
                 task['photo'] = bool(fields['photo'])
             if 'season' in fields:
-                task['season'] = self._clean_season(fields['season'])
+                if fields['season'] == 'auto':
+                    task['auto_season'] = True
+                else:
+                    task['season'] = self._clean_season(fields['season'])
+                    task['auto_season'] = False     # forælderens eget valg vinder
+            if 'quick' in fields:
+                task['quick'] = bool(fields['quick'])
             if 'surprise' in fields:
                 task['surprise'] = bool(fields['surprise'])
             if 'icon' in fields:
@@ -539,7 +617,7 @@ class Store:
                 continue
             lang = self.lang_of()
             self.add_task(i18n.translate(lang, title), price, i18n.translate(lang, room), repeat,
-                          False, None, lo, hi, times, False, None, season)
+                          False, None, lo, hi, times, False, None, season, auto_season=True)
             made += 1
         return made
 
@@ -749,7 +827,7 @@ class Store:
             'id': _id(),
             'task_id': task['id'],
             'kid_id': kid['id'],
-            'period': period_key(task['repeat'], d),
+            'period': self._period(task, d),
             'title': task['title'],
             'room': task['room'],
             'price': task['price'],
@@ -759,6 +837,8 @@ class Store:
             'decided_at': None,
             'rejected': 0,
         }
+        if task.get('given_from'):
+            item['from_task'] = task['given_from']      # tæller med til hurtigknapperne
         self.data['items'].append(item)
         return item
 
@@ -808,8 +888,9 @@ class Store:
             finished = any(i['status'] == 'done' for i in mine) and not any(
                 i['status'] in ('todo', 'wait') for i in mine)
             age = d - dt.datetime.fromisoformat(t.get('created') or d.isoformat())
-            lapsed = t.get('expires') and d > dt.datetime.fromisoformat(t['expires'])
-            limit = dt.timedelta(hours=hours) if hours > 0 and t['auto_rule'] != 'surprise' \
+            until = t.get('expires') or t.get('until')
+            lapsed = until and d > dt.datetime.fromisoformat(until)
+            limit = dt.timedelta(hours=hours) if hours > 0 and t['auto_rule'] not in ('surprise', 'given') \
                 else dt.timedelta(days=2)
             if finished:
                 self.data['tasks'].remove(t)
@@ -841,8 +922,8 @@ class Store:
             t = tasks.get(it['task_id'])
             kid = kids.get(it['kid_id'])
             paused = bool(kid and kid.get('paused'))
-            expired = (t is not None and t['repeat'] != 'once' and
-                       it['period'] != period_key(t['repeat'], d))
+            current = d.strftime('%Y-%m-%d') if it.get('given') else self._period(t, d) if t is not None else ''
+            expired = (t is not None and (t['repeat'] != 'once' or it.get('given')) and it['period'] != current)
             off_season = t is not None and not self._in_season(t, d)
             if t is not None and t.get('duty') and d > self._day_end(t) and not paused and t['active']:
                 # pligten blev ikke lavet inden fristen: træk beløbet (aldrig under 0)
@@ -859,13 +940,13 @@ class Store:
                 self.delete_photo(it['id'])
                 changed = True
                 if penalty and expired and t['active'] and not paused and not off_season \
-                        and not t.get('open'):
+                        and not t.get('open') and _period_kind(it['period']) == _period_kind(current):
                     cut = min(penalty, max(0, self.balance(it['kid_id'])))
                     if cut:
                         self._credit(it['kid_id'], -cut, 'penalty', it['title'])
         existing = {}
         for i in self.data['items']:
-            if i['status'] != 'missed':
+            if i['status'] != 'missed' and not i.get('given'):
                 key = (i['task_id'], i['kid_id'], i['period'])
                 existing[key] = existing.get(key, 0) + 1
         for t in self.data['tasks']:
@@ -875,7 +956,9 @@ class Store:
                 continue                    # maddagen vises kun på dagen
             if t.get('duty') and d > self._day_end(t):
                 continue
-            period = period_key(t['repeat'], d)
+            if self._weather_blocks(t, d):
+                continue                    # regn eller ingen sne: kommer næste gang, vejret passer
+            period = self._period(t, d)
             for kid in self.data['kids']:
                 if kid.get('paused') or not self._in_scope(t, kid):
                     continue
@@ -945,9 +1028,9 @@ class Store:
             return jobs
         for t in self.data['tasks']:
             if not t['active'] or not t['open'] or t.get('surprise') or not self._in_scope(t, kid) \
-                    or not self._in_season(t, d):
+                    or not self._in_season(t, d) or self._weather_blocks(t, d):
                 continue
-            period = period_key(t['repeat'], d)
+            period = self._period(t, d)
             taken = sum(1 for i in self.data['items'] if i['task_id'] == t['id']
                         and i['period'] == period and i['status'] != 'missed')
             if taken < t.get('times', 1):
@@ -1205,13 +1288,72 @@ class Store:
             task = self._task(task_id)
             if task not in self._open_jobs_for(kid):
                 raise Problem('Opgaven er allerede taget')
-            period = period_key(task['repeat'], self._now())
+            period = self._period(task, self._now())
             taken = sum(1 for i in self.data['items'] if i['task_id'] == task['id']
                         and i['period'] == period and i['status'] != 'missed')
             item = self._new_item(task, kid, self._now(), slot=taken + 1)
             self._save()
             self._emit('taken', task, kid)
             return kid, item
+
+    # ---- hurtigknapper: giv en opgave for i dag ----------------------------
+    @staticmethod
+    def _giveable(task):
+        return task['active'] and not (task.get('duty') or task.get('meal') or task.get('auto_rule'))
+
+    def _kids_for(self, task):
+        return [k for k in self.data['kids'] if not k.get('paused') and self._in_scope(task, k)]
+
+    def give_task(self, task_id, kid_id=None):
+        """Forælderen giver en opgave for i dag: til ét barn, eller som ledig opgave til alle.
+
+        Returnerer (opgave, børn der skal have besked, item eller None for en ledig opgave).
+        """
+        with self.lock:
+            self._refresh()
+            task = self._task(task_id)
+            now = self._now()
+            if not self._giveable(task):
+                raise Problem('Den opgave kan ikke gives herfra')
+            if not self._in_season(task, now):
+                raise Problem('Opgaven hører ikke til på denne tid af året')
+            if kid_id:
+                kid = self._kid(kid_id)
+                if kid.get('paused'):
+                    raise Problem('%s er på pause' % kid['name'])
+                if not self._in_scope(task, kid):
+                    raise Problem('%s kan ikke få den opgave' % kid['name'])
+                item = self._new_item(task, kid, now)
+                item.update(period=now.strftime('%Y-%m-%d'), given=True, slot=1, of=1)
+                self._save()
+                return task, [kid], item
+            kids = self._kids_for(task)
+            if not kids:
+                raise Problem('Intet barn kan tage den opgave')
+            job = self.add_task(task['title'], task['price'], task['room'], 'once', True, task.get('kids'),
+                                task.get('age_min', 0), task.get('age_max', 99), photo=task.get('photo', False),
+                                auto_rule='given', icon=task.get('icon', ''))
+            job.update(given_from=task['id'], until=now.date().isoformat() + 'T23:59:59')
+            self._save()
+            return job, kids, None
+
+    def _quick(self):
+        """Hurtigknapperne: fastgjorte først, så de mest brugte de sidste 30 dage, ellers rækkefølgen."""
+        now = self._now()
+        since = (now - dt.timedelta(days=USE_DAYS)).isoformat(timespec='seconds')
+        use = {}
+        for i in self.data['items']:
+            if (i.get('created') or '') >= since and (i.get('given') or i.get('from_task')
+                                                      or i['status'] in ('wait', 'done')):
+                tid = i.get('from_task') or i['task_id']
+                use[tid] = use.get(tid, 0) + 1
+        ok = [t for t in self.data['tasks'] if self._giveable(t) and self._in_season(t, now)]
+        pinned = [t for t in ok if t.get('quick')]
+        rest = sorted((t for t in ok if not t.get('quick')), key=lambda t: -use.get(t['id'], 0))
+        pick = pinned + rest[:max(0, QUICK - len(pinned))]
+        return [{'id': t['id'], 'title': t['title'], 'price': t['price'], 'quick': bool(t.get('quick')),
+                 'icon_shown': t.get('icon') or icons.guess(t['title'], t['room']),
+                 'kids': [k['id'] for k in self._kids_for(t)]} for t in pick]
 
     # ---- forældrenes visning ------------------------------------------
     def admin_state(self):
@@ -1282,14 +1424,24 @@ class Store:
                 'duties': self._duty_views(),
                 'icons': icons.ICONS,
                 'tasks': [dict(t, icon_shown=t.get('icon') or icons.guess(t['title'], t['room']),
-                               fair=self.fairness(t['price'], t['repeat'], t.get('times', 1), t['id']))
+                               fair=self.fairness(t['price'], t['repeat'], t.get('times', 1), t['id']),
+                               auto=outdoor.describe(self._auto_rule(t)),
+                               auto_season=bool(self._auto(t)),
+                               outdoor=not t.get('auto_rule') and outdoor.is_outdoor(t['title'], t['room']),
+                               snow=not t.get('auto_rule') and outdoor.is_snow(t['title'], t['room']))
                           for t in self.data['tasks']],
+                'quick': self._quick(),
+                'weather': self._weather_view(),
                 'total': sum(k['balance'] for k in kids),
                 'goal': settings['goal'],
                 'hero_bonus': settings['hero_bonus'],
                 'hero_paid': settings.get('hero_paid_week') == week,
                 'week_label': 'Uge %d' % self._now().isocalendar()[1],
             }
+
+    def _weather_view(self):
+        w = self.data['settings'].get('weather') or {}
+        return {'entity': w['entity'], 'state': w.get('state', '')} if w.get('entity') else None
 
     def _duty_views(self):
         """Pligter til forældrene: hvem, frist og hvordan det går."""
@@ -1474,7 +1626,7 @@ class Store:
             self._refresh()
             now = self._now()
             templates = [t for t in self.data['tasks'] if t.get('surprise') and t['active']
-                         and self._in_season(t, now)]
+                         and self._in_season(t, now) and not self._weather_blocks(t, now)]
             if not templates:
                 return None
             today = now.strftime('%Y-%m-%d')

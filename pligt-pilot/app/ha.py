@@ -216,6 +216,20 @@ class HomeAssistant:
             log.warning('Kunne ikke læse enheder fra Home Assistant: %s', err)
             return {}
 
+    def weather(self):
+        """[(entity_id, tilstand), ...] for husets vejr-entities. None, hvis HA ikke svarer."""
+        if not self.enabled:
+            return None
+        try:
+            raw = self._post('/template', {'template':
+                "{% set ns = namespace(r=[]) %}{% for s in states.weather %}"
+                "{% set ns.r = ns.r + [[s.entity_id, s.state]] %}{% endfor %}{{ ns.r | tojson }}"})
+            return [(str(row[0]), str(row[1])) for row in json.loads(raw)
+                    if isinstance(row, list) and len(row) == 2 and str(row[0]).startswith('weather.')]
+        except Exception as err:  # noqa: BLE001
+            log.warning('Kunne ikke læse vejret fra Home Assistant: %s', err)
+            return None
+
     def fire_event(self, event_type, data):
         """Fyrer en hændelse på Home Assistants bus i baggrunden. Fejl stopper aldrig noget."""
         if not (self.enabled and re.match(r'^[a-z0-9_]+$', event_type or '')):

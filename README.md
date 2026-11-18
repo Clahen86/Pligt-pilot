@@ -50,8 +50,10 @@ Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
 </p>
 
 - **Godkend med ét tryk**, eller godkend alt på én gang. Opgaver kan kræve et foto som bevis.
+- **Giv en opgave med ét tryk:** hurtigknapper øverst på Oversigt med de mest brugte opgaver (eller dem, du har fastgjort). Vælg et barn, eller gør den ledig for alle, for i dag.
 - **Opsætning på få minutter:** en startpakke opretter opgaver, der passer til børnenes alder. Appen kan også foreslå opgaver ud fra husets rum og enheder.
 - **Fleksible opgaver:** pris, gentagelse, flere gange om dagen, kun til bestemte børn, sæsonopgaver (fx løv om efteråret) og låsning efter alder, der åbner af sig selv, når barnet har fødselsdag.
+- **Årstid og vejr af sig selv:** græs, hæk, løv, havemøbler og sne får selv de rigtige måneder og højst én gang om ugen (hæk hver 3. uge), ud fra titlen. Med en vejr-entity i Home Assistant venter udendørs opgaver på en tør dag, og sneopgaver kommer kun, når det har sneet.
 - **Rimelighedstjek:** appen siger til, hvis en pris virker for høj eller for lav.
 - **Pauseknap** pr. barn, lommepenge, træk for glemte opgaver, bonus for perfekt uge og udbetaling til alle med ét tryk.
 - **Lommepenge med krav:** fra en valgt alder kræver lommepengene et antal godkendte opgaver i ugen. Ellers holdes de tilbage, og barnet får besked.

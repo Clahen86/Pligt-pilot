@@ -98,6 +98,19 @@ nav .dot { position: absolute; top: 4px; right: 18%; background: var(--red); col
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { background: #F1E8D6; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 800; color: var(--ink); }
 nav button { font-size: 13px; }
+.quick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.qbtn { border: 0; background: #fff; border-radius: 18px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; text-align: left; font: inherit; color: var(--ink); min-height: 64px; }
+.qbtn .qx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.qbtn .qt { font-size: 14px; font-weight: 900; line-height: 1.15; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: anywhere; }
+.qbtn .qp { font-size: 12.5px; font-weight: 800; color: var(--muted); }
+.qbtn.more { background: transparent; border: 2px dashed #D9CDB6; justify-content: center; }
+.qbtn.more .qx { align-items: center; }
+.qsheet { position: fixed; inset: 0; background: rgba(34,48,74,.35); display: flex; align-items: flex-end; z-index: 60; }
+.qsheet .in { background: var(--cream); width: 100%; border-radius: 26px 26px 0 0; padding: 18px 18px 28px; display: flex; flex-direction: column; gap: 12px; }
+.qkids { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.qkid { border: 0; background: #fff; border-radius: 18px; padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; font: inherit; font-weight: 900; color: var(--ink); }
+.qhead { display: flex; align-items: center; gap: 12px; }
+.qhead b { display: block; font-size: 19px; font-weight: 900; line-height: 1.2; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 </style>
 </head>
@@ -108,7 +121,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 <script>
 (function () {
   var state = null, found = null, powerList = [], entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
-  var qrKid = '', qrParent = '';
+  var qrKid = '', qrParent = '', quickTask = '';
   var draft = { duty: { title: '', kids: [], date: '', time: '', fine: '10' }, rule: { preset: 'Vaskemaskine', entity: '', door: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false, season: '', surprise: false, icon: '' }, kid: { name: '', age: '', birthday: '' }, reward: { title: '', price: '10' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
   // ---- sprog: udskifter kendte danske tekststykker (samme metode som serverens i18n.py) ----
@@ -305,16 +318,30 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       ['daily', 'weekly', 'once'].map(function (x) { return '<option value="' + x + '"' + (r.repeat === x ? ' selected' : '') + '>' + REPEAT[x] + '</option>'; }).join('') + '</select></div></div>' +
       '<div><label for="' + key + '-n">Hvor mange gange pr. periode</label>' + timesSelect(key + '-n', r.times || 1) + '</div>' +
       (withKids ? '<div><label>Billede</label>' + iconPicker(key + '-ic', r.icon, '') + '</div>' : '') +
-      (withKids ? '<div><label for="' + key + '-se">Hvornår på året</label>' + seasonSelect(key + '-se', r.season) + '</div>' +
+      (withKids ? '<div><label for="' + key + '-se">Hvornår på året</label>' + taskSeason(key + '-se', r) + '</div>' +
+        '<label class="check"><input type="checkbox" id="' + key + '-qk"' + (r.quick ? ' checked' : '') + '> Vis som hurtigknap</label>' +
         '<label class="check"><input type="checkbox" id="' + key + '-su"' + (r.surprise ? ' checked' : '') + '> Overraskelse: dukker af og til op med dobbelt pris</label>' : '') +
       (withKids ? kidBoxes('edit', editKids) + '<label class="check"><input type="checkbox" id="' + key + '-ph"' + (r.photo ? ' checked' : '') + '> Barnet skal tage et billede som bevis</label>' : '') +
       '<div class="row"><button class="btn small" data-save="' + key + '">Gem</button><button class="btn small ghost" data-cancel="1">Annullér</button></div>';
+  }
+  // årstid: automatik ud fra titlen, hvis den passer. Forælderens eget valg vinder.
+  function taskSeason(id, t) {
+    var val = t.auto && t.auto_season ? 'auto' : (t.season || '');
+    var html = seasonSelect(id, val, ' data-was="' + val + '"');
+    if (t.auto) {
+      html = html.replace('<option value=""', '<option value="auto"' + (val === 'auto' ? ' selected' : '') + '>Automatisk (' + esc(t.auto.months) + ')</option><option value=""');
+    }
+    var notes = [];
+    if (t.auto && t.auto_season) { notes.push(t.auto.text); }
+    if (state.weather && t.snow) { notes.push('Kommer kun, når det har sneet det sidste døgn.'); }
+    else if (state.weather && t.outdoor) { notes.push('Udendørs: venter, hvis det regner eller stormer.'); }
+    return html + notes.map(function (n) { return '<div class="note" style="margin-top:4px">' + esc(n) + '</div>'; }).join('');
   }
   function readForm(key) {
     var f = { title: document.getElementById(key + '-t').value, price: document.getElementById(key + '-p').value,
       age_min: document.getElementById(key + '-a').value, repeat: document.getElementById(key + '-r').value,
       times: document.getElementById(key + '-n').value };
-    if (key.charAt(0) === 't') { f.icon = document.getElementById(key + '-ic').value; f.kids = editKids.slice(); f.photo = document.getElementById(key + '-ph').checked; f.season = document.getElementById(key + '-se').value; f.surprise = document.getElementById(key + '-su').checked; }
+    if (key.charAt(0) === 't') { f.icon = document.getElementById(key + '-ic').value; f.kids = editKids.slice(); f.photo = document.getElementById(key + '-ph').checked; f.quick = document.getElementById(key + '-qk').checked; var se = document.getElementById(key + '-se'); if (se.value !== se.dataset.was) { f.season = se.value; } f.surprise = document.getElementById(key + '-su').checked; }
     return f;
   }
   function kidTask(id) { return state.tasks.filter(function (t) { return t.id === id; })[0] || {}; }
@@ -514,6 +541,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         step(3, false, 'Giv børnene deres link', 'Vis en QR-kode, som barnet scanner med sin telefon', hasKids ? '<button class="btn small ghost" data-tab="kids">Vis</button>' : '') + '</div>';
     }
     var out = '<div class="head"><div><h1>Oversigt</h1><div class="sub">' + esc(s.week_label) + ' · Familien</div></div><div class="badge">Forælder</div></div>';
+    out += quickBox();
     out += '<h2>Til godkendelse' + (s.pending.length ? ' <span class="count">' + s.pending.length + '</span>' : '') + '</h2><div class="list">';
     if (!s.pending.length) { out += '<div class="empty">Alt er godkendt. Godt gået!</div>'; }
     var plain = s.pending.filter(function (p) { return !p.has_photo; }).length;
@@ -607,6 +635,35 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     return out;
   }
 
+  // ---- Hurtigknapper: giv en opgave for i dag ------------------------
+  function quickById(id) { return (state.quick || []).filter(function (q) { return q.id === id; })[0]; }
+  function quickBox() {
+    var pick = state.quick || [];
+    if (!pick.length) { return ''; }
+    return '<h2>Giv en opgave</h2><div class="quick">' + pick.map(function (t) {
+      return '<button class="qbtn" data-quick="' + t.id + '">' + icoSpan(t.icon_shown) + '<span class="qx"><span class="qt">' + esc(t.title) + '</span><span class="qp">' + t.price + ' kr.</span></span></button>';
+    }).join('') + '<button class="qbtn more" data-tab="tasks"><span class="qx"><span class="qt">Alle opgaver</span><span class="qp">Vælg en anden</span></span></button></div>';
+  }
+  function quickSheet() {
+    var q = quickById(quickTask);
+    if (!q) { quickTask = ''; return ''; }
+    var kids = state.kids.filter(function (k) { return q.kids.indexOf(k.id) >= 0; });
+    return '<div class="qsheet" data-qclose="1"><div class="in" role="dialog" aria-modal="true" aria-label="' + esc(q.title) + '">' +
+      '<div class="qhead">' + icoSpan(q.icon_shown) + '<div><b>' + esc(q.title) + '</b><div class="sub">' + q.price + ' kr. · Hvem skal have den?</div></div></div>' +
+      (kids.length ? '<div class="qkids">' + kids.map(function (k) {
+        return '<button class="qkid" data-qgive="' + k.id + '"><div class="avatar" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' + esc(k.name) + '</button>';
+      }).join('') + '</div>' +
+      '<button class="btn sun" style="width:100%" data-qall="1">Først til mølle – alle kan tage den</button>'
+        : '<div class="empty">Intet barn kan få den opgave lige nu</div>') +
+      '<button class="btn ghost" style="width:100%" data-qcancel="1">Annuller</button></div></div>';
+  }
+  function give(kidId) {
+    var q = quickById(quickTask), kid = kidId ? kidById(kidId) : null;
+    if (!q) { return; }
+    quickTask = '';
+    post('api/tasks/' + q.id + '/give', { kid_id: kidId || null }, kid ? 'Sendt til ' + kid.name : 'Sendt til alle').catch(function () { render(); });
+  }
+
   // ---- Opgaver ------------------------------------------------------
   function tasks() {
     var s = state, out = '<div class="head"><div><h1>Opgaver</h1><div class="sub">' + s.tasks.length + (s.tasks.length === 1 ? ' opgave' : ' opgaver') + '</div></div></div>';
@@ -643,7 +700,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       out += '<div class="group">' + esc(room) + '</div><div class="list">';
       plainTasks.forEach(function (t) {
         if ((t.room || 'Andet') !== room) { return; }
-        out += '<div class="card"><div class="row">' + icoSpan(t.icon_shown) + '<div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.photo ? ' · med foto' : '') + (t.season ? ' · ' + SEASON_SHORT[t.season] : '') + (t.surprise ? ' · overraskelse' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
+        out += '<div class="card"><div class="row">' + icoSpan(t.icon_shown) + '<div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.photo ? ' · med foto' : '') + (t.auto_season ? ' · ' + t.auto.months : t.season ? ' · ' + SEASON_SHORT[t.season] : '') + (t.quick ? ' · hurtigknap' : '') + (t.surprise ? ' · overraskelse' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
           '<div class="price" ' + (t.fair && t.fair.level !== 'ok' ? 'title="' + esc(t.fair.text) + '" style="color:' + (t.fair.level === 'high' ? '#C73A30' : '#B05A00') + '"' : '') + '>' + t.price + ' kr' + (t.fair && t.fair.level !== 'ok' ? ' ' + (t.fair.level === 'high' ? '▲' : '▼') : '') + '</div>' +
           '<button class="sw" role="switch" aria-checked="' + (t.active ? 'true' : 'false') + '" aria-label="' + esc(t.title) + ' er slået til" data-active="' + t.id + '"><span></span></button>' +
           '<button class="btn small ghost" data-duptask="' + t.id + '" aria-label="Lav en kopi af ' + esc(t.title) + '">Kopi</button>' +
@@ -908,7 +965,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   function render() {
     if (state && state.lang && state.lang !== I18N.lang) { loadLang(); if (!I18N.rx) { return; } }
     if (!state) { return; }
-    app.innerHTML = tab === 'home' ? home() : tab === 'tasks' ? tasks() : tab === 'house' ? house() : kids();
+    app.innerHTML = (tab === 'home' ? home() + (quickTask ? quickSheet() : '') : tab === 'tasks' ? tasks() : tab === 'house' ? house() : kids());
     if (tab === 'tasks') { updateFair(); }
     var pend = state.pending.length;
     nav.innerHTML =
@@ -947,10 +1004,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     }
   });
   document.addEventListener('click', function (e) {
+    if (e.target.classList && e.target.classList.contains('qsheet')) { quickTask = ''; render(); return; }
     var b = e.target.closest('button');
     if (!b) { return; }
     var d = b.dataset;
-    if (d.tab) { tab = d.tab; render(); window.scrollTo(0, 0); if ((d.tab === 'house' || d.tab === 'kids') && entitiesOn === null) { loadEntities(); }
+    if (d.quick) { quickTask = d.quick; render(); }
+    else if (d.qgive) { give(d.qgive); }
+    else if (d.qall) { give(null); }
+    else if (d.qcancel) { quickTask = ''; render(); }
+    else if (d.tab) { tab = d.tab; render(); window.scrollTo(0, 0); if ((d.tab === 'house' || d.tab === 'kids') && entitiesOn === null) { loadEntities(); }
       if (d.tab === 'house') { loadFound(); } }
     else if (d.claimyes) { post('api/claims/' + d.claimyes + '/approve', {}, 'Godkendt'); }
     else if (d.claimno) { post('api/claims/' + d.claimno + '/reject', {}, 'Afvist'); }

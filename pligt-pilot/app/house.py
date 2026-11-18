@@ -6,6 +6,7 @@ import datetime as dt
 import logging
 import threading
 
+import outdoor
 from store import DOOR_OPEN, SURPRISE_MINUTES
 
 log = logging.getLogger('pligt')
@@ -18,6 +19,7 @@ POWER_ON = 15.0     # watt: maskinen arbejder
 POWER_OFF = 5.0     # watt: maskinen er stoppet
 SETTLE_POWER = dt.timedelta(minutes=3)   # maskiner holder pause midt i et program
 SETTLE_TEXT = dt.timedelta(seconds=30)
+WEATHER_EVERY = dt.timedelta(minutes=5)
 
 
 def _number(value):
@@ -67,10 +69,12 @@ class Automation:
         self.clock = clock or dt.datetime.now
         self.states = {}
         self.doors = {}         # sidste kendte tilstand for hver regels dørsensor
+        self.weather_at = None
         self._stop = threading.Event()
 
     def tick(self):
         now = self.clock()
+        self._weather(now)
         self.store.housekeeping()
         self._rules(now)
         self._allowance()
@@ -97,6 +101,19 @@ class Automation:
                 if task:
                     self.tell_kids('Ny opgave', '%s (%d kr.). Først til mølle!'
                                    % (task['title'], task['price']), task)
+
+    def _weather(self, now):
+        """Læser husets vejr hvert 5. minut. Svarer HA ikke, bruges det gemte (og det bliver for gammelt af sig selv)."""
+        if self.weather_at and now - self.weather_at < WEATHER_EVERY:
+            return
+        self.weather_at = now
+        if not hasattr(self.ha, 'weather'):
+            return
+        pairs = self.ha.weather()
+        if pairs is None:
+            return
+        found = outdoor.pick_weather(pairs)
+        self.store.set_weather(*(found or ('', '')))
 
     def _door(self, rule, value):
         """Lågen er åbnet (fra lukket til åben): maskinen bliver tømt, så den ledige opgave fjernes.
