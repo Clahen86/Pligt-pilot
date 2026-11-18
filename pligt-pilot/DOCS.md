@@ -7,6 +7,26 @@
 3. Under **Opgaver** kan du trykke **Vis forslag**. Appen kigger på husets rum og foreslår opgaver, som du slår til eller fra.
 4. Kopiér hvert barns personlige link, send det til barnet, og vælg "Føj til hjemmeskærm" i browseren.
 
+## Giv en opgave hurtigt
+
+Øverst på **Oversigt** står **Giv en opgave** med de 5 opgaver, I bruger mest. Tryk på en, og vælg barnet eller **Først til mølle**. Så er den sendt for i dag. En opgave kommer altid med som knap, hvis du slår **Vis som hurtigknap** til på den.
+
+## Årstid, hyppighed og vejr
+
+Appen læser opgavens navn og sætter selv måneder og hyppighed:
+
+| Opgave | Måneder | Højst |
+|---|---|---|
+| Græs og plæne | april–oktober | én gang om ugen |
+| Hæk | maj–september | hver 3. uge |
+| Løv og blade | september–november | én gang om ugen |
+| Havemøbler og trampolin, vanding ude | april/maj–september | |
+| Sne og glat føre | december–marts | kun når det har sneet |
+
+Uden for månederne gives opgaven ikke ud, og ingen trækkes for den. Vælger du selv en sæson på opgaven, bruges din i stedet.
+
+Har Home Assistant en vejr-entity (fx `weather.forecast_home`), venter udendørs opgaver på en tør dag ved regn, storm eller hagl, uden træk. Sneopgaver kommer kun, når det har sneet inden for et døgn. Uden vejr-entity gøres intet anderledes.
+
 ## Huset opretter opgaver
 
 Under fanen **Huset** vælger du en maskine (fx vaskemaskine) og den måler eller kontakt, der viser, om den kører. Bedst er en stikkontakt med effektmåling i watt. Når maskinen har kørt og så har været stille i ca. 3 minutter, får børnene en ledig opgave. Den første, der tager den, får den.
