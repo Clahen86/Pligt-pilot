@@ -2146,13 +2146,32 @@ class FakeHA(BaseHTTPRequestHandler):
     def do_POST(self):
         body = self.rfile.read(int(self.headers.get('Content-Length') or 0)).decode()
         FakeHA.calls.append((self.path, self.headers.get('Authorization'), body))
-        if self.path == '/template' and 'entity_id' in body:
+        if self.path == '/template' and 'area_entities' in body:
+            out = json.dumps({'Vaskerum': ['binary_sensor.myggbett_1', 'sensor.vask_effekt']}).encode()
+        elif self.path == '/template' and 'entity_id' in body:
             out = json.dumps([['sensor.vaskemaskine_effekt', 'Vaskemaskine effekt'],
                               ['switch.tumbler', 'Tørretumbler'], ['light.stue', 'Stue']]).encode()
         elif self.path == '/template':
             out = json.dumps(['Køkken', 'Bryggers', 'Have']).encode()
         else:
             out = b'[]'
+        self.send_response(200)
+        self.send_header('Content-Length', str(len(out)))
+        self.end_headers()
+        self.wfile.write(out)
+
+
+    def do_GET(self):
+        if self.path == '/states':
+            rows = [{'entity_id': 'sensor.vaskemaskine_effekt', 'state': '0', 'attributes': {'friendly_name': 'Vaskemaskine effekt'}},
+                    {'entity_id': 'switch.tumbler', 'state': 'off', 'attributes': {'friendly_name': 'Tørretumbler'}},
+                    {'entity_id': 'light.stue', 'state': 'off', 'attributes': {'friendly_name': 'Stue'}},
+                    {'entity_id': 'sensor.vask_effekt', 'state': '0', 'attributes': {'friendly_name': 'Vask effekt', 'unit_of_measurement': 'W'}},
+                    {'entity_id': 'binary_sensor.entre_dor', 'state': 'off', 'attributes': {'friendly_name': 'Entre dør', 'device_class': 'door'}},
+                    {'entity_id': 'binary_sensor.myggbett_1', 'state': 'on', 'attributes': {'friendly_name': 'Myggbett 1', 'device_class': 'door'}}]
+            out = json.dumps(rows).encode()
+        else:
+            out = b'{}'
         self.send_response(200)
         self.send_header('Content-Length', str(len(out)))
         self.end_headers()
@@ -2179,6 +2198,13 @@ class ServerTests(unittest.TestCase):
     def tearDownClass(cls):
         for s in (cls.kid_srv, cls.adm_srv, cls.fake):
             s.shutdown()
+
+    def test_entities_come_from_the_states_and_rooms_from_a_small_template(self):
+        ents = HomeAssistant('http://127.0.0.1:%d' % self.fake.server_address[1], 'hemmelig').entities()
+        self.assertIn(['binary_sensor.myggbett_1', 'Myggbett 1', 'door', '', 'Vaskerum'], ents)
+        from house import door_candidates
+        self.assertEqual([d['entity'] for d in door_candidates(ents, 'sensor.vask_effekt')],
+                         ['binary_sensor.myggbett_1', 'binary_sensor.entre_dor'])
 
     def call(self, base, path, body=None, method=None, ctype='application/json'):
         data = None

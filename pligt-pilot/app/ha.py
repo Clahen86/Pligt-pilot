@@ -180,16 +180,26 @@ class HomeAssistant:
         if self._entities and time.time() - self._entities_at < 60:
             return self._entities
         try:
-            raw = self._post('/template', {'template':
-                "{% set ns = namespace(r=[]) %}{% for s in states %}"
-                "{% set ns.r = ns.r + [[s.entity_id, s.name, s.attributes.get('device_class', '') or '', "
-                "s.attributes.get('unit_of_measurement', '') or '', area_name(s.entity_id) or '']] %}"
-                "{% endfor %}{{ ns.r | tojson }}"},
-                timeout=15)
+            # The states come from /api/states (a template answer may be at most 256 kB - too little in a big home),
+            # the rooms from a small template: room -> its entities (also those through their device).
+            states = json.loads(self._get(self.base_url + '/states', timeout=20))
+            rooms = {}
+            try:
+                raw = self._post('/template', {'template':
+                    "{% set ns = namespace(r={}) %}{% for a in areas() %}"
+                    "{% set ns.r = dict(ns.r, **{area_name(a): area_entities(a)}) %}{% endfor %}{{ ns.r | tojson }}"},
+                    timeout=15)
+                for room, ids in json.loads(raw).items():
+                    for eid in ids:
+                        rooms.setdefault(eid, room)
+            except Exception as err:  # noqa: BLE001 - without rooms the list still works
+                log.info('Kunne ikke læse rummene fra Home Assistant: %s', err)
             rows = []
-            for row in json.loads(raw):
-                row = [str(x) for x in row] + [''] * (5 - len(row))
-                rows.append(row[:5])
+            for st in states:
+                eid = str(st.get('entity_id') or '')
+                a = st.get('attributes') or {}
+                rows.append([eid, str(a.get('friendly_name') or eid), str(a.get('device_class') or ''),
+                             str(a.get('unit_of_measurement') or ''), rooms.get(eid, '')])
             self._entities = rows
             self._entities_at = time.time()
         except Exception as err:  # noqa: BLE001
