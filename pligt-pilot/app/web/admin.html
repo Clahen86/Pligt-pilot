@@ -27,10 +27,13 @@ h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; disp
 .row { display: flex; align-items: center; gap: 10px; }
 .row.card { flex-direction: row; padding: 8px 8px 8px 12px; border-radius: 20px; }
 .grow { flex: 1; min-width: 0; }
+.row:has(> .ico) { flex-wrap: wrap; }
+.row > .ico + .grow { flex: 1 1 calc(100% - 56px); }
+.row > .ico + .grow + * { margin-left: 50px; }
 .avatar { width: 38px; height: 38px; border-radius: 50%; color: #fff; font-size: 17px; font-weight: 900;
   display: flex; align-items: center; justify-content: center; flex: none; }
 .avatar.big { width: 44px; height: 44px; font-size: 20px; }
-.t b { display: block; font-size: 15px; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
+.t b { display: block; font-size: 15px; font-weight: 800; line-height: 1.2; overflow-wrap: break-word; }
 .t span { font-size: 13px; color: var(--muted); font-weight: 700; }
 .icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; padding: 0; flex: none; }
 .icon.no { border: 2px solid var(--red); background: #fff; }

@@ -5,8 +5,14 @@ Pligter, penge og ønsker til hele familien, som en Home Assistant add-on.
 Børnene åbner et personligt link på telefon eller tablet. Ingen HA-konto,
 ingen kodeord. Du godkender med ét tryk.
 
-> Status: første version (v0.1). Testet mod en simuleret Home Assistant, men
-> endnu ikke på en rigtig installation. Udkastet til skærmene ligger i `design/`.
+> Status: version 0.10. Testet grundigt mod en simuleret Home Assistant.
+> Udkastet til skærmene ligger i `design/`.
+
+## Sådan ser det ud
+
+| Barnets side | Forælder: oversigt | Opgaver | Huset |
+| --- | --- | --- | --- |
+| ![Barnets side](docs/barn.png) | ![Oversigt](docs/oversigt.png) | ![Opgaver](docs/opgaver.png) | ![Huset](docs/huset.png) |
 
 ## Installation
 
@@ -26,7 +32,9 @@ Se `pligt-pilot/DOCS.md` for indstillinger.
 - **Ugens helt.** Konkurrence med point efter alder og en bonus.
 
 ## Nyt i 0.10
-- **Billeder på opgaverne:** hver opgave får et ikon (fx 🍴 til at dække bord og 🗑️ til skraldespanden), så de mindste kan se, hvad opgaven er. Appen gætter ikonet, og du kan vælge et andet.
+- **0.10.2:** egne, farvede ikoner i stedet for emoji, og opgavekort der ikke bliver presset sammen på smalle skærme.
+- **0.10.1:** Huset finder også vaskemaskine og tørretumbler (også med tyske og svenske navne) og viser en liste over alle effektmålere, hvis navnene ikke passer.
+- **Billeder på opgaverne:** hver opgave får et ikon (fx gaffel og kniv til at dække bord og en skraldespand), så de mindste kan se, hvad opgaven er. Appen gætter ikonet, og du kan vælge et andet.
 - **Ledige opgaver** står øverst på børnesiden og er svære at overse.
 
 ## Nyt i 0.9
