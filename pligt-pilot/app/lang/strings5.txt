@@ -112,7 +112,7 @@ Når jeg giver den || When I give it || Wenn ich sie gebe || När jag ger den ||
 Kommer af sig selv, som gentagelsen siger. || Comes by itself, as often as it repeats. || Kommt von selbst, so oft wie sie sich wiederholt. || Kommer av sig själv, så ofta som den upprepas. || Kommer av seg selv, så ofte som den gjentas.
 Børnene ser den aldrig af sig selv. Giv den med hurtigknapperne eller + Tilføj. || The children never see it by themselves. Give it with the quick buttons or + Add. || Die Kinder sehen sie nie von selbst. Gib sie mit den Schnelltasten oder + Hinzufügen. || Barnen ser den aldrig av sig själva. Ge den med snabbknapparna eller + Lägg till. || Barna ser den aldri av seg selv. Gi den med hurtigknappene eller + Legg til.
 Faste dage || Fixed days || Feste Tage || Fasta dagar || Faste dager
-Ingen valgt: alle dage. En ugentlig opgave kommer på den første valgte dag. || None chosen: every day. A weekly task comes on the first chosen day. || Keiner gewählt: jeden Tag. Eine wöchentliche Aufgabe kommt am ersten gewählten Tag. || Ingen vald: alla dagar. En veckouppgift kommer på den första valda dagen. || Ingen valgt: alle dager. En ukentlig oppgave kommer på den første valgte dagen.
+Vælg en dag, så bliver opgaven fast. Ingen valgt: alle dage. || Choose a day to make the task fixed. None chosen: every day. || Wähle einen Tag, dann wird die Aufgabe fest. Keiner gewählt: jeden Tag. || Välj en dag så blir uppgiften fast. Ingen vald: alla dagar. || Velg en dag, så blir oppgaven fast. Ingen valgt: alle dager.
 Ukendte ugedage || Unknown weekdays || Unbekannte Wochentage || Okända veckodagar || Ukjente ukedager
 Startpakken er oprettet. Slet det, du ikke vil have. || The starter pack was created. Delete what you don't want. || Das Startpaket wurde erstellt. Lösche, was du nicht willst. || Startpaketet är skapat. Ta bort det du inte vill ha. || Startpakken er opprettet. Slett det du ikke vil ha.
 Mandag || Monday || Montag || Måndag || Mandag
@@ -122,3 +122,13 @@ Torsdag || Thursday || Donnerstag || Torsdag || Torsdag
 Fredag || Friday || Freitag || Fredag || Fredag
 Lørdag || Saturday || Samstag || Lördag || Lørdag
 Søndag || Sunday || Sonntag || Söndag || Søndag
+# Opgaver: enkel liste og ark
+=Faste || Fixed || Fest || Fasta || Faste
+Når jeg giver dem || When I give them || Wenn ich sie gebe || När jag ger dem || Når jeg gir dem
+=Hvornår? || When? || Wann? || När? || Når?
+=Hvem? || Who? || Wer? || Vem? || Hvem?
+=Hver sin || Each their own || Jedes für sich || Var sin || Hver sin
+Flere valg || More options || Weitere Optionen || Fler val || Flere valg
+=Luk || Close || Schließen || Stäng || Lukk
+=Kopi lavet || Copy made || Kopie erstellt || Kopia skapad || Kopi laget
+=Forslag || Suggestions || Vorschläge || Förslag || Forslag

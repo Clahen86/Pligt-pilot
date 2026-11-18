@@ -2379,6 +2379,28 @@ class ServerTests(unittest.TestCase):
         status, err = self.call(self.adm, '/api/tasks/%s' % task['id'], {'days': [9]})
         self.assertEqual(status, 400)
 
+    def test_new_task_from_the_sheet_keeps_who_and_quick_button(self):
+        # arket "Ny opgave" sender hver sin/én af børnene og hurtigknap med det samme
+        status, state = self.call(self.adm, '/api/tasks', {'title': 'Red din seng', 'price': 2, 'active': True,
+                                                           'days': [0, 2], 'each': False, 'quick': True})
+        self.assertEqual(status, 200)
+        task = [t for t in state['tasks'] if t['title'] == 'Red din seng'][0]
+        self.assertEqual((task['each'], task['each_auto'], task['quick'], task['days']), (False, False, True, [0, 2]))
+        # uden valg gætter appen stadig ud fra navnet
+        status, state = self.call(self.adm, '/api/tasks', {'title': 'Dæk bordet', 'price': 3, 'active': False})
+        task = [t for t in state['tasks'] if t['title'] == 'Dæk bordet'][0]
+        self.assertTrue(task['each_auto'])
+        self.assertFalse(task.get('quick', False))
+        # også fra en forælders eget link
+        status, state = self.call(self.adm, '/api/parents', {'name': 'Far'})
+        token = state['parents'][-1]['token']
+        status, state = self.call(self.kid, '/p/%s/api/tasks' % token, {'title': 'Fej gangen', 'price': 4, 'each': True})
+        self.assertEqual(status, 200)
+        task = [t for t in state['tasks'] if t['title'] == 'Fej gangen'][0]
+        self.assertEqual((task['each'], task['each_auto']), (True, False))
+        status, _ = self.call(self.adm, '/api/tasks', {'title': '', 'price': 4, 'each': True})
+        self.assertEqual(status, 400)
+
     def test_parent_server_can_be_limited_to_ingress(self):
         locked, _ = serve(self.app, 'admin', 0, allow_from={'172.30.32.2'}, host='127.0.0.1')
         try:

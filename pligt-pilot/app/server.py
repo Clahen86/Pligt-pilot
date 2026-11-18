@@ -483,15 +483,17 @@ def make_handler(app, role, allow_from=None):
                     store.new_token(kid_id)
                 return self._json(store.admin_state())
             if path == '/api/tasks':
-                store.add_task(body.get('title'), body.get('price', 0), body.get('room', ''),
-                               body.get('repeat', 'daily'), body.get('open', False),
-                               body.get('kids'), body.get('age_min', 0),
-                               body.get('age_max', 99), body.get('times', 1),
-                               body.get('photo', False), None, body.get('season', ''),
-                               body.get('surprise', False), body.get('icon', ''),
-                               days=body.get('days'), active=body.get('active', True))
-                if body.get('open') and store.data['tasks'][-1]['active']:
-                    task = store.data['tasks'][-1]
+                task = store.add_task(body.get('title'), body.get('price', 0), body.get('room', ''),
+                                      body.get('repeat', 'daily'), body.get('open', False),
+                                      body.get('kids'), body.get('age_min', 0),
+                                      body.get('age_max', 99), body.get('times', 1),
+                                      body.get('photo', False), None, body.get('season', ''),
+                                      body.get('surprise', False), body.get('icon', ''),
+                                      days=body.get('days'), active=body.get('active', True))
+                extra = {k: body[k] for k in ('each', 'quick') if k in body}   # fra arket "Ny opgave"
+                if extra:
+                    store.update_task(task['id'], **extra)
+                if body.get('open') and task['active']:
                     for kid in store.data['kids']:
                         if not kid.get('paused') and store._in_scope(task, kid):
                             app.ha.notify_kid(kid, 'Ny opgave',

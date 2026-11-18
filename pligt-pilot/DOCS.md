@@ -7,12 +7,18 @@
 3. Under **Opgaver** kan du trykke **Vis forslag**. Appen kigger på husets rum og foreslår opgaver, som du vælger til eller fra.
 4. Kopiér hvert barns personlige link, send det til barnet, og vælg "Føj til hjemmeskærm" i browseren.
 
+## Opgaver
+
+Fanen **Opgaver** viser dine opgaver i to grupper: **Faste** og **Når jeg giver dem**. Hver opgave fylder én linje med dage eller hyppighed, pris, *hver sin* og rummet. Tryk på linjen for at rette opgaven, eller tryk **+ Ny opgave**. Pligter, maddage og husets opgaver står ikke i listen.
+
+Arket har **Navn**, **Pris**, **Hvornår?**, **Hvem?** (*Hver sin* eller *Én af børnene*) og **Gem**. Under **Flere valg** finder du alder, hvor tit, antal gange, årstid, foto, overraskelse, hurtigknap, billede og bestemte børn, og nederst **Kopiér** og **Slet**. Slet spørger først.
+
 ## Fast eller kun når jeg giver den
 
-Under **Rediger** på en opgave vælger du, hvornår børnene får den:
+Under **Hvornår?** i arket vælger du, hvornår børnene får opgaven:
 
-- **Fast:** den kommer af sig selv, så tit som gentagelsen siger. Vælg evt. **Faste dage** (Man–Søn). En daglig opgave kommer så kun på de dage, og en ugentlig kommer på den første valgte dag og er åben resten af ugen. Ingen dage valgt betyder alle dage. Træk for glemte opgaver tæller kun de dage, opgaven blev givet.
-- **Kun når jeg giver den:** børnene ser den aldrig af sig selv. Du giver den med hurtigknapperne eller **+ Tilføj**. Den står med mærket *Når jeg giver den* i listen.
+- **Faste dage:** den kommer af sig selv, så tit som gentagelsen siger. Vælg evt. dagene (Man–Søn), eller **Hver dag**. Et tryk på en dag gør opgaven fast. En daglig opgave kommer så kun på de dage, og en ugentlig kommer på den første valgte dag og er åben resten af ugen. Ingen dage valgt betyder alle dage. Træk for glemte opgaver tæller kun de dage, opgaven blev givet.
+- **Når jeg giver den:** børnene ser den aldrig af sig selv. Du giver den med hurtigknapperne eller **+ Tilføj**. Den står under *Når jeg giver dem* i listen.
 
 ## Giv en opgave hurtigt
 
@@ -25,7 +31,7 @@ Hver knap har et lille mærke:
 - **Alle**: hvert barn laver sin egen (fx *Red din seng*, *Smør madpakke*, *Lektier*). Ét tryk sender den til alle børn, der må få den (alder, pause og valgte børn tæller med).
 - **Én**: én af børnene gør det (fx *Dæk bord*, *Tøm opvaskeren*). Tryk og vælg barnet eller **Først til mølle**.
 
-Appen gætter ud fra opgavens navn. Er gættet forkert, så ret **Hvem laver den?** under **Rediger** på opgaven. Dit valg vinder, også hvis du senere ændrer navnet.
+Appen gætter ud fra opgavens navn. Er gættet forkert, så ret **Hvem?** i opgavens ark. Dit valg vinder, også hvis du senere ændrer navnet.
 
 ## Årstid, hyppighed og vejr
 
@@ -124,7 +130,7 @@ Under Børn → Forældre kan du lave et personligt link til hver forælder (op 
 Linket er som en adgangskode. Del det kun med voksne, og brug **Nyt link** eller **Fjern forælder**, hvis det kommer til at ligge forkert. Forældre med et link kan ikke hente backup eller se og ændre andre forældres links.
 
 ## Billeder på opgaverne
-Appen gætter et ikon ud fra opgavens navn (på dansk, engelsk, tysk, svensk og norsk). Vil du vælge selv, trykker du Rediger på opgaven og vælger et billede, eller vælger det, når du skriver en ny opgave. "Automatisk" går tilbage til appens gæt.
+Appen gætter et ikon ud fra opgavens navn (på dansk, engelsk, tysk, svensk og norsk). Vil du vælge selv, trykker du på opgaven og vælger et billede under **Flere valg**. "Automatisk" går tilbage til appens gæt.
 
 ## Sprog
 Dansk, engelsk, tysk, svensk og norsk. Husets sprog vælges under Indstillinger (Sprog), og hvert barn kan få sit eget under Børn. Beskeder sendes på modtagerens sprog. Startpakken og forslagene oprettes på husets sprog. Opgaver, du selv har skrevet, oversættes ikke.

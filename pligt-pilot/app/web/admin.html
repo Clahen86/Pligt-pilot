@@ -79,7 +79,7 @@ input[type=text], input[type=number], input[type=date], input[type=time], select
 .two { display: flex; gap: 10px; }
 .two > div { flex: 1; min-width: 0; }
 .check { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: var(--ink); margin: 0; }
-.check input { width: 22px; height: 22px; accent-color: var(--accent); }
+.check input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
 .linkbox { display: flex; gap: 8px; }
 .linkbox input { font-size: 14px; }
 .steps { counter-reset: s; display: flex; flex-direction: column; gap: 8px; }
@@ -125,6 +125,38 @@ nav button { font-size: 13px; }
 .qkid { border: 0; background: #fff; border-radius: 18px; padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; font: inherit; font-weight: 900; color: var(--ink); }
 .qhead { display: flex; align-items: center; gap: 12px; }
 .qhead b { display: block; font-size: 19px; font-weight: 900; line-height: 1.2; }
+.thead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.btn.big { min-height: 48px; padding: 0 18px; font-size: 16px; border-radius: 16px; }
+.tgroup { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 8px 4px -4px; }
+.tgroup .n { background: #F1E8D6; color: var(--ink); border-radius: 999px; padding: 1px 9px; font-size: 12.5px; letter-spacing: 0; }
+.tcard { background: #fff; border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; }
+.trow { border: 0; background: transparent; display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; color: var(--ink); min-height: 62px; padding: 9px 12px; position: relative; }
+.trow + .trow::before { content: ""; position: absolute; top: 0; left: 64px; right: 0; border-top: 1px solid #F1E8D6; }
+.trow:active { background: #FBF5EA; }
+.trow b { display: block; font-size: 15px; font-weight: 800; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trow .ts { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+.trow .ts .nw { white-space: nowrap; margin-right: 10px; }
+.trow .ts .rm { color: #A3AAB8; white-space: nowrap; display: inline-block; }
+.trow .chev { flex: none; color: #B9B2A4; display: flex; }
+.qsheet .in.tsheet { overflow-y: auto; gap: 14px; padding: 10px 18px 26px; max-width: 520px; margin: 0 auto; scrollbar-width: none; }
+.qsheet:has(.tsheet) { justify-content: center; }
+.grab { width: 40px; height: 5px; border-radius: 999px; background: #D9CFBE; margin: 0 auto 2px; flex: none; }
+.qhead .x { margin-left: auto; width: 40px; height: 40px; border-radius: 50%; border: 0; background: #F1E8D6; display: grid; place-items: center; flex: none; color: var(--ink); }
+.qhead .grow { min-width: 0; }
+.qhead .qsub { font-size: 13px; font-weight: 700; color: var(--muted); }
+.fld { display: flex; flex-direction: column; gap: 8px; }
+.fld > .lbl { font-size: 15px; font-weight: 900; color: var(--ink); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: #F1E8D6; border-radius: 14px; padding: 4px; }
+.seg button { border: 0; background: transparent; min-height: 40px; border-radius: 11px; font-size: 14.5px; font-weight: 800; color: var(--muted); padding: 0 6px; }
+.seg button[aria-pressed="true"] { background: #fff; color: var(--accent); box-shadow: 0 1px 3px rgba(34,48,74,.14); }
+.dayrow { display: flex; flex-direction: column; gap: 6px; }
+.ic.day { height: 38px; }
+.ic.every { width: 100%; font-size: 14px; font-weight: 800; color: var(--ink); height: 38px; }
+.tsheet .ic.day.on, .tsheet .ic.every.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.more { border: 0; background: transparent; color: var(--accent); font-size: 15px; font-weight: 800; padding: 6px 0; align-self: center; }
+.morebox { display: flex; flex-direction: column; gap: 12px; background: #fff; border-radius: 18px; padding: 14px; }
+.morebox .acts { display: flex; gap: 10px; }
+.morebox .acts .btn { flex: 1; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 </style>
 </head>
@@ -134,9 +166,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 <div class="toast" id="toast" hidden role="status"></div>
 <script>
 (function () {
-  var state = null, found = null, powerList = [], entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
+  var state = null, found = null, powerList = [], entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, tSheet = null, tab = 'home', suggestions = null, sugOn = {};
   var qrKid = '', qrParent = '', quickTask = '', quickAdd = false, pressTimer = null, pressAt = null, pressed = false;
-  var draft = { duty: { title: '', kids: [], date: '', time: '', fine: '10' }, rule: { preset: 'Vaskemaskine', entity: '', door: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false, season: '', surprise: false, icon: '', active: '1', days: [] }, kid: { name: '', age: '', birthday: '' }, reward: { title: '', price: '10' } };
+  var draft = { duty: { title: '', kids: [], date: '', time: '', fine: '10' }, rule: { preset: 'Vaskemaskine', entity: '', door: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, kid: { name: '', age: '', birthday: '' }, reward: { title: '', price: '10' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
   // ---- sprog: udskifter kendte danske tekststykker (samme metode som serverens i18n.py) ----
   var I18N = { lang: 'da', locale: 'da-DK', rx: null, map: {}, exact: {}, loading: false };
@@ -270,7 +302,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   }
   function typing() {
     var a = document.activeElement;
-    return a && (a.tagName === 'INPUT' || a.tagName === 'SELECT');
+    // en åben redigering eller et åbent ark må ikke tegnes om under fingrene på en (fx valgte dage)
+    return (a && (a.tagName === 'INPUT' || a.tagName === 'SELECT')) || sugEdit >= 0 || !!quickTask || quickAdd || !!tSheet;
   }
   var SEASON = { '': 'Hele året', 'forår': 'Forår (mar–maj)', 'sommer': 'Sommer (jun–aug)', 'efterår': 'Efterår (sep–nov)', 'vinter': 'Vinter (dec–feb)' };
   var SEASON_SHORT = { 'forår': 'om foråret', 'sommer': 'om sommeren', 'efterår': 'om efteråret', 'vinter': 'om vinteren' };
@@ -315,24 +348,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       return '<option value="' + n + '"' + (+val === n ? ' selected' : '') + '>' + (n === 1 ? '1 gang' : n + ' gange') + '</option>';
     }).join('') + '</select>';
   }
-  // Fast (kommer af sig selv) eller kun når forælderen giver den. Faste dage kun for Fast.
   var DAY_FULL = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
-  var MODE_NOTE = { '1': 'Kommer af sig selv, som gentagelsen siger.', '': 'Børnene ser den aldrig af sig selv. Giv den med hurtigknapperne eller + Tilføj.' };
   function daysText(days) {
     if (!days || !days.length) { return ''; }
     if (days.length === 1) { return DAY_FULL[days[0]]; }
     return days.map(function (n) { return (state.day_names || [])[n] || DAY_FULL[n].slice(0, 3); }).join(', ');
-  }
-  function modePicker(key, active, days, draftKey) {
-    var mode = active ? '1' : '', out = '<div><label for="' + key + '-ac">Hvornår får børnene den?</label><select id="' + key + '-ac" data-mode="' + key + '"' + (draftKey ? ' data-draft="' + draftKey + '"' : '') + '>' +
-      '<option value="1"' + (active ? ' selected' : '') + '>Fast</option><option value=""' + (active ? '' : ' selected') + '>Kun når jeg giver den</option></select>' +
-      '<div class="note" style="margin-top:4px" id="' + key + '-acn">' + MODE_NOTE[mode] + '</div></div>' +
-      '<div id="' + key + '-dw"' + (active ? '' : ' hidden') + '><label>Faste dage</label><div class="days" role="group" aria-label="Faste dage">';
-    for (var n = 0; n < 7; n++) {
-      var on = (days || []).indexOf(n) >= 0;
-      out += '<button type="button" class="ic day' + (on ? ' on' : '') + '" data-day="' + n + '" data-dayfor="' + key + '" aria-pressed="' + on + '">' + esc((state.day_names || [])[n] || DAY_FULL[n].slice(0, 3)) + '</button>';
-    }
-    return out + '</div><div class="note" style="margin-top:4px">Ingen valgt: alle dage. En ugentlig opgave kommer på den første valgte dag.</div></div>';
   }
   function kidBoxes(group, chosen) {
     if (state.kids.length < 2) { return ''; }
@@ -343,28 +363,22 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           (chosen.indexOf(k.id) >= 0 ? ' checked' : '') + '> ' + esc(k.name) + '</label>';
       }).join('') + '</div>';
   }
-  function editForm(key, r, withKids) {
+  function editForm(key, r) {
     return '<div class="two"><div><label for="' + key + '-t">Navn</label><input id="' + key + '-t" type="text" value="' + esc(r.title) + '"></div>' +
       '<div><label for="' + key + '-p">Pris (kr.)</label><input id="' + key + '-p" type="number" inputmode="numeric" min="0" max="1000" value="' + esc(r.price) + '"></div></div>' +
       '<div class="two"><div><label for="' + key + '-a">Fra alder</label><input id="' + key + '-a" type="number" inputmode="numeric" min="0" max="25" value="' + esc(r.age_min || 0) + '"></div>' +
-      '<div><label for="' + key + '-r">Hvor tit</label><select id="' + key + '-r">' +
-      ['daily', 'weekly', 'once'].map(function (x) { return '<option value="' + x + '"' + (r.repeat === x ? ' selected' : '') + '>' + REPEAT[x] + '</option>'; }).join('') + '</select></div></div>' +
+      '<div><label for="' + key + '-r">Hvor tit</label>' + repeatSelect(key + '-r', r.repeat) + '</div></div>' +
       '<div><label for="' + key + '-n">Hvor mange gange pr. periode</label>' + timesSelect(key + '-n', r.times || 1) + '</div>' +
-      (withKids ? modePicker(key, r.active !== false, r.days) : '') +
-      (withKids ? '<div><label>Billede</label>' + iconPicker(key + '-ic', r.icon, '') + '</div>' : '') +
-      (withKids ? '<div><label for="' + key + '-ea">Hvem laver den?</label><select id="' + key + '-ea" data-was="' + (r.each ? '1' : '') + '">' +
-        '<option value="1"' + (r.each ? ' selected' : '') + '>Hvert barn sin egen</option><option value=""' + (r.each ? '' : ' selected') + '>Én af børnene</option></select>' +
-        (r.each_auto ? '<div class="note" style="margin-top:4px">Gættet ud fra navnet.</div>' : '') + '</div>' : '') +
-      (withKids ? '<div><label for="' + key + '-se">Hvornår på året</label>' + taskSeason(key + '-se', r) + '</div>' +
-        '<label class="check"><input type="checkbox" id="' + key + '-qk"' + (r.quick ? ' checked' : '') + '> Vis som hurtigknap</label>' +
-        '<label class="check"><input type="checkbox" id="' + key + '-su"' + (r.surprise ? ' checked' : '') + '> Overraskelse: dukker af og til op med dobbelt pris</label>' : '') +
-      (withKids ? kidBoxes('edit', editKids) + '<label class="check"><input type="checkbox" id="' + key + '-ph"' + (r.photo ? ' checked' : '') + '> Barnet skal tage et billede som bevis</label>' : '') +
       '<div class="row"><button class="btn small" data-save="' + key + '">Gem</button><button class="btn small ghost" data-cancel="1">Annullér</button></div>';
   }
+  function repeatSelect(id, val) {
+    return '<select id="' + id + '">' + ['daily', 'weekly', 'once'].map(function (x) { return '<option value="' + x + '"' + (val === x ? ' selected' : '') + '>' + REPEAT[x] + '</option>'; }).join('') + '</select>';
+  }
   // årstid: automatik ud fra titlen, hvis den passer. Forælderens eget valg vinder.
-  function taskSeason(id, t) {
-    var val = t.auto && t.auto_season ? 'auto' : (t.season || '');
-    var html = seasonSelect(id, val, ' data-was="' + val + '"');
+  function seasonOf(t) { return t.auto && t.auto_season ? 'auto' : (t.season || ''); }
+  function taskSeason(id, t, pick) {
+    var val = pick == null ? seasonOf(t) : pick;
+    var html = seasonSelect(id, val);
     if (t.auto) {
       html = html.replace('<option value=""', '<option value="auto"' + (val === 'auto' ? ' selected' : '') + '>Automatisk (' + esc(t.auto.months) + ')</option><option value=""');
     }
@@ -375,14 +389,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     return html + notes.map(function (n) { return '<div class="note" style="margin-top:4px">' + esc(n) + '</div>'; }).join('');
   }
   function readForm(key) {
-    var f = { title: document.getElementById(key + '-t').value, price: document.getElementById(key + '-p').value,
+    return { title: document.getElementById(key + '-t').value, price: document.getElementById(key + '-p').value,
       age_min: document.getElementById(key + '-a').value, repeat: document.getElementById(key + '-r').value,
       times: document.getElementById(key + '-n').value };
-    if (key.charAt(0) === 't') { f.icon = document.getElementById(key + '-ic').value; f.kids = editKids.slice(); f.photo = document.getElementById(key + '-ph').checked; f.quick = document.getElementById(key + '-qk').checked; var se = document.getElementById(key + '-se'); if (se.value !== se.dataset.was) { f.season = se.value; } f.surprise = document.getElementById(key + '-su').checked; f.active = !!document.getElementById(key + '-ac').value; f.days = pickedDays(key); var ea = document.getElementById(key + '-ea'); if (ea.value !== ea.dataset.was) { f.each = !!ea.value; } }
-    return f;
-  }
-  function pickedDays(key) {
-    return Array.prototype.map.call(document.querySelectorAll('[data-dayfor="' + key + '"][aria-pressed="true"]'), function (b) { return +b.dataset.day; });
   }
   function kidTask(id) { return state.tasks.filter(function (t) { return t.id === id; })[0] || {}; }
   function goalBox(k) {
@@ -740,10 +749,101 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     post('api/tasks/' + q.id + '/give', { kid_id: kidId || null }, kid ? 'Sendt til ' + kid.name : 'Sendt til alle').catch(function () { render(); });
   }
 
+  // ---- Opgaver: én linje pr. opgave, et tryk åbner arket --------------
+  var CHEV = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  var XS = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  // pligter, maddage og husets opgaver står ikke i listen
+  function plainTask(t) { return !t.duty && !t.meal && !t.auto_rule; }
+  function taskLine(t) {
+    var bits = [];
+    if (t.active) { bits.push(t.days && t.days.length && t.days.length < 7 ? daysText(t.days) : REPEAT[t.repeat]); }
+    bits.push(t.price + ' kr.');
+    if (t.each) { bits.push('hver sin'); }
+    return '<button class="trow" data-topen="' + t.id + '">' + icoSpan(t.icon_shown) +
+      '<span class="grow"><b>' + esc(t.title) + '</b><span class="ts"><span class="nw">' + esc(bits.join(' · ')) + '</span>' +
+      (t.room ? '<span class="rm">' + esc(t.room) + '</span>' : '') + '</span></span><span class="chev">' + CHEV + '</span></button>';
+  }
+  function taskList() {
+    var all = state.tasks.filter(plainTask), out = '<div class="thead"><h1>Opgaver</h1><button class="btn big" data-tnew="1">+ Ny opgave</button></div>';
+    [['Faste', all.filter(function (t) { return t.active; })], ['Når jeg giver dem', all.filter(function (t) { return !t.active; })]].forEach(function (g) {
+      if (g[1].length) { out += '<div class="tgroup">' + g[0] + '<span class="n">' + g[1].length + '</span></div><div class="tcard">' + g[1].map(taskLine).join('') + '</div>'; }
+    });
+    return out;
+  }
+  function openSheet(t) {
+    var s = t || {};
+    tSheet = { id: s.id || '', src: s, title: s.title || '', price: t ? String(t.price) : '5', active: !!s.active, days: (s.days || []).slice(),
+      each: t ? !!s.each : true, more: false, age_min: s.age_min || 0, repeat: s.repeat || 'daily', times: s.times || 1, season: null,
+      photo: !!s.photo, surprise: !!s.surprise, quick: !!s.quick, icon: s.icon || '' };
+    editKids = (s.kids || []).slice();
+  }
+  // læser felterne ind i tSheet, så arket kan tegnes igen uden at miste noget
+  function readSheet() {
+    [['title', 'ts-t'], ['price', 'ts-p'], ['age_min', 'ts-a'], ['repeat', 'ts-r'], ['times', 'ts-n'], ['season', 'ts-se'],
+      ['photo', 'ts-ph'], ['surprise', 'ts-su'], ['quick', 'ts-qk'], ['icon', 'ts-ic']].forEach(function (f) {
+      var el = document.getElementById(f[1]);
+      if (el) { tSheet[f[0]] = el.type === 'checkbox' ? el.checked : el.value; }
+    });
+  }
+  function sheetBody() {
+    var d = tSheet, s = d.src, f = { title: d.title, price: d.price, active: d.active, days: d.days, kids: editKids.slice(), age_min: d.age_min,
+      repeat: d.repeat, times: d.times, photo: d.photo, surprise: d.surprise, icon: d.icon, quick: d.quick, each: d.each };
+    if (d.season !== null) { f.season = d.season; }
+    if (d.id) {                                   // kun det, der er ændret: ellers vinder et gæt over titlen
+      if (d.each === !!s.each) { delete f.each; }
+      if (d.quick === !!s.quick) { delete f.quick; }
+      if (f.season === seasonOf(s)) { delete f.season; }
+    }
+    return f;
+  }
+  function seg(key, a, av, b, bv, cur) {
+    return '<div class="seg" role="group"><button type="button" data-tseg="' + key + '" data-v="' + av + '" aria-pressed="' + (cur === av) + '">' + a + '</button>' +
+      '<button type="button" data-tseg="' + key + '" data-v="' + bv + '" aria-pressed="' + (cur === bv) + '">' + b + '</button></div>';
+  }
+  function taskSheet() {
+    var d = tSheet, s = d.src, every = d.active && (!d.days.length || d.days.length === 7), name = s.title || 'Ny opgave';
+    var out = '<div class="qsheet" data-qclose="1"><div class="in tsheet" role="dialog" aria-modal="true" aria-label="' + esc(name) + '"><div class="grab"></div>' +
+      '<div class="qhead">' + icoSpan(d.icon || s.icon_shown || '⭐') + '<div class="grow"><b>' + esc(name) + '</b>' + (s.room ? '<div class="qsub">' + esc(s.room) + '</div>' : '') + '</div>' +
+      '<button class="x" data-tclose="1" aria-label="Luk">' + XS + '</button></div>' +
+      '<div class="two"><div><label for="ts-t">Navn</label><input id="ts-t" type="text" value="' + esc(d.title) + '" placeholder="Fx Fodr kaninen"></div>' +
+      '<div style="max-width:110px"><label for="ts-p">Pris (kr.)</label><input id="ts-p" type="number" inputmode="numeric" min="0" max="1000" value="' + esc(d.price) + '"></div></div>' +
+      (s.fair && s.fair.level !== 'ok' ? '<div class="note" style="color:' + (s.fair.level === 'high' ? '#C73A30' : '#B05A00') + '">' + esc(s.fair.text) + '</div>' : '') +
+      '<div class="fld"><div class="lbl">Hvornår?</div>' + seg('active', 'Når jeg giver den', '', 'Faste dage', '1', d.active ? '1' : '') +
+      '<div class="dayrow"><div class="days" role="group" aria-label="Faste dage">';
+    for (var n = 0; n < 7; n++) {                 // dagene står altid der: et tryk gør opgaven fast
+      var on = d.active && !every && d.days.indexOf(n) >= 0;
+      out += '<button type="button" class="ic day' + (on ? ' on' : '') + '" data-tday="' + n + '" aria-pressed="' + on + '">' + esc((state.day_names || [])[n] || DAY_FULL[n].slice(0, 3)) + '</button>';
+    }
+    out += '</div><button type="button" class="ic every' + (every ? ' on' : '') + '" data-tday="all" aria-pressed="' + every + '">Hver dag</button></div>' +
+      (d.active ? '' : '<div class="note">Børnene ser den aldrig af sig selv. Giv den med hurtigknapperne eller + Tilføj.</div>') + '</div>' +
+      '<div class="fld"><div class="lbl">Hvem?</div>' + seg('each', 'Hver sin', '1', 'Én af børnene', '', d.each ? '1' : '') + '</div>' +
+      '<button class="btn big" data-tsave="1">Gem</button>' +
+      '<button class="more" data-tmore="1" aria-expanded="' + d.more + '">Flere valg ' + (d.more ? '▴' : '▾') + '</button>';
+    if (d.more) {
+      out += '<div class="morebox">' +
+        '<div class="two"><div><label for="ts-a">Fra alder</label><input id="ts-a" type="number" inputmode="numeric" min="0" max="25" value="' + esc(d.age_min) + '"></div>' +
+        '<div><label for="ts-r">Hvor tit</label>' + repeatSelect('ts-r', d.repeat) + '</div></div>' +
+        '<div><label for="ts-n">Hvor mange gange pr. periode</label>' + timesSelect('ts-n', d.times) + '</div>' +
+        '<div><label for="ts-se">Hvornår på året</label>' + taskSeason('ts-se', s, d.season) + '</div>' +
+        '<label class="check"><input type="checkbox" id="ts-ph"' + (d.photo ? ' checked' : '') + '> Barnet skal tage et billede som bevis</label>' +
+        '<label class="check"><input type="checkbox" id="ts-su"' + (d.surprise ? ' checked' : '') + '> Overraskelse: dukker af og til op med dobbelt pris</label>' +
+        '<label class="check"><input type="checkbox" id="ts-qk"' + (d.quick ? ' checked' : '') + '> Vis som hurtigknap</label>' +
+        '<div><label>Billede</label>' + iconPicker('ts-ic', d.icon, '') + '</div>' + kidBoxes('edit', editKids) +
+        (d.id ? '<div class="acts"><button class="btn small ghost" data-duptask="' + d.id + '">Kopiér</button><button class="btn small danger" data-deltask="' + d.id + '">Slet</button></div>' : '') +
+        '</div>';
+    }
+    return out + '</div></div>';
+  }
+  function sheetRender() {                        // tegn arket igen, på samme sted
+    var sc = document.querySelector('.tsheet'), top = sc ? sc.scrollTop : 0;
+    render();
+    sc = document.querySelector('.tsheet'); if (sc) { sc.scrollTop = top; }
+  }
+
   // ---- Opgaver ------------------------------------------------------
   function tasks() {
-    var s = state, out = '<div class="head"><div><h1>Opgaver</h1><div class="sub">' + s.tasks.length + (s.tasks.length === 1 ? ' opgave' : ' opgaver') + '</div></div></div>';
-    out += '<div class="card"><div class="t"><b>Foreslå fra mit hjem</b><span>Appen kigger på husets rum og foreslår opgaver</span></div>' +
+    var s = state, out = taskList();
+    out += '<h2>Forslag</h2><div class="card"><div class="t"><b>Foreslå fra mit hjem</b><span>Appen kigger på husets rum og foreslår opgaver</span></div>' +
       '<button class="btn" data-suggest="1">' + (suggestions ? 'Opdatér forslag' : 'Vis forslag') + '</button></div>';
     if (suggestions) {
       var rooms = [];
@@ -769,23 +869,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       out += '<button class="btn" data-setup="1"' + (n ? '' : ' disabled') + '>Opret ' + n + ' valgte</button>';
     }
     out += duties();
-    var rooms2 = [], plainTasks = s.tasks.filter(function (t) { return !t.duty && !t.meal; });
-    plainTasks.forEach(function (t) { var r = t.room || 'Andet'; if (rooms2.indexOf(r) < 0) { rooms2.push(r); } });
-    if (plainTasks.length) { out += '<h2>Dine opgaver</h2>'; }
-    rooms2.forEach(function (room) {
-      out += '<div class="group">' + esc(room) + '</div><div class="list">';
-      plainTasks.forEach(function (t) {
-        if ((t.room || 'Andet') !== room) { return; }
-        out += '<div class="card"><div class="row">' + icoSpan(t.icon_shown) + '<div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.photo ? ' · med foto' : '') + (t.auto_season ? ' · ' + t.auto.months : t.season ? ' · ' + SEASON_SHORT[t.season] : '') + (t.quick ? ' · hurtigknap' : '') + (t.each ? ' · hver sin' : '') + (t.surprise ? ' · overraskelse' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + (t.active && t.days && t.days.length ? ' · ' + esc(daysText(t.days)) : '') + '</span>' +
-            (t.active ? '' : '<span class="chip">Når jeg giver den</span>') + '</div>' +
-          '<div class="price" ' + (t.fair && t.fair.level !== 'ok' ? 'title="' + esc(t.fair.text) + '" style="color:' + (t.fair.level === 'high' ? '#C73A30' : '#B05A00') + '"' : '') + '>' + t.price + ' kr' + (t.fair && t.fair.level !== 'ok' ? ' ' + (t.fair.level === 'high' ? '▲' : '▼') : '') + '</div>' +
-          '<button class="btn small ghost" data-duptask="' + t.id + '" aria-label="Lav en kopi af ' + esc(t.title) + '">Kopi</button>' +
-          '<button class="icon no" style="width:40px;height:40px" data-deltask="' + t.id + '" aria-label="Slet ' + esc(t.title) + '">' + CROSS + '</button></div>' +
-          (t.fair && t.fair.level !== 'ok' ? '<div class="note" style="color:' + (t.fair.level === 'high' ? '#C73A30' : '#B05A00') + '">' + esc(t.fair.text) + '</div>' : '') +
-          (taskEdit === t.id ? editForm('t' + t.id, t, true) : '<button class="btn small ghost" data-taskedit="' + t.id + '">Rediger</button>') + '</div>';
-      });
-      out += '</div>';
-    });
     out += '<h2>Belønninger</h2><div class="card"><div class="note">Børnene kan bruge kroner på dem. Du siger ja eller nej, hver gang.</div>';
     s.rewards.forEach(function (r) {
       out += '<div class="row"><div class="grow t"><b>' + esc(r.title) + '</b><span>' + r.price + ' kr.</span></div>' +
@@ -795,22 +878,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     out += '<div class="two"><div><label for="rw-title">Ny belønning</label><input id="rw-title" type="text" data-draft="reward.title" placeholder="Fx Biograftur" value="' + esc(draft.reward.title) + '"></div>' +
       '<div style="max-width:110px"><label for="rw-price">Pris (kr.)</label><input id="rw-price" type="number" inputmode="numeric" min="1" max="1000" data-draft="reward.price" value="' + esc(draft.reward.price) + '"></div></div>' +
       '<button class="btn ghost" data-addreward="1">Tilføj belønning</button></div>';
-    var d = draft.task;
-    out += '<h2>Skriv din egen opgave</h2><div class="card">' +
-      '<div><label for="t-title">Navn på opgaven</label><input id="t-title" type="text" data-draft="task.title" value="' + esc(d.title) + '" placeholder="Fx Fodr kaninen"></div>' +
-      '<div class="two"><div><label for="t-price">Pris i kr.</label><input id="t-price" type="number" inputmode="numeric" min="0" max="1000" data-draft="task.price" value="' + esc(d.price) + '"><div id="fair" class="note" aria-live="polite" style="margin-top:4px"></div></div>' +
-      '<div><label for="t-room">Rum</label><input id="t-room" type="text" data-draft="task.room" value="' + esc(d.room) + '" placeholder="Fx Køkken"></div></div>' +
-      '<div><label for="t-repeat">Hvor tit</label><select id="t-repeat" data-draft="task.repeat">' +
-      ['daily', 'weekly', 'once'].map(function (r) { return '<option value="' + r + '"' + (d.repeat === r ? ' selected' : '') + '>' + REPEAT[r] + '</option>'; }).join('') + '</select></div>' +
-      '<div><label for="t-times">Hvor mange gange pr. periode</label>' + timesSelect('t-times', d.times).replace('<select ', '<select data-draft="task.times" ') + '</div>' +
-      modePicker('nt', !!d.active, d.days, 'task.active') +
-      kidBoxes('draft', d.kids) +
-      '<div><label>Billede</label>' + iconPicker('t-icon', d.icon, 'task.icon') + '</div>' +
-      '<div><label for="t-season">Hvornår på året</label>' + seasonSelect('t-season', d.season, ' data-draft="task.season"') + '</div>' +
-      '<label class="check"><input type="checkbox" data-draft="task.surprise"' + (d.surprise ? ' checked' : '') + '> Overraskelse: dukker af og til op med dobbelt pris</label>' +
-      '<label class="check"><input type="checkbox" data-draft="task.photo"' + (d.photo ? ' checked' : '') + '> Barnet skal tage et billede som bevis</label>' +
-      '<label class="check"><input type="checkbox" data-draft="task.open"' + (d.open ? ' checked' : '') + '> Ledig opgave: den første, der tager den, får den</label>' +
-      '<button class="btn" data-addtask="1">Tilføj opgave</button></div>';
     return out;
   }
 
@@ -1018,18 +1085,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     return out;
   }
 
-  var fairTimer = null;
-  function updateFair() {
-    var el = document.getElementById('fair');
-    if (!el) { return; }
-    var d = draft.task;
-    call('api/fairness?price=' + encodeURIComponent(d.price) + '&repeat=' + encodeURIComponent(d.repeat) + '&times=' + encodeURIComponent(d.times)).then(function (r) {
-      el = document.getElementById('fair');
-      if (!el) { return; }
-      el.textContent = r.text || '';
-      el.style.color = r.level === 'high' ? '#C73A30' : r.level === 'low' ? '#B05A00' : '#0B7A70';
-    }).catch(function () {});
-  }
   function loadFound() {
     return call('api/house_find').then(function (r) { found = r.found || []; powerList = r.power || []; entitiesOn = !!r.on; render(); })
       .catch(function () { found = []; });
@@ -1042,8 +1097,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   function render() {
     if (state && state.lang && state.lang !== I18N.lang) { loadLang(); if (!I18N.rx) { return; } }
     if (!state) { return; }
-    app.innerHTML = (tab === 'home' ? home() + (quickTask ? quickSheet() : quickAdd ? addSheet() : '') : tab === 'tasks' ? tasks() : tab === 'house' ? house() : kids());
-    if (tab === 'tasks') { updateFair(); }
+    app.innerHTML = (tab === 'home' ? home() + (quickTask ? quickSheet() : quickAdd ? addSheet() : '') : tab === 'tasks' ? tasks() + (tSheet ? taskSheet() : '') : tab === 'house' ? house() : kids());
     var pend = state.pending.length;
     nav.innerHTML =
       '<button data-tab="home"' + (tab === 'home' ? ' aria-current="page"' : '') + '>Oversigt' + (pend ? '<span class="dot">' + pend + '</span>' : '') + '</button>' +
@@ -1061,7 +1115,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var t = e.target;
     if (t.dataset && t.dataset.draft) {
       setDraft(t.dataset.draft, t.type === 'checkbox' ? t.checked : t.value);
-      if (/^task\.(price|repeat|times)$/.test(t.dataset.draft)) { clearTimeout(fairTimer); fairTimer = setTimeout(updateFair, 300); }
     }
   });
   document.addEventListener('change', function (e) {
@@ -1071,14 +1124,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       return;
     }
     if (t.dataset && t.dataset.kidbox) {
-      var list = t.dataset.kidbox === 'draft' ? draft.task.kids : t.dataset.kidbox === 'duty' ? draft.duty.kids : editKids, at = list.indexOf(t.value);
+      var list = t.dataset.kidbox === 'duty' ? draft.duty.kids : editKids, at = list.indexOf(t.value);
       if (t.checked && at < 0) { list.push(t.value); } else if (!t.checked && at >= 0) { list.splice(at, 1); }
       return;
-    }
-    if (t.dataset && t.dataset.mode) {            // Fast eller kun når jeg giver den: dagene kun for Fast
-      var dw = document.getElementById(t.dataset.mode + '-dw'), mn = document.getElementById(t.dataset.mode + '-acn');
-      if (dw) { dw.hidden = !t.value; }
-      if (mn) { mn.textContent = T(MODE_NOTE[t.value ? '1' : '']); }
     }
     if (t.dataset && t.dataset.draft) {
       setDraft(t.dataset.draft, t.type === 'checkbox' ? t.checked : t.value);
@@ -1086,15 +1134,33 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     }
   });
   document.addEventListener('click', function (e) {
-    if (e.target.classList && e.target.classList.contains('qsheet')) { quickTask = ''; quickAdd = false; render(); return; }
+    if (e.target.classList && e.target.classList.contains('qsheet')) { quickTask = ''; quickAdd = false; tSheet = null; render(); return; }
     var b = e.target.closest('button');
     if (!b) { return; }
     var d = b.dataset;
     if (pressed) { pressed = false; if (d.quick) { return; } }       // langt tryk: ikke også et almindeligt tryk
-    if (d.dayfor) {                               // en fast dag til eller fra
-      var don = b.getAttribute('aria-pressed') !== 'true';
-      b.setAttribute('aria-pressed', String(don)); b.classList.toggle('on', don);
-      if (d.dayfor === 'nt') { draft.task.days = pickedDays('nt'); }
+    if (d.topen) { openSheet(kidTask(d.topen)); render(); return; }
+    if (d.tnew) { openSheet(null); render(); return; }
+    if (d.tclose) { tSheet = null; render(); return; }
+    if (tSheet && (d.tseg || d.tday || d.tmore)) {
+      readSheet();
+      if (d.tseg === 'active') { tSheet.active = !!d.v; }
+      else if (d.tseg === 'each') { tSheet.each = !!d.v; }
+      else if (d.tmore) { tSheet.more = !tSheet.more; }
+      else if (!tSheet.active) { tSheet.active = true; tSheet.days = d.tday === 'all' ? [] : [+d.tday]; }   // en dag valgt: så er den fast
+      else if (d.tday === 'all') { tSheet.days = []; }
+      else {
+        var dn = +d.tday, at = tSheet.days.indexOf(dn);
+        if (at >= 0) { tSheet.days.splice(at, 1); } else { tSheet.days.push(dn); }
+        tSheet.days.sort(function (x, y) { return x - y; });
+      }
+      sheetRender();
+      return;
+    }
+    if (d.tsave) {
+      readSheet();
+      post(tSheet.id ? 'api/tasks/' + tSheet.id : 'api/tasks', sheetBody(), tSheet.id ? 'Gemt' : 'Opgaven er tilføjet')
+        .then(function () { tSheet = null; render(); }).catch(function () {});
       return;
     }
     if (d.quick) { var qq = quickById(d.quick); if (qq && qq.each) { giveEach(qq); } else { quickTask = d.quick; render(); } }
@@ -1132,31 +1198,22 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       }).catch(function (err) { say(err.message); });
     }
     else if (d.sugedit) { sugEdit = +d.sugedit; render(); }
-    else if (d.taskedit) { taskEdit = d.taskedit; editKids = (kidTask(d.taskedit).kids || []).slice(); render(); }
-    else if (d.cancel) { sugEdit = -1; taskEdit = ''; render(); }
+    else if (d.cancel) { sugEdit = -1; render(); }
     else if (d.sugall) { suggestions.forEach(function (r, i) { sugOn[i] = d.sugall === '1' && !r.exists; }); render(); }
     else if (d.save) {
-      var f = readForm(d.save);
-      if (d.save.charAt(0) === 's') {
-        var row = suggestions[+d.save.slice(1)];
-        row.title = f.title; row.price = f.price; row.age_min = f.age_min; row.repeat = f.repeat; row.times = f.times;
-        sugEdit = -1; render();
-      } else {
-        post('api/tasks/' + d.save.slice(1), f, 'Gemt').then(function () { taskEdit = ''; render(); }).catch(function () {});
-      }
+      var f = readForm(d.save), row = suggestions[+d.save.slice(1)];
+      row.title = f.title; row.price = f.price; row.age_min = f.age_min; row.repeat = f.repeat; row.times = f.times;
+      sugEdit = -1; render();
     }
     else if (d.sug !== undefined) { sugOn[d.sug] = !sugOn[d.sug]; render(); }
     else if (d.setup) {
       var rows = suggestions.filter(function (r, i) { return sugOn[i] && !r.exists; });
       post('api/setup', { rows: rows }, rows.length + ' opgaver oprettet').then(function () { suggestions = null; });
     }
-    else if (d.duptask) { post('api/tasks/' + d.duptask + '/duplicate', {}, 'Kopi lavet. Tryk Rediger for at ændre den.'); }
-    else if (d.deltask) { if (confirm('Slette opgaven?')) { post('api/tasks/' + d.deltask + '/delete', {}, 'Slettet'); } }
-    else if (d.addtask) {
-      var x = draft.task;
-      post('api/tasks', { title: x.title, price: x.price, room: x.room, repeat: x.repeat, open: x.open, times: x.times, kids: x.kids, photo: x.photo, season: x.season, surprise: x.surprise, icon: x.icon, active: !!x.active, days: x.active ? x.days : [] }, 'Opgaven er tilføjet')
-        .then(function () { draft.task = { title: '', price: x.price, room: x.room, repeat: x.repeat, open: false, times: '1', kids: [], photo: false, season: '', surprise: false, icon: '', active: x.active, days: [] }; render(); }).catch(function () {});
+    else if (d.duptask) {                         // kopien åbner i arket, klar til at blive rettet
+      post('api/tasks/' + d.duptask + '/duplicate', {}, 'Kopi lavet').then(function (s) { openSheet(s.tasks[s.tasks.length - 1]); render(); }).catch(function () {});
     }
+    else if (d.deltask) { if (confirm('Slette opgaven?')) { post('api/tasks/' + d.deltask + '/delete', {}, 'Slettet').then(function () { tSheet = null; render(); }).catch(function () {}); } }
     else if (d.addkid) {
       var y = draft.kid;
       post('api/kids', { name: y.name, age: y.age, birthday: validDate(y.birthday) }, 'Barnet er tilføjet')
