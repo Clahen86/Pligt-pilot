@@ -60,6 +60,15 @@ Sendt til alle || Sent to everyone || An alle geschickt || Skickad till alla || 
 Sendt til || Sent to || Geschickt an || Skickad till || Sendt til
 Vis som hurtigknap || Show as a quick button || Als Schnelltaste zeigen || Visa som snabbknapp || Vis som hurtigknapp
 hurtigknap || quick button || Schnelltaste || snabbknapp || hurtigknapp
+# Hver sin eller én gør det
+=Alle || Each || Alle || Alla || Alle
+=Én || One || Einer || En || Én
+=og || and || und || och || og
+Hvem laver den? || Who does it? || Wer macht sie? || Vem gör den? || Hvem gjør den?
+Hvert barn sin egen || Each child their own || Jedes Kind seine eigene || Varje barn sin egen || Hvert barn sin egen
+Én af børnene || One of the children || Eines der Kinder || Ett av barnen || Ett av barna
+Gættet ud fra navnet. || Guessed from the name. || Aus dem Namen geraten. || Gissat utifrån namnet. || Gjettet ut fra navnet.
+hver sin || each their own || jedes für sich || var sin || hver sin
 én gang om ugen || once a week || einmal pro Woche || en gång i veckan || én gang i uken
 hver 3. uge || every 3rd week || jede 3. Woche || var 3:e vecka || hver 3. uke
 Kommer kun, når det har sneet det sidste døgn. || Only comes when it has snowed in the last 24 hours. || Kommt nur, wenn es in den letzten 24 Stunden geschneit hat. || Kommer bara när det har snöat det senaste dygnet. || Kommer bare når det har snødd det siste døgnet.

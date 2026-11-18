@@ -55,6 +55,42 @@ MACHINES = ('washer', 'dryer', 'dishwasher')
 DOOR_OPEN = ('on', 'open')
 QUICK = 5                   # antal hurtigknapper på Oversigt (fastgjorte kommer oveni)
 USE_DAYS = 30               # hurtigknapperne følger, hvad der er brugt de sidste 30 dage
+# "Hver sin" eller "én gør det", gættet ud fra titlen (dansk, engelsk, tysk, svensk og norsk).
+# Ord med * til sidst er ordstammer; resten skal stå som hele ord.
+# 1) ejeord og "egen" vinder altid, 2) fælles ting giver én, 3) personlige ting giver hver sin.
+EACH_MINE = ['din', 'dit', 'dine', 'egen', 'eget', 'egne', 'own', 'your', 'yours', 'dein*', 'eigen*',
+             'ditt', 'dina', 'egna', 'sin', 'sit', 'sine', 'sina', 'sitt']
+EACH_SHARED = ['dæk* bord*', 'dække bord*', 'ryd af bord*', 'ryd* af', 'opvask*', 'skrald*', 'kæledyr*', 'fodr*',
+               'stue*', 'badeværelse*', 'toilet*', 'set the table', 'clear the table', 'dishwasher*', 'trash',
+               'garbage', 'bin', 'bins', 'pet', 'pets', 'feed*', 'living room', 'bathroom', 'tisch*', 'geschirr*',
+               'spülmaschine*', 'müll*', 'haustier*', 'füttern', 'wohnzimmer', 'duka*', 'diskmaskin*', 'sopor',
+               'soptunn*', 'husdjur*', 'mata', 'vardagsrum*', 'badrum*', 'dekk* bord*', 'oppvask*', 'søppel*',
+               'kjæledyr*', 'mate', 'stua', 'stuen']
+EACH_OWN = ['madpak*', 'seng*', 'værelse*', 'beskidt* tøj', 'snavset* tøj', 'skoletask*', 'lektie*', 'sko', 'skoene',
+            'jakke*', 'tallerken', 'tænder', 'nattøj', 'bed', 'beds', 'bedroom', 'room', 'homework', 'lunchbox*',
+            'lunch box*', 'schoolbag*', 'school bag*', 'backpack*', 'shoes', 'jacket*', 'coat', 'teeth',
+            'dirty clothes', 'bett*', 'zimmer', 'kinderzimmer', 'hausaufgabe*', 'brotdose*', 'schulranzen',
+            'schultasche*', 'schuhe', 'jacke*', 'zähne', 'schmutzige wäsche', 'säng*', 'rum', 'rummet', 'läx*',
+            'matlåd*', 'skolväsk*', 'skor', 'skorna', 'jack*', 'tänder', 'smutsiga kläder', 'rom', 'rommet',
+            'lekse*', 'matpakk*', 'skolesekk*', 'tenner', 'skittentøy*']
+
+
+def _words(words):
+    parts = [r'(?<!\w)' + re.escape(w.rstrip('*')).replace(r'\*', r'\w*') + ('' if w.endswith('*') else r'(?!\w)')
+             for w in words]
+    return re.compile('|'.join(parts))
+
+
+_EACH = [(_words(EACH_MINE), True), (_words(EACH_SHARED), False), (_words(EACH_OWN), True)]
+
+
+def guess_each(title):
+    """True, hvis titlen lyder som noget hvert barn laver for sig selv (egen seng, egne lektier)."""
+    text = (title or '').lower()
+    for rx, each in _EACH:
+        if rx.search(text):
+            return each
+    return False
 
 
 def machine_type(name):
@@ -591,6 +627,9 @@ class Store:
                     task['auto_season'] = False     # forælderens eget valg vinder
             if 'quick' in fields:
                 task['quick'] = bool(fields['quick'])
+            if 'each' in fields:
+                task['each'] = bool(fields['each'])
+                task['each_auto'] = False           # forælderens eget valg vinder over titlen
             if 'surprise' in fields:
                 task['surprise'] = bool(fields['surprise'])
             if 'icon' in fields:
@@ -1301,13 +1340,20 @@ class Store:
     def _giveable(task):
         return task['active'] and not (task.get('duty') or task.get('meal') or task.get('auto_rule'))
 
+    @staticmethod
+    def _each(task):
+        """Hvert barn sin egen? Gættes ud fra titlen, indtil forælderen selv vælger."""
+        if task.get('each_auto', True):
+            return guess_each(task['title'])
+        return bool(task.get('each'))
+
     def _kids_for(self, task):
         return [k for k in self.data['kids'] if not k.get('paused') and self._in_scope(task, k)]
 
     def give_task(self, task_id, kid_id=None):
-        """Forælderen giver en opgave for i dag: til ét barn, eller som ledig opgave til alle.
+        """Forælderen giver en opgave for i dag: til ét barn, til hvert barn ('all'), eller som ledig opgave til alle.
 
-        Returnerer (opgave, børn der skal have besked, item eller None for en ledig opgave).
+        Returnerer (opgave, børn der skal have besked, item / liste af items eller None for en ledig opgave).
         """
         with self.lock:
             self._refresh()
@@ -1317,6 +1363,17 @@ class Store:
                 raise Problem('Den opgave kan ikke gives herfra')
             if not self._in_season(task, now):
                 raise Problem('Opgaven hører ikke til på denne tid af året')
+            if kid_id == 'all':                     # hver sin: en egen opgave til hvert barn, der må få den
+                kids = self._kids_for(task)
+                if not kids:
+                    raise Problem('Intet barn kan tage den opgave')
+                items = []
+                for kid in kids:
+                    item = self._new_item(task, kid, now)
+                    item.update(period=now.strftime('%Y-%m-%d'), given=True, slot=1, of=1)
+                    items.append(item)
+                self._save()
+                return task, kids, items
             if kid_id:
                 kid = self._kid(kid_id)
                 if kid.get('paused'):
@@ -1352,6 +1409,7 @@ class Store:
         rest = sorted((t for t in ok if not t.get('quick')), key=lambda t: -use.get(t['id'], 0))
         pick = pinned + rest[:max(0, QUICK - len(pinned))]
         return [{'id': t['id'], 'title': t['title'], 'price': t['price'], 'quick': bool(t.get('quick')),
+                 'each': self._each(t),
                  'icon_shown': t.get('icon') or icons.guess(t['title'], t['room']),
                  'kids': [k['id'] for k in self._kids_for(t)]} for t in pick]
 
@@ -1424,6 +1482,7 @@ class Store:
                 'duties': self._duty_views(),
                 'icons': icons.ICONS,
                 'tasks': [dict(t, icon_shown=t.get('icon') or icons.guess(t['title'], t['room']),
+                               each=self._each(t), each_auto=t.get('each_auto', True),
                                fair=self.fairness(t['price'], t['repeat'], t.get('times', 1), t['id']),
                                auto=outdoor.describe(self._auto_rule(t)),
                                auto_season=bool(self._auto(t)),

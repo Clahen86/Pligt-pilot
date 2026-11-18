@@ -11,6 +11,13 @@
 
 Øverst på **Oversigt** står **Giv en opgave** med de 5 opgaver, I bruger mest. Tryk på en, og vælg barnet eller **Først til mølle**. Så er den sendt for i dag. En opgave kommer altid med som knap, hvis du slår **Vis som hurtigknap** til på den.
 
+Hver knap har et lille mærke:
+
+- **Alle**: hvert barn laver sin egen (fx *Red din seng*, *Smør madpakke*, *Lektier*). Ét tryk sender den til alle børn, der må få den (alder, pause og valgte børn tæller med).
+- **Én**: én af børnene gør det (fx *Dæk bord*, *Tøm opvaskeren*). Tryk og vælg barnet eller **Først til mølle**.
+
+Appen gætter ud fra opgavens navn. Er gættet forkert, så ret **Hvem laver den?** under **Rediger** på opgaven. Dit valg vinder, også hvis du senere ændrer navnet.
+
 ## Årstid, hyppighed og vejr
 
 Appen læser opgavens navn og sætter selv måneder og hyppighed:

@@ -1528,6 +1528,51 @@ class QuickTests(unittest.TestCase):
         self.clock.advance(hours=11)
         self.assertFalse(any(t['id'] == job2['id'] for t in self.store.admin_state()['tasks']))
 
+    def test_each_is_guessed_from_the_title_in_five_languages(self):
+        from store import guess_each
+        for title in ('Ryd dit værelse', 'Red din seng', 'Smør madpakke', 'Læg beskidt tøj til vask', 'Pak skoletaske',
+                      'Lav lektier', 'Sæt sko og jakke på plads', 'Ryd din egen tallerken af', 'Børst tænder',
+                      'Make your bed', 'Tidy your own room', 'Do homework', 'Pack your lunchbox',
+                      'Mach dein Bett', 'Bädda sängen', 'Gjør leksene'):
+            self.assertTrue(guess_each(title), title)
+        for title in ('Dæk bord', 'Ryd af bordet', 'Tøm opvaskeren', 'Tøm skraldespanden', 'Fodr kæledyr',
+                      'Støvsug stuen', 'Tidy the living room', 'Set the table', 'Tisch decken', 'Vask bilen', ''):
+            self.assertFalse(guess_each(title), title)
+
+    def test_each_follows_the_title_until_the_parent_chooses(self):
+        task = self.store.add_task('Dæk bord', 3)                           # gammel opgave uden feltet
+        self.assertNotIn('each', self.store.data['tasks'][0])
+        view = lambda: [t for t in self.store.admin_state()['tasks'] if t['id'] == task['id']][0]
+        self.assertEqual((view()['each'], view()['each_auto']), (False, True))
+        self.store.update_task(task['id'], title='Red din seng')
+        self.assertTrue(view()['each'])
+        self.assertTrue(self.store.admin_state()['quick'][0]['each'])
+        self.store.update_task(task['id'], each=False)                      # forælderen vælger selv
+        self.store.update_task(task['id'], title='Red din seng igen')
+        self.assertEqual((view()['each'], view()['each_auto']), (False, False))
+        self.store.update_task(task['id'], each=True, title='Dæk bord')
+        self.assertTrue(view()['each'])
+
+    def test_give_to_each_child_as_their_own_task_for_today(self):
+        self.store.set_setting('penalty', 0)
+        ida = self.store.add_kid('Ida', 3)
+        task = self.store.add_task('Red din seng', 4, repeat='weekly', age_min=5)
+        task_, kids, items = self.store.give_task(task['id'], 'all')
+        self.assertEqual([k['name'] for k in kids], ['Emil', 'Maja'])      # Ida er for ung
+        self.assertEqual(len(items), 2)
+        for kid in (self.emil, self.maja):
+            mine = [i for i in self.view(kid)['items'] if i['title'] == 'Red din seng']
+            self.assertEqual(len(mine), 2)                                   # den ugentlige + dagens egen
+        self.assertEqual(self.view(ida)['items'], [])
+        self.store.update_kid(self.maja['id'], paused=True)
+        _, kids, _ = self.store.give_task(task['id'], 'all')
+        self.assertEqual([k['name'] for k in kids], ['Emil'])
+        self.store.update_kid(self.emil['id'], paused=True)
+        with self.assertRaises(Problem):
+            self.store.give_task(task['id'], 'all')                          # ingen kan få den
+        self.clock.advance(days=1)
+        self.assertFalse([i for i in self.view(self.emil)['items'] if i.get('given')])
+
     def test_cannot_give_duties_or_off_season_tasks(self):
         duty = self.store.add_duty('Ryd op', [self.emil['id']], '2026-11-20')
         with self.assertRaises(Problem):
@@ -2048,6 +2093,13 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(state['parents'], [])
         self.assertTrue(any(t.get('given_from') == task['id'] for t in state['tasks']))
+        status, state = self.call(self.kid, '/p/%s/api/tasks/%s/give' % (token, task['id']), {'kid_id': 'all'})
+        self.assertEqual(status, 200)
+        status, view = self.call(self.kid, '/k/%s/api/state' % ida['token'])
+        self.assertEqual([i['title'] for i in view['items']].count('Tøm opvasker'), 2)
+        status, state = self.call(self.adm, '/api/tasks/%s' % task['id'], {'each': True})
+        mine = [t for t in state['tasks'] if t['id'] == task['id']][0]
+        self.assertEqual((mine['each'], mine['each_auto']), (True, False))
         status, err = self.call(self.kid, '/p/%s/api/tasks/%s/give' % ('x' * 24, task['id']), {'kid_id': None})
         self.assertEqual(status, 404)
         status, err = self.call(self.adm, '/api/tasks/%s/give' % task['id'], {'kid_id': 'abcdef1234'})

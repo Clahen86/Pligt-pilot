@@ -103,6 +103,8 @@ nav button { font-size: 13px; }
 .qbtn .qx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .qbtn .qt { font-size: 14px; font-weight: 900; line-height: 1.15; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: anywhere; }
 .qbtn .qp { font-size: 12.5px; font-weight: 800; color: var(--muted); }
+.qbtn .qm { align-self: flex-start; margin-top: 2px; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 800; letter-spacing: .02em; background: #F1E8D6; color: var(--ink); }
+.qbtn .qm.each { background: #DCEFEA; color: #0B5F57; }
 .qbtn.more { background: transparent; border: 2px dashed #D9CDB6; justify-content: center; }
 .qbtn.more .qx { align-items: center; }
 .qsheet { position: fixed; inset: 0; background: rgba(34,48,74,.35); display: flex; align-items: flex-end; z-index: 60; }
@@ -318,6 +320,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       ['daily', 'weekly', 'once'].map(function (x) { return '<option value="' + x + '"' + (r.repeat === x ? ' selected' : '') + '>' + REPEAT[x] + '</option>'; }).join('') + '</select></div></div>' +
       '<div><label for="' + key + '-n">Hvor mange gange pr. periode</label>' + timesSelect(key + '-n', r.times || 1) + '</div>' +
       (withKids ? '<div><label>Billede</label>' + iconPicker(key + '-ic', r.icon, '') + '</div>' : '') +
+      (withKids ? '<div><label for="' + key + '-ea">Hvem laver den?</label><select id="' + key + '-ea" data-was="' + (r.each ? '1' : '') + '">' +
+        '<option value="1"' + (r.each ? ' selected' : '') + '>Hvert barn sin egen</option><option value=""' + (r.each ? '' : ' selected') + '>Én af børnene</option></select>' +
+        (r.each_auto ? '<div class="note" style="margin-top:4px">Gættet ud fra navnet.</div>' : '') + '</div>' : '') +
       (withKids ? '<div><label for="' + key + '-se">Hvornår på året</label>' + taskSeason(key + '-se', r) + '</div>' +
         '<label class="check"><input type="checkbox" id="' + key + '-qk"' + (r.quick ? ' checked' : '') + '> Vis som hurtigknap</label>' +
         '<label class="check"><input type="checkbox" id="' + key + '-su"' + (r.surprise ? ' checked' : '') + '> Overraskelse: dukker af og til op med dobbelt pris</label>' : '') +
@@ -341,7 +346,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var f = { title: document.getElementById(key + '-t').value, price: document.getElementById(key + '-p').value,
       age_min: document.getElementById(key + '-a').value, repeat: document.getElementById(key + '-r').value,
       times: document.getElementById(key + '-n').value };
-    if (key.charAt(0) === 't') { f.icon = document.getElementById(key + '-ic').value; f.kids = editKids.slice(); f.photo = document.getElementById(key + '-ph').checked; f.quick = document.getElementById(key + '-qk').checked; var se = document.getElementById(key + '-se'); if (se.value !== se.dataset.was) { f.season = se.value; } f.surprise = document.getElementById(key + '-su').checked; }
+    if (key.charAt(0) === 't') { f.icon = document.getElementById(key + '-ic').value; f.kids = editKids.slice(); f.photo = document.getElementById(key + '-ph').checked; f.quick = document.getElementById(key + '-qk').checked; var se = document.getElementById(key + '-se'); if (se.value !== se.dataset.was) { f.season = se.value; } f.surprise = document.getElementById(key + '-su').checked; var ea = document.getElementById(key + '-ea'); if (ea.value !== ea.dataset.was) { f.each = !!ea.value; } }
     return f;
   }
   function kidTask(id) { return state.tasks.filter(function (t) { return t.id === id; })[0] || {}; }
@@ -641,7 +646,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var pick = state.quick || [];
     if (!pick.length) { return ''; }
     return '<h2>Giv en opgave</h2><div class="quick">' + pick.map(function (t) {
-      return '<button class="qbtn" data-quick="' + t.id + '">' + icoSpan(t.icon_shown) + '<span class="qx"><span class="qt">' + esc(t.title) + '</span><span class="qp">' + t.price + ' kr.</span></span></button>';
+      return '<button class="qbtn" data-quick="' + t.id + '">' + icoSpan(t.icon_shown) + '<span class="qx"><span class="qt">' + esc(t.title) + '</span><span class="qp">' + t.price + ' kr.</span>' +
+        '<span class="qm' + (t.each ? ' each' : '') + '">' + (t.each ? 'Alle' : 'Én') + '</span></span></button>';
     }).join('') + '<button class="qbtn more" data-tab="tasks"><span class="qx"><span class="qt">Alle opgaver</span><span class="qp">Vælg en anden</span></span></button></div>';
   }
   function quickSheet() {
@@ -656,6 +662,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<button class="btn sun" style="width:100%" data-qall="1">Først til mølle – alle kan tage den</button>'
         : '<div class="empty">Intet barn kan få den opgave lige nu</div>') +
       '<button class="btn ghost" style="width:100%" data-qcancel="1">Annuller</button></div></div>';
+  }
+  // hver sin: ét tryk sender en egen opgave til hvert barn, der må få den
+  function giveEach(q) {
+    var names = state.kids.filter(function (k) { return q.kids.indexOf(k.id) >= 0; }).map(function (k) { return k.name; });
+    if (!names.length) { say('Intet barn kan få den opgave lige nu'); return; }
+    var who = names.length > 1 ? names.slice(0, -1).join(', ') + ' ' + T('og') + ' ' + names[names.length - 1] : names[0];
+    post('api/tasks/' + q.id + '/give', { kid_id: 'all' }, 'Sendt til ' + who).catch(function () { render(); });
   }
   function give(kidId) {
     var q = quickById(quickTask), kid = kidId ? kidById(kidId) : null;
@@ -700,7 +713,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       out += '<div class="group">' + esc(room) + '</div><div class="list">';
       plainTasks.forEach(function (t) {
         if ((t.room || 'Andet') !== room) { return; }
-        out += '<div class="card"><div class="row">' + icoSpan(t.icon_shown) + '<div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.photo ? ' · med foto' : '') + (t.auto_season ? ' · ' + t.auto.months : t.season ? ' · ' + SEASON_SHORT[t.season] : '') + (t.quick ? ' · hurtigknap' : '') + (t.surprise ? ' · overraskelse' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
+        out += '<div class="card"><div class="row">' + icoSpan(t.icon_shown) + '<div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.photo ? ' · med foto' : '') + (t.auto_season ? ' · ' + t.auto.months : t.season ? ' · ' + SEASON_SHORT[t.season] : '') + (t.quick ? ' · hurtigknap' : '') + (t.each ? ' · hver sin' : '') + (t.surprise ? ' · overraskelse' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
           '<div class="price" ' + (t.fair && t.fair.level !== 'ok' ? 'title="' + esc(t.fair.text) + '" style="color:' + (t.fair.level === 'high' ? '#C73A30' : '#B05A00') + '"' : '') + '>' + t.price + ' kr' + (t.fair && t.fair.level !== 'ok' ? ' ' + (t.fair.level === 'high' ? '▲' : '▼') : '') + '</div>' +
           '<button class="sw" role="switch" aria-checked="' + (t.active ? 'true' : 'false') + '" aria-label="' + esc(t.title) + ' er slået til" data-active="' + t.id + '"><span></span></button>' +
           '<button class="btn small ghost" data-duptask="' + t.id + '" aria-label="Lav en kopi af ' + esc(t.title) + '">Kopi</button>' +
@@ -1008,7 +1021,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var b = e.target.closest('button');
     if (!b) { return; }
     var d = b.dataset;
-    if (d.quick) { quickTask = d.quick; render(); }
+    if (d.quick) { var qq = quickById(d.quick); if (qq && qq.each) { giveEach(qq); } else { quickTask = d.quick; render(); } }
     else if (d.qgive) { give(d.qgive); }
     else if (d.qall) { give(null); }
     else if (d.qcancel) { quickTask = ''; render(); }
