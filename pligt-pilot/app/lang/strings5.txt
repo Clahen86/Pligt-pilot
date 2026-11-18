@@ -1,0 +1,51 @@
+# Tømt-maskine, lommepenge med krav, pligter uden betaling og maddage
+=Pligt || Must do || Pflicht || Plikt || Plikt
+Pligter uden betaling || Unpaid must-dos || Pflichten ohne Bezahlung || Plikter utan betalning || Plikter uten betaling
+En pligt giver ingen penge, men skal laves inden fristen. Ellers trækkes beløbet (aldrig mere end barnets saldo). || A must-do earns no money, but has to be done before the deadline. Otherwise the amount is deducted (never more than the child's balance). || Eine Pflicht bringt kein Geld, muss aber vor der Frist erledigt werden. Sonst wird der Betrag abgezogen (nie mehr als das Guthaben des Kindes). || En plikt ger inga pengar, men måste göras före tidsfristen. Annars dras beloppet av (aldrig mer än barnets saldo). || En plikt gir ingen penger, men må gjøres før fristen. Ellers trekkes beløpet (aldri mer enn barnets saldo).
+Ny pligt || New must-do || Neue Pflicht || Ny plikt || Ny plikt
+Fx Ryd dit værelse || E.g. Tidy your room || Z. B. Räum dein Zimmer auf || T.ex. Städa ditt rum || F.eks. Rydd rommet ditt
+Frist (dato) || Deadline (date) || Frist (Datum) || Tidsfrist (datum) || Frist (dato)
+Klokken (valgfri) || Time (optional) || Uhrzeit (optional) || Klockan (valfritt) || Klokken (valgfritt)
+Træk, hvis den ikke er lavet (kr.) || Deduction if it isn't done (kr.) || Abzug, wenn sie nicht erledigt ist (kr.) || Avdrag om den inte är gjord (kr.) || Trekk hvis den ikke er gjort (kr.)
+Send pligt || Send must-do || Pflicht senden || Skicka plikt || Send plikt
+Pligten er sendt || The must-do was sent || Die Pflicht wurde gesendet || Plikten har skickats || Plikten er sendt
+Frist: || Deadline: || Frist: || Tidsfrist: || Frist:
+ellers || otherwise || sonst || annars || ellers
+kl. || at || um || kl. || kl.
+ikke klaret endnu || not done yet || noch nicht erledigt || inte klar än || ikke gjort ennå
+venter på dig || waiting for you || wartet auf dich || väntar på dig || venter på deg
+klaret || done || erledigt || klar || gjort
+ikke lavet || not done || nicht erledigt || inte gjord || ikke gjort
+byttet || swapped || getauscht || bytt || byttet
+Vælg mindst ét barn || Choose at least one child || Wähle mindestens ein Kind || Välj minst ett barn || Velg minst ett barn
+Fristen skal være en dato || The deadline must be a date || Die Frist muss ein Datum sein || Tidsfristen måste vara ett datum || Fristen må være en dato
+Fristen er allerede gået || The deadline has already passed || Die Frist ist schon vorbei || Tidsfristen har redan gått ut || Fristen har allerede gått ut
+Skriv et tal || Write a number || Gib eine Zahl ein || Skriv ett tal || Skriv et tall
+Tallet skal være mellem 0 og || The number must be between 0 and || Die Zahl muss zwischen 0 und || Talet måste vara mellan 0 och || Tallet må være mellom 0 og
+Maddag || Cooking day || Kochtag || Matlagningsdag || Matlagingsdag
+Klar kl. || Ready at || Fertig um || Klar kl. || Klar kl.
+Opskrift || Recipe || Rezept || Recept || Oppskrift
+Skjul opskrift || Hide recipe || Rezept ausblenden || Dölj recept || Skjul oppskrift
+Ingredienser || Ingredients || Zutaten || Ingredienser || Ingredienser
+Sådan gør du || How to do it || So geht's || Så här gör du || Slik gjør du det
+Åbn opskriften || Open the recipe || Rezept öffnen || Öppna receptet || Åpne oppskriften
+Pris for en maddag (kr.) || Price for a cooking day (kr.) || Preis für einen Kochtag (kr.) || Pris för en matlagningsdag (kr.) || Pris for en matlagingsdag (kr.)
+Maddage kommer fra Madplan, hvis den er installeret. 0 betyder, at det er en pligt uden betaling. || Cooking days come from Madplan if it is installed. 0 means it is an unpaid must-do. || Kochtage kommen von Madplan, wenn es installiert ist. 0 bedeutet, dass es eine Pflicht ohne Bezahlung ist. || Matlagningsdagar kommer från Madplan om den är installerad. 0 betyder att det är en plikt utan betalning. || Matlagingsdager kommer fra Madplan hvis den er installert. 0 betyr at det er en plikt uten betaling.
+Klaret! Du får dine lommepenge. || Done! You'll get your pocket money. || Geschafft! Du bekommst dein Taschengeld. || Klart! Du får dina fickpengar. || Klart! Du får lommepengene dine.
+Du skal have || You need || Du brauchst || Du behöver || Du må ha
+godkendte opgaver i ugen for at få lommepenge. || approved chores this week to get pocket money. || genehmigte Aufgaben in der Woche, um Taschengeld zu bekommen. || godkända uppgifter i veckan för att få fickpengar. || godkjente oppgaver i uka for å få lommepenger.
+Lommepengene for sidste uge er holdt tilbage. || Last week's pocket money is held back. || Das Taschengeld der letzten Woche wird zurückgehalten. || Förra veckans fickpengar hålls inne. || Lommepengene for forrige uke holdes tilbake.
+Lommepengene for uge || The pocket money for week || Das Taschengeld für Woche || Fickpengarna för vecka || Lommepengene for uke
+er holdt tilbage: || is held back: || wird zurückgehalten: || hålls inne: || holdes tilbake:
+opgaver godkendt. || chores approved. || Aufgaben genehmigt. || uppgifter godkända. || oppgaver godkjent.
+Krav til lommepenge fra alder (år) || Pocket money requirement from age (years) || Taschengeld-Bedingung ab Alter (Jahre) || Krav för fickpengar från ålder (år) || Krav til lommepenger fra alder (år)
+Godkendte opgaver pr. uge || Approved chores per week || Genehmigte Aufgaben pro Woche || Godkända uppgifter per vecka || Godkjente oppgaver per uke
+0 betyder slået fra. Børn på eller over alderen får kun ugens lommepenge, hvis de har nok godkendte opgaver i ugen. Ellers holdes de tilbage, og barnet får besked. || 0 means off. Children at or above the age only get the week's pocket money if they have enough approved chores that week. Otherwise it is held back, and the child is told. || 0 bedeutet aus. Kinder ab diesem Alter bekommen das Taschengeld der Woche nur, wenn sie genug genehmigte Aufgaben in der Woche haben. Sonst wird es zurückgehalten, und das Kind bekommt Bescheid. || 0 betyder avstängt. Barn i eller över åldern får bara veckans fickpengar om de har tillräckligt många godkända uppgifter i veckan. Annars hålls de inne, och barnet får besked. || 0 betyr slått av. Barn på eller over alderen får bare ukens lommepenger hvis de har nok godkjente oppgaver i uka. Ellers holdes de tilbake, og barnet får beskjed.
+opgaver i ugen || chores this week || Aufgaben in der Woche || uppgifter i veckan || oppgaver i uka
+lommepenge holdt tilbage || pocket money held back || Taschengeld zurückgehalten || fickpengar innehållna || lommepenger holdt tilbake
+Dørsensor (valgfri) || Door sensor (optional) || Türsensor (optional) || Dörrsensor (valfritt) || Dørsensor (valgfritt)
+Fx binary_sensor.vaskemaskine_dor || E.g. binary_sensor.washer_door || Z. B. binary_sensor.waschmaschine_tuer || T.ex. binary_sensor.tvattmaskin_dorr || F.eks. binary_sensor.vaskemaskin_dor
+Dørsensoren skal ligne binary_sensor.vaskemaskine_dor || The door sensor must look like binary_sensor.washer_door || Der Türsensor muss wie binary_sensor.waschmaschine_tuer aussehen || Dörrsensorn måste se ut som binary_sensor.tvattmaskin_dorr || Dørsensoren må se ut som binary_sensor.vaskemaskin_dor
+En ledig opgave fra huset forsvinder igen, når lågen åbnes (med dørsensor), når maskinen starter igen, eller når den har ligget for længe. Har et barn taget den, bliver den liggende. || An open chore from the house disappears again when the door is opened (with a door sensor), when the machine starts again, or when it has been there too long. If a child has taken it, it stays. || Eine freie Aufgabe vom Haus verschwindet wieder, wenn die Tür geöffnet wird (mit Türsensor), wenn die Maschine wieder startet oder wenn sie zu lange liegt. Hat ein Kind sie genommen, bleibt sie. || En ledig uppgift från huset försvinner igen när luckan öppnas (med dörrsensor), när maskinen startar igen eller när den har legat för länge. Har ett barn tagit den ligger den kvar. || En ledig oppgave fra huset forsvinner igjen når luken åpnes (med dørsensor), når maskinen starter igjen, eller når den har ligget for lenge. Har et barn tatt den, blir den liggende.
+Fjern ledig opgave efter (timer) || Remove open chore after (hours) || Freie Aufgabe entfernen nach (Stunden) || Ta bort ledig uppgift efter (timmar) || Fjern ledig oppgave etter (timer)
+0 betyder efter 2 dage. || 0 means after 2 days. || 0 bedeutet nach 2 Tagen. || 0 betyder efter 2 dagar. || 0 betyr etter 2 dager.

@@ -89,6 +89,20 @@ class App:
         self.options = options or {}
         self.vapid = None
         self.ha.translator = lambda kid, text: i18n.translate(store.lang_of(kid), text)
+        if hasattr(ha, 'fire_event'):
+            store.listener = lambda payload: ha.fire_event('pligt_pilot_task', payload)
+
+    def ha_event(self, event, data):
+        """Hændelser fra Home Assistant (sendt videre af integrationen): Hus-chat og Madplan."""
+        data = data if isinstance(data, dict) else {}
+        if event == 'hus_chat_machine' and data.get('kind') in ('taken', 'emptied'):
+            return bool(self.store.drop_open_job(machine=str(data.get('machine') or '')))
+        if event == 'madplan_cook':
+            task = self.store.add_meal(data)
+            if task:
+                self.store.housekeeping()       # er det i dag, kommer opgaven frem med det samme
+            return bool(task)
+        return False
 
     def outside_url(self):
         """The address that works away from home: the one Home Assistant gave (Nabu Casa or its own), else public_url."""
@@ -181,6 +195,9 @@ def make_handler(app, role, allow_from=None):
                         app.learn_outside(self.headers.get('X-Pligt-Outside'))
                     if path == '/_ha/hello' and self.client_address[0] == HA_CORE:
                         return self._json({'ok': True})
+                    if path == '/_ha/event' and method == 'POST' and self.client_address[0] == HA_CORE:
+                        body = self._body()
+                        return self._json({'ok': True, 'done': app.ha_event(body.get('event'), body.get('data'))})
                     self._kid(method, path)
                 else:
                     self._admin(method, path)
@@ -532,7 +549,8 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.admin_state())
             if path == '/api/settings':
                 for key in ('goal', 'hero_bonus', 'penalty', 'perfect_bonus',
-                            'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading', 'weekly_summary', 'streak_bonus', 'lang'):
+                            'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading', 'weekly_summary', 'streak_bonus', 'lang',
+                            'auto_task_hours', 'min_tasks_age', 'min_tasks_week', 'meal_price'):
                     if key in body:
                         store.set_setting(key, body[key])
                 if 'family_title' in body or 'family_amount' in body:
@@ -547,11 +565,19 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.admin_state())
             if path == '/api/rules':
                 store.add_rule(body.get('name'), body.get('entity'), body.get('title'),
-                               body.get('price', 0))
+                               body.get('price', 0), body.get('door', ''))
                 return self._json(store.admin_state())
             m = re.match(r'^/api/rules/' + ID + r'$', path)
             if m:
-                store.update_rule(m.group(1), body.get('active'))
+                store.update_rule(m.group(1), body.get('active'), body.get('door'))
+                return self._json(store.admin_state())
+            if path == '/api/duties':
+                task = store.add_duty(body.get('title'), body.get('kids'), body.get('date'),
+                                      body.get('time', ''), body.get('fine', 0))
+                due = task['duty']['due'].replace('T', ' kl. ')
+                for kid in store.data['kids']:
+                    if kid['id'] in task['kids'] and not kid.get('paused'):
+                        app.ha.notify_kid(kid, 'Ny pligt', '%s. Frist: %s' % (task['title'], due))
                 return self._json(store.admin_state())
             m = re.match(r'^/api/rules/' + ID + r'/delete$', path)
             if m:

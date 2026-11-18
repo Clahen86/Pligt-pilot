@@ -216,6 +216,20 @@ class HomeAssistant:
             log.warning('Kunne ikke læse enheder fra Home Assistant: %s', err)
             return {}
 
+    def fire_event(self, event_type, data):
+        """Fyrer en hændelse på Home Assistants bus i baggrunden. Fejl stopper aldrig noget."""
+        if not (self.enabled and re.match(r'^[a-z0-9_]+$', event_type or '')):
+            return False
+
+        def work():
+            try:
+                self._post('/events/' + event_type, data)
+            except Exception as err:  # noqa: BLE001
+                log.warning('Kunne ikke sende hændelsen %s: %s', event_type, err)
+
+        threading.Thread(target=work, daemon=True).start()
+        return True
+
     def celebrate(self, entity):
         """Får en lampe til at blinke grønt."""
         if not (self.enabled and entity and entity.startswith('light.') and ENTITY.match(entity)):

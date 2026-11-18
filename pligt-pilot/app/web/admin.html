@@ -109,7 +109,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 (function () {
   var state = null, found = null, powerList = [], entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, taskEdit = '', tab = 'home', suggestions = null, sugOn = {};
   var qrKid = '', qrParent = '';
-  var draft = { rule: { preset: 'Vaskemaskine', entity: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false, season: '', surprise: false, icon: '' }, kid: { name: '', age: '', birthday: '' }, reward: { title: '', price: '10' } };
+  var draft = { duty: { title: '', kids: [], date: '', time: '', fine: '10' }, rule: { preset: 'Vaskemaskine', entity: '', door: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, task: { title: '', price: '5', room: '', repeat: 'daily', open: false, times: '1', kids: [], photo: false, season: '', surprise: false, icon: '' }, kid: { name: '', age: '', birthday: '' }, reward: { title: '', price: '10' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
   // ---- sprog: udskifter kendte danske tekststykker (samme metode som serverens i18n.py) ----
   var I18N = { lang: 'da', locale: 'da-DK', rx: null, map: {}, exact: {}, loading: false };
@@ -635,12 +635,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       });
       out += '<button class="btn" data-setup="1"' + (n ? '' : ' disabled') + '>Opret ' + n + ' valgte</button>';
     }
-    var rooms2 = [];
-    s.tasks.forEach(function (t) { var r = t.room || 'Andet'; if (rooms2.indexOf(r) < 0) { rooms2.push(r); } });
-    if (s.tasks.length) { out += '<h2>Dine opgaver</h2>'; }
+    out += duties();
+    var rooms2 = [], plainTasks = s.tasks.filter(function (t) { return !t.duty && !t.meal; });
+    plainTasks.forEach(function (t) { var r = t.room || 'Andet'; if (rooms2.indexOf(r) < 0) { rooms2.push(r); } });
+    if (plainTasks.length) { out += '<h2>Dine opgaver</h2>'; }
     rooms2.forEach(function (room) {
       out += '<div class="group">' + esc(room) + '</div><div class="list">';
-      s.tasks.forEach(function (t) {
+      plainTasks.forEach(function (t) {
         if ((t.room || 'Andet') !== room) { return; }
         out += '<div class="card"><div class="row">' + icoSpan(t.icon_shown) + '<div class="grow t"><b>' + esc(t.title) + '</b><span>' + esc(REPEAT[t.repeat]) + (t.open ? ' · ledig, først til mølle' : '') + (t.times > 1 ? ' · ' + t.times + ' gange' : '') + (t.photo ? ' · med foto' : '') + (t.season ? ' · ' + SEASON_SHORT[t.season] : '') + (t.surprise ? ' · overraskelse' : '') + (t.kids && t.kids.length ? ' · kun ' + t.kids.map(function (id) { var k = kidById(id); return k ? esc(k.name) : ''; }).join(', ') : '') + (t.age_min ? ' · fra ' + t.age_min + ' år' : '') + '</span></div>' +
           '<div class="price" ' + (t.fair && t.fair.level !== 'ok' ? 'title="' + esc(t.fair.text) + '" style="color:' + (t.fair.level === 'high' ? '#C73A30' : '#B05A00') + '"' : '') + '>' + t.price + ' kr' + (t.fair && t.fair.level !== 'ok' ? ' ' + (t.fair.level === 'high' ? '▲' : '▼') : '') + '</div>' +
@@ -676,6 +677,31 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<label class="check"><input type="checkbox" data-draft="task.photo"' + (d.photo ? ' checked' : '') + '> Barnet skal tage et billede som bevis</label>' +
       '<label class="check"><input type="checkbox" data-draft="task.open"' + (d.open ? ' checked' : '') + '> Ledig opgave: den første, der tager den, får den</label>' +
       '<button class="btn" data-addtask="1">Tilføj opgave</button></div>';
+    return out;
+  }
+
+  // ---- Pligter (uden betaling, med frist) -----------------------------
+  function fmtDue(due) {
+    var d = new Date(due);
+    var day = isNaN(d) ? due.slice(0, 10) : d.toLocaleDateString(I18N.locale, { weekday: 'short', day: 'numeric', month: 'short' });
+    return day + ' kl. ' + due.slice(11, 16);
+  }
+  var DUTY_STATUS = { todo: 'ikke klaret endnu', wait: 'venter på dig', done: 'klaret', missed: 'ikke lavet', traded: 'byttet' };
+  function duties() {
+    var s = state, d = draft.duty, out = '<h2>Pligter uden betaling</h2><div class="card"><div class="note">En pligt giver ingen penge, men skal laves inden fristen. Ellers trækkes beløbet (aldrig mere end barnets saldo).</div>';
+    (s.duties || []).forEach(function (u) {
+      out += '<div class="row"><div class="grow t"><b>' + esc(u.title) + '</b><span>Frist: ' + esc(fmtDue(u.due)) + (u.fine ? ' · ellers -' + u.fine + ' kr' : '') + ' · ' +
+        u.kids.map(function (k) { return esc(k.name) + ' ' + (DUTY_STATUS[k.status] || k.status); }).join(', ') + '</span></div>' +
+        '<button class="icon no" style="width:40px;height:40px" data-deltask="' + u.id + '" aria-label="Slet ' + esc(u.title) + '">' + CROSS + '</button></div>';
+    });
+    out += '<div><label for="du-title">Ny pligt</label><input id="du-title" type="text" maxlength="60" data-draft="duty.title" placeholder="Fx Ryd dit værelse" value="' + esc(d.title) + '"></div>' +
+      '<div><label>Hvem skal have den?</label>' + s.kids.map(function (k) {
+        return '<label class="check" style="margin:0 0 6px"><input type="checkbox" data-kidbox="duty" value="' + k.id + '"' + (d.kids.indexOf(k.id) >= 0 ? ' checked' : '') + '> ' + esc(k.name) + '</label>';
+      }).join('') + '</div>' +
+      '<div class="two"><div><label for="du-date">Frist (dato)</label><input id="du-date" type="date" data-draft="duty.date" value="' + esc(d.date) + '"></div>' +
+      '<div><label for="du-time">Klokken (valgfri)</label><input id="du-time" type="time" data-draft="duty.time" value="' + esc(d.time) + '"></div></div>' +
+      '<div><label for="du-fine">Træk, hvis den ikke er lavet (kr.)</label><input id="du-fine" type="number" inputmode="numeric" min="0" max="1000" data-draft="duty.fine" value="' + esc(d.fine) + '"></div>' +
+      '<button class="btn" data-addduty="1">Send pligt</button></div>';
     return out;
   }
 
@@ -754,6 +780,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<div><label for="s-remind">Påmind børnene kl.</label><input id="s-remind" type="time" value="' + esc(cfg.reminder_time || '') + '"></div>' +
       '<div><label for="s-light">Lampe, der blinker grønt ved godkendelse</label><input id="s-light" type="text" list="lights" placeholder="Fx light.stue" value="' + esc(cfg.celebrate_light || '') + '">' +
       '<datalist id="lights">' + lights.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[1]) + '</option>'; }).join('') + '</datalist></div>' +
+      '<div class="two"><div><label for="s-minage">Krav til lommepenge fra alder (år)</label><input id="s-minage" type="number" min="0" max="25" value="' + (cfg.min_tasks_age || 0) + '"></div>' +
+      '<div><label for="s-minweek">Godkendte opgaver pr. uge</label><input id="s-minweek" type="number" min="0" max="50" value="' + (cfg.min_tasks_week == null ? 5 : cfg.min_tasks_week) + '"></div></div>' +
+      '<div class="note">0 betyder slået fra. Børn på eller over alderen får kun ugens lommepenge, hvis de har nok godkendte opgaver i ugen. Ellers holdes de tilbage, og barnet får besked.</div>' +
+      s.kids.filter(function (k) { return k.allowance_rule; }).map(function (k) {
+        var r = k.allowance_rule;
+        return '<div class="note">' + esc(k.name) + ': ' + r.done + ' af ' + r.need + ' opgaver i ugen' + (r.held ? ' · lommepenge holdt tilbage' : '') + '</div>';
+      }).join('') +
+      '<div><label for="s-meal">Pris for en maddag (kr.)</label><input id="s-meal" type="number" min="0" max="1000" value="' + (cfg.meal_price || 0) + '"></div>' +
+      '<div class="note">Maddage kommer fra Madplan, hvis den er installeret. 0 betyder, at det er en pligt uden betaling.</div>' +
       '<div class="two"><div><label for="s-ft">Familiemål</label><input id="s-ft" type="text" placeholder="Fx Tivoli" value="' + (fam ? esc(fam.title) : '') + '"></div>' +
       '<div><label for="s-fa">Beløb (kr.)</label><input id="s-fa" type="number" min="1" max="1000" value="' + (fam ? fam.amount : '') + '"></div></div>' +
       '<button class="btn ghost" data-savesettings="1">Gem indstillinger</button>' +
@@ -775,6 +810,20 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       return p.words.some(function (w) { return t.indexOf(w) >= 0; }) && !p.not.some(function (w) { return t.indexOf(w) >= 0; });
     });
     return (hit.length ? hit : all).slice(0, 300);
+  }
+  function doorCandidates(preset) {
+    var words = (PRESETS[preset] || PRESETS.Andet).words;
+    var all = entityList.filter(function (e) { return e[0].indexOf('binary_sensor.') === 0; });
+    function text(e) { return (e[0] + ' ' + e[1]).toLowerCase(); }
+    var doors = all.filter(function (e) {
+      return ['door', 'opening', 'window', 'garage_door'].indexOf(e[2]) >= 0 || /dør|dor_|door|låge|lage|kontakt|contact|luge/.test(text(e));
+    });
+    function like(e) { return words.some(function (w) { return text(e).indexOf(w) >= 0; }) ? 1 : 0; }
+    doors.sort(function (a, b) { return like(b) - like(a); });
+    return (doors.length ? doors : all).slice(0, 200);
+  }
+  function doorList(id, preset) {
+    return '<datalist id="' + id + '">' + doorCandidates(preset).map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[1]) + '</option>'; }).join('') + '</datalist>';
   }
   function house() {
     var s = state, d = draft.rule;
@@ -812,16 +861,23 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(r.name) + '</b><span>' + esc(r.entity) + '</span></div>' +
           '<button class="sw" role="switch" aria-checked="' + (r.active ? 'true' : 'false') + '" aria-label="' + esc(r.name) + ' er slået til" data-ruleactive="' + r.id + '"><span></span></button>' +
           '<button class="icon no" style="width:40px;height:40px" data-delrule="' + r.id + '" aria-label="Slet ' + esc(r.name) + '">' + CROSS + '</button></div>' +
-          '<div class="note">Når den er færdig: ' + esc(r.title) + ' (' + r.price + ' kr)</div></div>';
+          '<div class="note">Når den er færdig: ' + esc(r.title) + ' (' + r.price + ' kr)</div>' +
+          '<div><label for="rd-' + r.id + '">Dørsensor (valgfri)</label><div class="linkbox"><input id="rd-' + r.id + '" type="text" list="dl-' + r.id + '" placeholder="Fx binary_sensor.vaskemaskine_dor" value="' + esc(r.door || '') + '">' +
+          '<button class="btn small" data-savedoor="' + r.id + '">Gem</button></div>' + doorList('dl-' + r.id, r.name) + '</div></div>';
       });
       out += '</div>';
     }
+    var hours = s.settings.auto_task_hours == null ? 4 : s.settings.auto_task_hours;
+    out += '<div class="card"><div class="note">En ledig opgave fra huset forsvinder igen, når lågen åbnes (med dørsensor), når maskinen starter igen, eller når den har ligget for længe. Har et barn taget den, bliver den liggende.</div>' +
+      '<div class="linkbox"><div class="grow"><label for="h-hours">Fjern ledig opgave efter (timer)</label><input id="h-hours" type="number" min="0" max="72" value="' + hours + '"></div>' +
+      '<button class="btn small" style="align-self:flex-end" data-savehours="1">Gem</button></div><div class="note">0 betyder efter 2 dage.</div></div>';
     out += '<h2>Tilføj regel</h2><div class="card">' +
       '<div><label for="r-preset">Hvilken maskine?</label><select id="r-preset" data-draft="rule.preset">' +
       Object.keys(PRESETS).map(function (k) { return '<option' + (d.preset === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></div>' +
       '<div><label for="r-ent">Måler eller kontakt, der viser, om den kører</label><input id="r-ent" type="text" list="ents" data-draft="rule.entity" placeholder="Fx sensor.vaskemaskine_effekt" value="' + esc(d.entity) + '">' +
       '<datalist id="ents">' + candidates(d.preset).map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[1]) + '</option>'; }).join('') + '</datalist></div>' +
       '<div class="note">' + (entitiesOn === false ? 'Appen kan ikke se Home Assistant lige nu. Skriv enhedens id selv.' : 'Vælg fra listen, eller skriv selv. Bedst er en stikkontakt med effektmåling (watt).') + '</div>' +
+      '<div><label for="r-door">Dørsensor (valgfri)</label><input id="r-door" type="text" list="doors" data-draft="rule.door" placeholder="Fx binary_sensor.vaskemaskine_dor" value="' + esc(d.door) + '">' + doorList('doors', d.preset) + '</div>' +
       '<div class="two"><div><label for="r-title">Opgave</label><input id="r-title" type="text" data-draft="rule.title" value="' + esc(d.title) + '"></div>' +
       '<div><label for="r-price">Pris (kr.)</label><input id="r-price" type="number" inputmode="numeric" min="0" max="1000" data-draft="rule.price" value="' + esc(d.price) + '"></div></div>' +
       '<button class="btn" data-addrule="1">Tilføj regel</button></div>';
@@ -881,13 +937,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       return;
     }
     if (t.dataset && t.dataset.kidbox) {
-      var list = t.dataset.kidbox === 'draft' ? draft.task.kids : editKids, at = list.indexOf(t.value);
+      var list = t.dataset.kidbox === 'draft' ? draft.task.kids : t.dataset.kidbox === 'duty' ? draft.duty.kids : editKids, at = list.indexOf(t.value);
       if (t.checked && at < 0) { list.push(t.value); } else if (!t.checked && at >= 0) { list.splice(at, 1); }
       return;
     }
     if (t.dataset && t.dataset.draft) {
       setDraft(t.dataset.draft, t.type === 'checkbox' ? t.checked : t.value);
-      if (t.dataset.draft === 'rule.preset') { var pr = PRESETS[t.value]; draft.rule.title = pr.title; draft.rule.price = pr.price; draft.rule.entity = ''; render(); }
+      if (t.dataset.draft === 'rule.preset') { var pr = PRESETS[t.value]; draft.rule.title = pr.title; draft.rule.price = pr.price; draft.rule.entity = ''; draft.rule.door = ''; render(); }
     }
   });
   document.addEventListener('click', function (e) {
@@ -974,8 +1030,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     else if (d.delrule) { if (confirm('Slette reglen?')) { post('api/rules/' + d.delrule + '/delete', {}, 'Reglen er slettet'); } }
     else if (d.addrule) {
       var r = draft.rule;
-      post('api/rules', { name: r.preset, entity: r.entity, title: r.title, price: r.price }, 'Reglen er tilføjet')
-        .then(function () { draft.rule.entity = ''; render(); }).catch(function () {});
+      post('api/rules', { name: r.preset, entity: r.entity, title: r.title, price: r.price, door: r.door }, 'Reglen er tilføjet')
+        .then(function () { draft.rule.entity = ''; draft.rule.door = ''; render(); }).catch(function () {});
+    }
+    else if (d.savedoor) { post('api/rules/' + d.savedoor, { door: document.getElementById('rd-' + d.savedoor).value }, 'Gemt'); }
+    else if (d.savehours) { post('api/settings', { auto_task_hours: document.getElementById('h-hours').value }, 'Gemt'); }
+    else if (d.addduty) {
+      var du = draft.duty;
+      post('api/duties', { title: du.title, kids: du.kids, date: du.date, time: du.time, fine: du.fine }, 'Pligten er sendt')
+        .then(function () { draft.duty = { title: '', kids: [], date: '', time: '', fine: du.fine }; render(); }).catch(function () {});
     }
     else if (d.savekid) {
       post('api/kids/' + d.savekid, {
@@ -1033,6 +1096,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         reminder_time: document.getElementById('s-remind').value, celebrate_light: document.getElementById('s-light').value,
         lang: document.getElementById('s-lang').value, streak_bonus: document.getElementById('s-streak').value, boss_hp: document.getElementById('s-bosshp').value, boss_bonus: document.getElementById('s-bossbonus').value,
         trading: document.getElementById('s-trading').checked,
+        min_tasks_age: document.getElementById('s-minage').value, min_tasks_week: document.getElementById('s-minweek').value,
+        meal_price: document.getElementById('s-meal').value,
           weekly_summary: document.getElementById('s-summary').checked
       };
       var ft = document.getElementById('s-ft').value, fa = document.getElementById('s-fa').value, fam = state.family;

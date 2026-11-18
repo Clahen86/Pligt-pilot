@@ -15,6 +15,30 @@ Finder appen ikke din vaskemaskine eller tørretumbler på navnet, viser Huset e
 
 Lav fx to regler: vaskemaskinen giver "Flyt tøj til tørretumbleren", og tørretumbleren giver "Tag tøj ud og fold det".
 
+En ledig opgave, som ingen har taget, forsvinder igen, når
+- lågen åbnes: vælg en dørsensor (binary_sensor) på reglen under **Huset**. Appen foreslår sensorer, der ligner maskinen.
+- maskinen starter igen.
+- den har ligget i det antal timer, du vælger under **Huset** (standard 4).
+
+En sensor, der er "unavailable" eller "unknown", fjerner aldrig noget. Har et barn taget opgaven, bliver den liggende.
+
+## Pligter uden betaling
+
+Under **Opgaver → Pligter uden betaling** sender du en pligt til et eller flere børn med en frist (dato og evt. klokkeslæt) og et træk. Barnet ser den med mærket **Pligt** og fristen. Er den ikke meldt færdig inden fristen, trækkes beløbet (aldrig mere end barnets saldo).
+
+## Lommepenge med krav
+
+Under **Børn → Indstillinger** kan du sætte en alder (fx 13) og et antal godkendte opgaver pr. uge (fx 5). Børn på eller over alderen får kun ugens lommepenge, hvis de har nok godkendte opgaver i ugen. Ellers holdes de tilbage, og barnet får besked. Godkender du opgaverne lidt for sent, kommer pengene alligevel. Barnet ser fremskridtet på sin side. Alder 0 slår kravet fra.
+
+## Samspil med Hus-chat og Madplan
+
+Kræver integrationen **Pligt-pilot**. Den lytter efter `hus_chat_machine` og `madplan_cook` og sender dem videre til add-on'en.
+- Tømmes en maskine (eller tages den) i Hus-chat, fjernes en ledig husopgave for samme slags maskine.
+- Giver Madplan et barn en maddag, får barnet opgaven "Maddag: <ret>" på dagen med opskrift og ingredienser. Prisen vælges under Indstillinger (standard 0 = en pligt uden betaling).
+- Pligt-pilot fyrer selv `pligt_pilot_task` (taken, done, removed) for husopgaver, maddage og pligter.
+
+Findes de andre apps ikke, sker der ingenting.
+
 ## Links der virker ude (Nabu Casa)
 
 Installér integrationen **Pligt-pilot** (fra samme repo via HACS) og tilføj den under Indstillinger → Enheder og tjenester. Så går linkene gennem Home Assistant: `https://….ui.nabu.casa/pligter/k/…`. De virker overalt, med https, uden åbne porte og uden login. Integrationen fortæller selv add-on'en adressen, så `public_url` ikke skal udfyldes. Uden Nabu Casa bruges Home Assistants egen adresse udefra, hvis den findes. Ellers virker linkene kun hjemme som før.

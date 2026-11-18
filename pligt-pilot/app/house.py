@@ -6,7 +6,7 @@ import datetime as dt
 import logging
 import threading
 
-from store import SURPRISE_MINUTES
+from store import DOOR_OPEN, SURPRISE_MINUTES
 
 log = logging.getLogger('pligt')
 
@@ -66,12 +66,14 @@ class Automation:
         self.ha = ha
         self.clock = clock or dt.datetime.now
         self.states = {}
+        self.doors = {}         # sidste kendte tilstand for hver regels dørsensor
         self._stop = threading.Event()
 
     def tick(self):
         now = self.clock()
         self.store.housekeeping()
         self._rules(now)
+        self._allowance()
         self._surprise()
         self._reminders()
         self._birthdays()
@@ -81,10 +83,13 @@ class Automation:
         rules = [r for r in self.store.data['rules'] if r['active']]
         if not rules:
             return
-        values = self.ha.states([r['entity'] for r in rules])
+        values = self.ha.states([r['entity'] for r in rules] + [r['door'] for r in rules if r.get('door')])
         for rule in rules:
+            self._door(rule, values.get(rule.get('door')) if rule.get('door') else None)
             if rule['entity'] not in values:
                 continue
+            if classify(values[rule['entity']]) == 'running':
+                self.store.drop_open_job(rule_id=rule['id'])      # maskinen er startet igen
             self.states[rule['id']], done = step(self.states.get(rule['id']),
                                                  values[rule['entity']], now)
             if done:
@@ -92,6 +97,24 @@ class Automation:
                 if task:
                     self.tell_kids('Ny opgave', '%s (%d kr.). Først til mølle!'
                                    % (task['title'], task['price']), task)
+
+    def _door(self, rule, value):
+        """Lågen er åbnet (fra lukket til åben): maskinen bliver tømt, så den ledige opgave fjernes.
+
+        'unavailable', 'unknown' og manglende værdier ignoreres, så en defekt sensor aldrig fjerner noget.
+        """
+        value = str(value).strip().lower() if value is not None else ''
+        if value not in DOOR_OPEN + ('off', 'closed'):
+            self.doors[rule['id']] = None       # glem den: næste 'on' tæller først efter et rigtigt 'off'
+            return
+        before = self.doors.get(rule['id'])
+        self.doors[rule['id']] = value
+        if value in DOOR_OPEN and before in ('off', 'closed'):
+            self.store.drop_open_job(rule_id=rule['id'])
+
+    def _allowance(self):
+        for kid, text in self.store.allowance_notices():
+            self.ha.notify_kid(kid, 'Lommepenge', text)
 
     def tell_kids(self, title, message, task=None):
         for kid in self.store.data['kids']:

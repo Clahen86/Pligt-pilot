@@ -17,7 +17,7 @@ from aiohttp import web
 
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.network import NoURLAvailableError, get_url
@@ -30,6 +30,7 @@ PATH = re.compile(r"^(k|p)/[A-Za-z0-9_-]{8,64}(/[A-Za-z0-9_.-]+)*/?$")  # only t
 TO_ADDON = ("Content-Type", "Accept", "Accept-Language")
 TO_BROWSER = ("Content-Type", "Cache-Control", "Location", "Content-Disposition")
 MAX_BODY = 1024 * 1024
+BRIDGED = ("hus_chat_machine", "madplan_cook")  # events from Hus-chat and Madplan that the add-on acts on
 
 
 async def find_addon(hass: HomeAssistant) -> str | None:
@@ -76,6 +77,23 @@ class Link:
             except (aiohttp.ClientError, asyncio.TimeoutError):
                 continue
         self.base = None
+
+    async def send_event(self, event_type: str, data: dict) -> None:
+        """Pass an event from Home Assistant's bus on to the add-on. Quietly does nothing when it can't."""
+        if not self.base:
+            await self.hello()
+        if not self.base:
+            return
+        try:
+            async with async_get_clientsession(self.hass, verify_ssl=False).post(
+                    f"{self.base}/_ha/event", json={"event": event_type, "data": data},
+                    headers={"X-Pligt-Outside": self.outside()}, timeout=aiohttp.ClientTimeout(total=10)) as r:
+                if r.status != 200:
+                    _LOGGER.debug("Pligt-pilot answered %s to %s", r.status, event_type)
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            self.base = None  # found again next time
+        except Exception:  # noqa: BLE001 - never break the event bus
+            _LOGGER.debug("Could not pass %s on to Pligt-pilot", event_type, exc_info=True)
 
 
 class PligtView(HomeAssistantView):
@@ -133,6 +151,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[f"{DOMAIN}_view"] = True
     entry.async_create_background_task(hass, link.hello(), "pligt_pilot hello")
     entry.async_on_unload(async_track_time_interval(hass, link.hello, timedelta(minutes=30)))
+
+    @callback
+    def _bridge(event: Event) -> None:
+        hass.async_create_background_task(link.send_event(event.event_type, dict(event.data)),
+                                          f"pligt_pilot {event.event_type}")
+
+    for event_type in BRIDGED:
+        entry.async_on_unload(hass.bus.async_listen(event_type, _bridge))
     return True
 
 

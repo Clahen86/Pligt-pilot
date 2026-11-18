@@ -39,6 +39,8 @@ Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
 - **Spil og leg:** en fugl, der vokser fra æg til Pligtlegende, ugens boss som hele familien slår sammen, bonus for dage i træk og en overraskelsesopgave med dobbelt pris.
 - **Bytte:** børn kan give en opgave til en søskende, evt. mod betaling.
 - **Besked på telefonen** direkte fra linket, uden app og uden ekstra betaling.
+- **Pligter** står med et rødt mærke og en frist, så barnet kan se, hvad der skal nås.
+- **Maddage** fra Madplan med opskrift og ingredienser, som kan foldes ud.
 
 ### Til forældrene
 
@@ -52,6 +54,8 @@ Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
 - **Fleksible opgaver:** pris, gentagelse, flere gange om dagen, kun til bestemte børn, sæsonopgaver (fx løv om efteråret) og låsning efter alder, der åbner af sig selv, når barnet har fødselsdag.
 - **Rimelighedstjek:** appen siger til, hvis en pris virker for høj eller for lav.
 - **Pauseknap** pr. barn, lommepenge, træk for glemte opgaver, bonus for perfekt uge og udbetaling til alle med ét tryk.
+- **Lommepenge med krav:** fra en valgt alder kræver lommepengene et antal godkendte opgaver i ugen. Ellers holdes de tilbage, og barnet får besked.
+- **Pligter uden betaling:** send en pligt til et eller flere børn med en frist. Bliver den ikke lavet, trækkes et beløb.
 - **Eget link til hver forælder**, så I begge kan styre alt fra telefonen uden at logge ind.
 - **Søndagsopsummering, gode råd og backup** af al data.
 - **Flere sprog:** dansk, engelsk, tysk, svensk og norsk. Hvert barn kan have sit eget sprog.
@@ -63,6 +67,12 @@ Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
 </p>
 
 Når vaskemaskinen, tørretumbleren eller opvaskemaskinen er færdig, får børnene en ledig opgave og en besked, fx "Flyt tøj til tørretumbleren". Appen finder selv målerne i Home Assistant, og hvis navnene ikke passer, peger du på dem fra en liste. En lampe kan blinke grønt, når du godkender.
+
+Har ingen taget opgaven, forsvinder den igen, når lågen åbnes (med en dørsensor), når maskinen starter igen, eller efter nogle timer.
+
+### Samspil med Hus-chat og Madplan
+
+Er Hus-chat eller Madplan installeret, finder de hinanden selv (kræver integrationen Pligt-pilot). Tømmes en maskine i Hus-chat, forsvinder den ledige opgave her. Giver Madplan et barn en maddag, får barnet opgaven "Maddag: …" med opskriften. Pligt-pilot fyrer selv `pligt_pilot_task`, når en husopgave, maddag eller pligt tages, laves eller fjernes. Uden de andre apps virker alt som før.
 
 ## Eksisterende løsninger (undersøgt 17. nov. 2026)
 

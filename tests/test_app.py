@@ -922,6 +922,320 @@ class AutomationTests(unittest.TestCase):
                           ('mobile_app_far', 'Fødselsdag i morgen')])
 
 
+class MapHA(StubHA):
+    """Som StubHA, men hver enhed har sin egen værdi (mangler den, svarer HA ikke for den)."""
+
+    def __init__(self):
+        super().__init__()
+        self.values = {}
+
+    def states(self, ids):
+        return {i: self.values[i] for i in ids if i in self.values}
+
+
+class HouseCleanupTests(unittest.TestCase):
+    """Tømt-maskine: en LEDIG husopgave forsvinder igen af sig selv."""
+
+    def setUp(self):
+        self.clock = Clock(monday())
+        self.store = Store(None, self.clock)
+        self.emil = self.store.add_kid('Emil', 8)
+        self.events = []
+        self.store.listener = self.events.append
+        self.rule = self.store.add_rule('Vaskemaskine', 'sensor.vask_effekt', 'Flyt tøj', 5,
+                                        door='binary_sensor.vask_dor')
+        self.ha = MapHA()
+        self.auto = Automation(self.store, self.ha, self.clock)
+
+    def jobs(self):
+        return [t for t in self.store.data['tasks'] if t.get('auto_rule') == self.rule['id']]
+
+    def test_machine_type_follows_the_shared_agreement(self):
+        from store import machine_type
+        self.assertEqual([machine_type(n) for n in ('Opvaskemaskine', 'Tørretumbler', 'Vaskemaskine',
+                                                     'Dishwasher', 'Wäschetrockner', 'Torktumlare',
+                                                     'Tvättmaskin', 'Waschmaschine', 'Andet', '')],
+                         ['dishwasher', 'dryer', 'washer', 'dishwasher', 'dryer', 'dryer', 'washer',
+                          'washer', 'other', 'other'])
+
+    def test_door_sensor_is_checked_and_can_be_changed(self):
+        with self.assertRaises(Problem):
+            self.store.add_rule('X', 'sensor.x', 'T', 1, door='sensor.ikke_en_dor')
+        self.store.update_rule(self.rule['id'], door='')
+        self.assertEqual(self.store._rule(self.rule['id'])['door'], '')
+        self.store.update_rule(self.rule['id'], door='binary_sensor.ny_dor')
+        self.assertEqual(self.store.admin_state()['rules'][0]['door'], 'binary_sensor.ny_dor')
+
+    def test_opening_the_door_removes_the_open_job(self):
+        self.ha.values = {'sensor.vask_effekt': '0', 'binary_sensor.vask_dor': 'off'}
+        self.auto.tick()
+        self.store.fire_rule(self.rule['id'])
+        for bad in ('unavailable', 'unknown', 'on'):     # efter 'unavailable' tæller 'on' ikke
+            self.ha.values['binary_sensor.vask_dor'] = bad
+            self.auto.tick()
+        self.assertEqual(len(self.jobs()), 1)
+        del self.ha.values['binary_sensor.vask_dor']    # manglende tilstand: intet sker
+        self.auto.tick()
+        self.assertEqual(len(self.jobs()), 1)
+        self.ha.values['binary_sensor.vask_dor'] = 'off'
+        self.auto.tick()
+        self.ha.values['binary_sensor.vask_dor'] = 'on'
+        self.auto.tick()
+        self.assertEqual(self.jobs(), [])
+        self.assertEqual(self.events[-1], {'kind': 'removed', 'source': 'machine', 'machine': 'washer',
+                                           'title': 'Flyt tøj', 'kid': '',
+                                           'task_id': self.events[-1]['task_id']})
+
+    def test_a_taken_job_stays_when_the_door_opens(self):
+        self.ha.values = {'sensor.vask_effekt': '0', 'binary_sensor.vask_dor': 'off'}
+        self.auto.tick()
+        task = self.store.fire_rule(self.rule['id'])
+        self.store.claim(self.emil['token'], task['id'])
+        self.assertEqual(self.events[-1]['kind'], 'taken')
+        self.assertEqual(self.events[-1]['kid'], 'Emil')
+        self.ha.values['binary_sensor.vask_dor'] = 'on'
+        self.auto.tick()
+        self.ha.values['sensor.vask_effekt'] = '1500'
+        self.auto.tick()
+        self.assertEqual(len(self.jobs()), 1)
+        item = self.store.kid_view(self.emil['token'])['items'][0]
+        self.store.mark_done(self.emil['token'], item['id'])
+        self.assertEqual((self.events[-1]['kind'], self.events[-1]['source'], self.events[-1]['machine']),
+                         ('done', 'machine', 'washer'))
+
+    def test_machine_starting_again_removes_the_open_job(self):
+        self.store.fire_rule(self.rule['id'])
+        self.ha.values = {'sensor.vask_effekt': 'unavailable'}
+        self.auto.tick()
+        self.assertEqual(len(self.jobs()), 1)
+        self.ha.values = {'sensor.vask_effekt': '1200'}
+        self.auto.tick()
+        self.assertEqual(self.jobs(), [])
+        self.assertEqual(self.events[-1]['kind'], 'removed')
+
+    def test_open_job_is_removed_after_the_set_number_of_hours(self):
+        self.store.fire_rule(self.rule['id'])
+        self.clock.advance(hours=3, minutes=59)
+        self.store.housekeeping()
+        self.assertEqual(len(self.jobs()), 1)
+        self.clock.advance(minutes=2)
+        self.store.housekeeping()
+        self.assertEqual(self.jobs(), [])
+        self.assertEqual([e['kind'] for e in self.events], ['removed'])
+        self.store.set_setting('auto_task_hours', 1)
+        task = self.store.fire_rule(self.rule['id'])
+        self.store.claim(self.emil['token'], task['id'])     # taget: bliver liggende
+        self.clock.advance(hours=5)
+        self.store.housekeeping()
+        self.assertEqual(len(self.jobs()), 1)
+        with self.assertRaises(Problem):
+            self.store.set_setting('auto_task_hours', 100)
+
+    def test_hus_chat_removes_an_open_job_of_the_same_machine_type(self):
+        self.store.fire_rule(self.rule['id'])
+        self.assertIsNone(self.store.drop_open_job(machine='dryer'))
+        self.assertIsNone(self.store.drop_open_job(machine='other'))
+        self.assertIsNotNone(self.store.drop_open_job(machine='washer'))
+        self.assertEqual(self.jobs(), [])
+        self.assertIsNone(self.store.drop_open_job(machine='washer'))
+
+    def test_a_failing_listener_never_stops_anything(self):
+        def boom(_):
+            raise RuntimeError('HA er væk')
+        self.store.listener = boom
+        task = self.store.fire_rule(self.rule['id'])
+        self.store.claim(self.emil['token'], task['id'])
+        self.assertEqual(len(self.store.kid_view(self.emil['token'])['items']), 1)
+
+
+class AllowanceRuleTests(unittest.TestCase):
+    """Store børn får kun lommepenge, hvis de har nok godkendte opgaver i ugen."""
+
+    def setUp(self):
+        self.clock = Clock(monday())
+        self.store = Store(None, self.clock)
+        self.emil = self.store.add_kid('Emil', 8)
+        self.maja = self.store.add_kid('Maja', 13)
+        self.store.add_task('Dæk bord', 3)
+        self.store.set_setting('min_tasks_age', 13)
+        self.store.set_setting('min_tasks_week', 2)
+        for kid in (self.emil, self.maja):
+            self.store.update_kid(kid['id'], allowance=20)
+
+    def finish(self, kid):
+        for i in self.store.kid_view(kid['token'])['items']:
+            if i['status'] == 'todo':
+                self.store.mark_done(kid['token'], i['id'])
+                self.store.decide(i['id'], True)
+                return
+
+    def allowance(self, kid):
+        return sum(e['amount'] for e in self.store.data['ledger']
+                   if e['kid_id'] == kid['id'] and e['kind'] == 'allowance')
+
+    def test_too_few_tasks_holds_the_allowance_back_and_tells_the_child(self):
+        self.finish(self.maja)
+        rule = self.store.kid_view(self.maja['token'])['allowance_rule']
+        self.assertEqual((rule['need'], rule['done'], rule['amount'], rule['held']), (2, 1, 20, 0))
+        self.assertIsNone(self.store.kid_view(self.emil['token'])['allowance_rule'])   # for ung
+        self.clock.advance(days=7)
+        self.store.housekeeping()
+        self.assertEqual(self.allowance(self.emil), 20)
+        self.assertEqual(self.allowance(self.maja), 0)
+        self.assertEqual(self.store.kid_view(self.maja['token'])['allowance_rule']['held'], 20)
+        notes = self.store.allowance_notices()
+        self.assertEqual([(k['name'], t) for k, t in notes],
+                         [('Maja', 'Lommepengene for uge 47 er holdt tilbage: 1 af 2 opgaver godkendt.')])
+        self.assertEqual(self.store.allowance_notices(), [])      # kun én gang
+        maja = [k for k in self.store.admin_state()['kids'] if k['name'] == 'Maja'][0]
+        self.assertEqual(maja['allowance_rule']['held'], 20)
+        self.assertEqual(self.store.admin_state()['settings']['min_tasks_week'], 2)
+
+    def test_enough_tasks_pays_and_late_approvals_release_the_money(self):
+        self.finish(self.maja)
+        self.clock.advance(days=1)
+        self.finish(self.maja)
+        self.clock.advance(days=6)
+        self.store.housekeeping()
+        self.assertEqual(self.allowance(self.maja), 20)
+        # ugen efter: én godkendt og én, der venter, da ugen skifter
+        self.finish(self.maja)
+        self.clock.advance(days=1)
+        item = [i for i in self.store.kid_view(self.maja['token'])['items'] if i['status'] == 'todo'][0]
+        self.store.mark_done(self.maja['token'], item['id'])
+        self.clock.advance(days=6)
+        self.store.housekeeping()
+        self.assertEqual(self.allowance(self.maja), 20)
+        self.store.decide(item['id'], True)                       # forælderen godkender om mandagen
+        self.store.housekeeping()
+        self.assertEqual(self.allowance(self.maja), 40)
+        self.store.housekeeping()
+        self.assertEqual(self.allowance(self.maja), 40)
+
+    def test_zero_age_means_no_requirement(self):
+        self.store.set_setting('min_tasks_age', 0)
+        self.clock.advance(days=7)
+        self.store.housekeeping()
+        self.assertEqual(self.allowance(self.maja), 20)
+        self.assertIsNone(self.store.kid_view(self.maja['token'])['allowance_rule'])
+
+    def test_automation_tells_the_child(self):
+        self.store.update_kid(self.maja['id'], notify='mobile_app_maja')
+        ha = StubHA()
+        auto = Automation(self.store, ha, self.clock)
+        self.clock.advance(days=7)
+        auto.tick()
+        self.assertEqual([(m[0], m[1]) for m in ha.sent], [('mobile_app_maja', 'Lommepenge')])
+
+
+class DutyTests(unittest.TestCase):
+    """Pligter uden betaling: med frist og træk, hvis de ikke bliver lavet."""
+
+    def setUp(self):
+        self.clock = Clock(monday())
+        self.store = Store(None, self.clock)
+        self.emil = self.store.add_kid('Emil', 8)
+        self.maja = self.store.add_kid('Maja', 12)
+        self.events = []
+        self.store.listener = self.events.append
+        self.store._credit(self.emil['id'], 10, 'bonus', 'Start')
+        self.store._credit(self.maja['id'], 2, 'bonus', 'Start')
+
+    def test_duty_is_shown_with_deadline_and_fine_is_taken_if_not_done(self):
+        duty = self.store.add_duty('Ryd dit værelse', [self.emil['id'], self.maja['id']], '2026-11-17', '18:00', 5)
+        self.assertEqual((duty['price'], duty['duty']), (0, {'due': '2026-11-17T18:00', 'fine': 5}))
+        item = self.store.kid_view(self.emil['token'])['items'][0]
+        self.assertEqual(item['duty'], {'due': '2026-11-17T18:00', 'fine': 5})
+        self.assertEqual(item['price'], 0)
+        maja_item = self.store.kid_view(self.maja['token'])['items'][0]
+        self.store.mark_done(self.maja['token'], maja_item['id'])
+        self.assertEqual(self.events[-1], {'kind': 'done', 'source': 'duty', 'title': 'Ryd dit værelse',
+                                           'kid': 'Maja', 'task_id': duty['id']})
+        self.clock.advance(days=1, hours=9, minutes=59)
+        self.assertEqual(self.store.balance(self.emil['id']), 10)
+        self.clock.advance(minutes=2)
+        self.assertEqual(self.store.kid_view(self.emil['token'])['items'], [])   # ikke lavet igen
+        self.assertEqual(self.store.balance(self.emil['id']), 5)
+        self.assertEqual(self.store.balance(self.maja['id']), 2)                 # Maja nåede det
+        entry = self.store.data['ledger'][-1]
+        self.assertEqual((entry['kind'], entry['amount'], entry['note']), ('penalty', -5, 'Ryd dit værelse'))
+        self.assertEqual(self.store.admin_state()['duties'][0]['kids'],
+                         [{'name': 'Emil', 'color': self.emil['color'], 'status': 'missed'},
+                          {'name': 'Maja', 'color': self.maja['color'], 'status': 'wait'}])
+        self.clock.advance(days=8)
+        self.store.housekeeping()
+        self.assertEqual(self.store.admin_state()['duties'], [])
+
+    def test_fine_never_goes_below_zero_and_whole_day_without_time(self):
+        duty = self.store.add_duty('Fej', [self.maja['id']], '2026-11-16', '', 10)
+        self.assertEqual(duty['duty']['due'], '2026-11-16T23:59')
+        self.clock.advance(hours=16)
+        self.store.housekeeping()
+        self.assertEqual(self.store.balance(self.maja['id']), 0)
+
+    def test_bad_duties_are_refused(self):
+        for kids, date, time in (([], '2026-11-17', ''), (['nope'], '2026-11-17', ''),
+                                 ([self.emil['id']], 'i morgen', ''), ([self.emil['id']], '2026-11-17', '25:00'),
+                                 ([self.emil['id']], '2026-11-16', '07:00')):
+            with self.assertRaises(Problem):
+                self.store.add_duty('Ryd op', kids, date, time, 5)
+
+
+class MealTests(unittest.TestCase):
+    """Maddage fra Madplan."""
+
+    def setUp(self):
+        self.clock = Clock(monday())
+        self.store = Store(None, self.clock)
+        self.silas = self.store.add_kid('Silas', 12)
+        self.events = []
+        self.store.listener = self.events.append
+
+    def meal(self, **kw):
+        data = {'person': 'person.silas', 'kid': 'silas', 'date': '2026-11-17', 'meal': 'Lasagne',
+                'time': '18:00', 'recipe': 'Brun kødet.\nLæg lag.', 'ingredients': ['Hakket oksekød', 'Pasta'],
+                'url': 'https://example.com/lasagne'}
+        data.update(kw)
+        return self.store.add_meal(data)
+
+    def test_meal_day_appears_on_the_day_with_recipe_and_is_updated_not_doubled(self):
+        task = self.meal()
+        self.assertEqual((task['title'], task['price']), ('Maddag: Lasagne', 0))
+        self.assertEqual(self.store.kid_view(self.silas['token'])['items'], [])   # først i morgen
+        self.assertNotIn(task['id'], [t['id'] for t in self.store.admin_state()['duties']])
+        self.store.set_setting('meal_price', 10)
+        self.meal(meal='Tacos', ingredients=['Tortillas'])
+        tasks = [t for t in self.store.data['tasks'] if t.get('meal')]
+        self.assertEqual([(t['title'], t['price']) for t in tasks], [('Maddag: Tacos', 10)])
+        self.clock.advance(days=1)
+        items = self.store.kid_view(self.silas['token'])['items']
+        self.assertEqual([(i['title'], i['price']) for i in items], [('Maddag: Tacos', 10)])
+        self.assertEqual(items[0]['meal']['ingredients'], ['Tortillas'])
+        self.assertEqual(items[0]['meal']['time'], '18:00')
+        self.assertEqual(items[0]['meal']['url'], 'https://example.com/lasagne')
+        self.store.mark_done(self.silas['token'], items[0]['id'])
+        self.assertEqual(self.events[-1], {'kind': 'done', 'source': 'meal', 'meal': 'Tacos',
+                                           'title': 'Maddag: Tacos', 'kid': 'Silas', 'task_id': tasks[0]['id']})
+
+    def test_unknown_child_or_bad_data_is_ignored(self):
+        self.assertIsNone(self.meal(kid='Bo', person='person.bo'))
+        self.assertIsNone(self.meal(date='i morgen'))
+        self.assertIsNone(self.meal(meal=''))
+        self.assertIsNotNone(self.meal(kid='', person='person.silas'))     # navnet fra personen
+        task = self.meal(url='javascript:alert(1)', time='sen', ingredients='ikke en liste')
+        self.assertEqual((task['meal']['url'], task['meal']['time'], task['meal']['ingredients']), ('', '', []))
+
+    def test_meal_day_is_not_left_hanging(self):
+        self.meal(date='2026-11-16')
+        self.assertEqual(len(self.store.kid_view(self.silas['token'])['items']), 1)
+        self.clock.advance(days=1)
+        self.assertEqual(self.store.kid_view(self.silas['token'])['items'], [])
+        self.assertEqual(self.store.balance(self.silas['id']), 0)
+        self.clock.advance(days=2)
+        self.store.housekeeping()
+        self.assertEqual([t for t in self.store.data['tasks'] if t.get('meal')], [])
+
+
 class NtfyTests(unittest.TestCase):
     def test_message_goes_to_ntfy_with_topic_and_link(self):
         got = []
@@ -1348,6 +1662,68 @@ class ServerTests(unittest.TestCase):
         _, state = self.call(self.adm, '/api/setup', {'rows': rows})
         again = len([t for t in state['tasks'] if t['title'] == 'Test-opgave'])
         self.assertEqual((count, again), (1, 1))
+
+    def test_ha_events_only_from_home_assistant(self):
+        import server
+        body = {'event': 'madplan_cook', 'data': {'kid': 'Lina', 'date': '2026-11-16', 'meal': 'Suppe'}}
+        status, state = self.call(self.adm, '/api/kids', {'name': 'Lina', 'age': 11})
+        token = state['kids'][-1]['token']
+        self.assertEqual(self.call(self.kid, '/_ha/event', body)[0], 404)
+        self.assertEqual(self.call(self.adm, '/_ha/event', body)[0], 404)
+        old = server.HA_CORE
+        server.HA_CORE = '127.0.0.1'
+        try:
+            status, answer = self.call(self.kid, '/_ha/event', body)
+            self.assertEqual((status, answer), (200, {'ok': True, 'done': True}))
+            items = [i for i in self.call(self.kid, '/k/%s/api/state' % token)[1]['items'] if i.get('meal')]
+            self.assertEqual([i['title'] for i in items], ['Maddag: Suppe'])
+            self.assertEqual(self.call(self.kid, '/_ha/event', {'event': 'noget_andet', 'data': {}})[1]['done'], False)
+            self.store.add_rule('Tørretumbler', 'sensor.tumbler_effekt', 'Fold tøjet', 8)
+            self.store.fire_rule(self.store.data['rules'][-1]['id'])
+            answer = self.call(self.kid, '/_ha/event', {'event': 'hus_chat_machine',
+                                                        'data': {'kind': 'emptied', 'machine': 'dryer', 'name': 'Far'}})[1]
+            self.assertTrue(answer['done'])
+            self.assertFalse(any(t['title'] == 'Fold tøjet' for t in self.store.data['tasks']))
+        finally:
+            server.HA_CORE = old
+        # og Pligt-pilot fortæller selv Home Assistant, når en opgave fjernes eller laves
+        item = items[0]
+        self.call(self.kid, '/k/%s/api/items/%s/done' % (token, item['id']), {})
+        import time
+        for _ in range(40):
+            fired = [json.loads(c[2]) for c in FakeHA.calls if c[0] == '/events/pligt_pilot_task']
+            if len(fired) >= 2:
+                break
+            time.sleep(0.05)
+        self.assertEqual([(f['kind'], f['source']) for f in fired], [('removed', 'machine'), ('done', 'meal')])
+        self.assertEqual(fired[0]['machine'], 'dryer')
+
+    def test_house_duty_and_settings_through_http(self):
+        status, state = self.call(self.adm, '/api/kids', {'name': 'Otto', 'age': 13})
+        kid = state['kids'][-1]
+        status, state = self.call(self.adm, '/api/duties', {'title': 'Tøm opvaskeren', 'kids': [kid['id']],
+                                                            'date': '2026-11-20', 'time': '17:00', 'fine': 5})
+        self.assertEqual(status, 200)
+        self.assertEqual(state['duties'][-1]['title'], 'Tøm opvaskeren')
+        items = self.call(self.kid, '/k/%s/api/state' % kid['token'])[1]['items']
+        self.assertEqual([i['duty'] for i in items if i['title'] == 'Tøm opvaskeren'],
+                         [{'due': '2026-11-20T17:00', 'fine': 5}])
+        status, _ = self.call(self.adm, '/api/duties', {'title': 'X', 'kids': [], 'date': '2026-11-20'})
+        self.assertEqual(status, 400)
+        status, state = self.call(self.adm, '/api/settings', {'auto_task_hours': 6, 'min_tasks_age': 13,
+                                                              'min_tasks_week': 4, 'meal_price': 5})
+        self.assertEqual({k: state['settings'][k] for k in ('auto_task_hours', 'min_tasks_age',
+                                                            'min_tasks_week', 'meal_price')},
+                         {'auto_task_hours': 6, 'min_tasks_age': 13, 'min_tasks_week': 4, 'meal_price': 5})
+        self.call(self.adm, '/api/settings', {'min_tasks_age': 0, 'meal_price': 0})
+        status, state = self.call(self.adm, '/api/rules', {'name': 'Opvaskemaskine', 'entity': 'sensor.opvask',
+                                                           'title': 'Tøm den', 'price': 5,
+                                                           'door': 'binary_sensor.opvask_dor'})
+        rule = state['rules'][-1]
+        self.assertEqual(rule['door'], 'binary_sensor.opvask_dor')
+        status, state = self.call(self.adm, '/api/rules/%s' % rule['id'], {'door': ''})
+        self.assertEqual(state['rules'][-1]['door'], '')
+        self.assertEqual(self.call(self.adm, '/api/rules/%s' % rule['id'], {'door': 'light.x'})[0], 400)
 
     def test_parent_server_can_be_limited_to_ingress(self):
         locked, _ = serve(self.app, 'admin', 0, allow_from={'172.30.32.2'}, host='127.0.0.1')
