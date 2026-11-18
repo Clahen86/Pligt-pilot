@@ -133,6 +133,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     document.documentElement.lang = data.lang === 'nb' ? 'nb' : data.lang;
     document.title = T(document.title);
   }
+  window.ppT = function (s) { return T(s); };
   function T(s) {
     if (!s || !I18N.rx) { return s; }
     var core = String(s).trim();
@@ -168,7 +169,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       .then(function () { I18N.loading = false; render(); });
   }
   // Forældreside med eget link (/p/...): kan lægges på hjemmeskærmen som en app
-  if (/^\/p\/[^/]+\//.test(location.pathname)) {
+  if (/\/p\/[^/]+\//.test(location.pathname)) {
     ['manifest', 'apple-touch-icon'].forEach(function (rel) {
       var l = document.createElement('link'); l.rel = rel; l.href = rel === 'manifest' ? 'manifest.json' : 'icon.png'; document.head.appendChild(l);
     });
@@ -477,7 +478,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     return h === 'localhost' || /\.local$/.test(h) || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
   }
   function linkBase() {
-    if (state.via_link) { return location.origin; }
+    if (state.via_link) { return location.origin + location.pathname.replace(/\/p\/.*$/, ''); }
     if (state.public_url) { return state.public_url.replace(/\/$/, ''); }
     if (state.local_url) { return state.local_url; }
     if (privateHost(location.hostname)) { return 'http://' + location.hostname + ':8099'; }
@@ -1039,5 +1040,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   load();
 })();
 </script>
+<!--install-->
 </body>
 </html>

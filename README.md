@@ -17,11 +17,21 @@ Børnene åbner et personligt link på telefon eller tablet. Ingen HA-konto, ing
 
 Se `pligt-pilot/DOCS.md` for opsætning og indstillinger.
 
+### Links der også virker ude (valgfrit)
+
+Har du Nabu Casa (eller en adresse udefra til Home Assistant), kan børnenes og forældrenes links også virke væk hjemmefra, uden at åbne en port og stadig uden login:
+
+1. Tilføj repo'et i HACS som **Custom repository** (type *Integration*) og installér **Pligt-pilot**. Genstart Home Assistant.
+2. **Indstillinger → Enheder og tjenester → Tilføj integration → Pligt-pilot**. Den finder selv add-on'en.
+3. Linkene starter nu med din Nabu Casa-adresse (`https://….ui.nabu.casa/pligter/…`). Send dem til børnene igen.
+
+Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
+
 ## Det kan den
 
 ### Til børnene
 
-- **Personligt link:** ingen login. Barnet kan scanne en QR-kode og lægge siden på startskærmen som en app.
+- **Personligt link:** ingen login. Barnet kan scanne en QR-kode og lægge siden på startskærmen som en app. Siden viser selv en **Installer**-knap, når telefonen kan.
 - **Tre tryk:** åbn, tryk på opgaven, tryk "Færdig". Hver opgave har et tydeligt ikon, så de mindste kan se, hvad den går ud på.
 - **Ledige opgaver** står øverst i gult. Den første, der tager dem, får dem.
 - **Rigtige kroner:** saldo, ugegraf, sparemål og ønsker. Et ønske kan blive til barnets sparemål med ét tryk.

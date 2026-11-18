@@ -1250,6 +1250,44 @@ class ServerTests(unittest.TestCase):
         with urllib.request.urlopen(self.kid + '/p/%s/icon.png' % token) as resp:
             self.assertEqual(resp.headers.get_content_type(), 'image/png')
 
+    def test_kid_page_can_be_installed_and_offers_a_button(self):
+        status, state = self.call(self.adm, '/api/kids', {'name': 'Ida', 'age': 9})
+        token = state['kids'][-1]['token']
+        status, page = self.call(self.kid, '/k/%s/' % token)
+        self.assertIn('beforeinstallprompt', page)
+        self.assertNotIn('<!--install-->', page)
+        status, manifest = self.call(self.kid, '/k/%s/manifest.json' % token)
+        self.assertIn('512x512', manifest)
+        with urllib.request.urlopen(self.kid + '/k/%s/icon-512.png' % token) as resp:
+            self.assertEqual(resp.headers.get_content_type(), 'image/png')
+
+    def test_redirect_to_the_slash_is_relative_so_it_works_behind_home_assistant(self):
+        status, state = self.call(self.adm, '/api/kids', {'name': 'Bo', 'age': 7})
+        token = state['kids'][-1]['token']
+
+        class NoFollow(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, *args):
+                return None
+        try:
+            urllib.request.build_opener(NoFollow).open(self.kid + '/k/%s' % token)
+            self.fail('expected a redirect')
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 301)
+            self.assertEqual(err.headers['Location'], token + '/')
+
+    def test_outside_address_from_home_assistant_is_used_for_links(self):
+        self.assertEqual(self.app.outside_url(), 'http://hjem.local:8099')
+        self.app.learn_outside('https://abc.ui.nabu.casa/pligter')
+        self.assertEqual(self.call(self.adm, '/api/state')[1]['public_url'], 'https://abc.ui.nabu.casa/pligter')
+        self.assertEqual(self.app.ha.public_url, 'https://abc.ui.nabu.casa/pligter')
+        self.app.learn_outside('javascript:alert(1)')  # never taken
+        self.assertEqual(self.app.outside_url(), 'https://abc.ui.nabu.casa/pligter')
+        self.app.learn_outside('')  # Home Assistant has no outside address any more: back to public_url
+        self.assertEqual(self.app.outside_url(), 'http://hjem.local:8099')
+
+    def test_only_home_assistant_may_say_hello(self):
+        self.assertEqual(self.call(self.kid, '/_ha/hello')[0], 404)
+
     def test_parent_link_cannot_manage_parents_or_download_backup(self):
         status, state = self.call(self.adm, '/api/parents', {'name': 'Far'})
         token = state['parents'][-1]['token']

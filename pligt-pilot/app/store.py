@@ -1622,6 +1622,10 @@ class Store:
                 value = (value or '').strip()
                 if value and not re.match(r'^([01]\d|2[0-3]):[0-5]\d$', value):
                     raise Problem('Tidspunktet skal være som 17:00')
+            elif key == 'outside_url':
+                value = (value or '').strip().rstrip('/')
+                if value and not re.match(r'^https?://[^\s/]+(/[A-Za-z0-9_./-]*)?$', value):
+                    raise Problem('Forkert adresse')
             elif key == 'celebrate_light':
                 value = (value or '').strip().lower()
                 if value and not (ENTITY.match(value) and value.startswith('light.')):

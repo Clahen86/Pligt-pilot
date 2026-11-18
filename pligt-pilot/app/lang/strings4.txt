@@ -22,3 +22,8 @@ Først til mølle. Tag den, før en anden gør. || First come, first served. Gra
 Ledige opgaver || Open chores || Freie Aufgaben || Lediga uppgifter || Ledige oppgaver
 Billede || Picture || Bild || Bild || Bilde
 Automatisk || Automatic || Automatisch || Automatiskt || Automatisk
+Læg Pligter på hjemmeskærmen || Put Chores on your home screen || Pflichten auf den Startbildschirm legen || Lägg Sysslor på hemskärmen || Legg Plikter på hjemskjermen
+Så åbner den som en app med ét tryk. || Then it opens like an app with one tap. || Dann öffnet es sich wie eine App mit einem Tippen. || Då öppnas den som en app med ett tryck. || Da åpnes den som en app med ett trykk.
+Tryk på Del-knappen og vælg »Føj til hjemmeskærm«. || Tap the Share button and choose “Add to Home Screen”. || Tippe auf Teilen und wähle „Zum Home-Bildschirm“. || Tryck på Dela och välj ”Lägg till på hemskärmen”. || Trykk på Del-knappen og velg «Legg til på Hjem-skjerm».
+Installer || Install || Installieren || Installera || Installer
+Ikke nu || Not now || Nicht jetzt || Inte nu || Ikke nå

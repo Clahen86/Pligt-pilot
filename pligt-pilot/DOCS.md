@@ -15,6 +15,12 @@ Finder appen ikke din vaskemaskine eller tørretumbler på navnet, viser Huset e
 
 Lav fx to regler: vaskemaskinen giver "Flyt tøj til tørretumbleren", og tørretumbleren giver "Tag tøj ud og fold det".
 
+## Links der virker ude (Nabu Casa)
+
+Installér integrationen **Pligt-pilot** (fra samme repo via HACS) og tilføj den under Indstillinger → Enheder og tjenester. Så går linkene gennem Home Assistant: `https://….ui.nabu.casa/pligter/k/…`. De virker overalt, med https, uden åbne porte og uden login. Integrationen fortæller selv add-on'en adressen, så `public_url` ikke skal udfyldes. Uden Nabu Casa bruges Home Assistants egen adresse udefra, hvis den findes. Ellers virker linkene kun hjemme som før.
+
+Med Nabu Casa kan du springe Duck DNS-afsnittet herunder over: beskeder direkte fra linket virker også, fordi adressen er https.
+
 ## Beskeder direkte fra linket (uden app)
 
 Når børnenes side kører med https, kan barnet trykke **Slå beskeder til** på sin side. Så kommer beskederne som almindelige notifikationer på telefonen, uden ntfy og uden Home Assistant-appen. Det kræver et gyldigt certifikat. Det kan du få gratis og uden at åbne porte på routeren:

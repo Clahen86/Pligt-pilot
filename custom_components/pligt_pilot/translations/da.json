@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Pligt-pilot ude",
+        "description": "Børnenes og forældrenes links virker så også ude – gennem Nabu Casa eller Home Assistants egen adresse udefra.",
+        "data": { "host": "Add-on'ens adresse" }
+      }
+    },
+    "error": { "no_addon": "Fandt ikke Pligt-pilot-add-on'en. Er den installeret og startet? Eller skriv dens adresse (fx 1fb5ace7-pligt-pilot)." },
+    "abort": { "already_configured": "Pligt-pilot er allerede sat op." }
+  }
+}

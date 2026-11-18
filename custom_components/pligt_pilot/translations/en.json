@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Pligt-pilot away from home",
+        "description": "The children's and parents' links will also work away from home, through Nabu Casa or Home Assistant's own outside address.",
+        "data": { "host": "The add-on's address" }
+      }
+    },
+    "error": { "no_addon": "The Pligt-pilot add-on wasn't found. Is it installed and started? Or type its address (e.g. 1fb5ace7-pligt-pilot)." },
+    "abort": { "already_configured": "Pligt-pilot is already set up." }
+  }
+}

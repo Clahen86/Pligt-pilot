@@ -40,6 +40,7 @@ def main():
                        options.get('notify_service', ''), options.get('ntfy_server', ''),
                        options.get('public_url', ''))
     app = App(store, ha, options)
+    ha.public_url = app.outside_url().rstrip('/')
     if push.AVAILABLE:
         app.vapid = push.Vapid(os.path.join(data_dir, 'vapid.pem'))
         ha.pusher = push.Pusher(store, app.vapid)

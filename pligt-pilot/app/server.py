@@ -41,7 +41,7 @@ KID_UNBUY = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/claims/([a-f0-9]{10})/can
 KID_WISH = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/wish$')
 KID_CLAIM = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/tasks/([a-f0-9]{10})/claim$')
 
-KID_FILE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/(sw\.js|manifest\.json|icon\.png)$')
+KID_FILE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/(sw\.js|manifest\.json|icon\.png|icon-512\.png)$')
 KID_PUSH_KEY = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/push_key$')
 KID_PUSH = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/push$')
 
@@ -78,6 +78,8 @@ def _icon_png(size=192):
 
 
 ICON = _icon_png()
+ICON_BIG = _icon_png(512)
+HA_CORE = '172.30.32.1'  # Home Assistant itself on the Supervisor's network: only it may tell the outside address
 
 
 class App:
@@ -87,6 +89,20 @@ class App:
         self.options = options or {}
         self.vapid = None
         self.ha.translator = lambda kid, text: i18n.translate(store.lang_of(kid), text)
+
+    def outside_url(self):
+        """The address that works away from home: the one Home Assistant gave (Nabu Casa or its own), else public_url."""
+        return self.store.data['settings'].get('outside_url') or self.options.get('public_url', '')
+
+    def learn_outside(self, url):
+        url = (url or '').strip().rstrip('/')
+        if url != (self.store.data['settings'].get('outside_url') or ''):
+            try:
+                self.store.set_setting('outside_url', url)
+                self.ha.public_url = self.outside_url().rstrip('/')
+                log.info('Adresse udefra fra Home Assistant: %s', url or '(ingen)')
+            except Exception:  # noqa: BLE001
+                log.warning('Forkert adresse fra Home Assistant: %s', url)
 
 
 def _read(name):
@@ -121,7 +137,8 @@ def make_handler(app, role, allow_from=None):
             self._send(status, body, 'application/json; charset=utf-8')
 
         def _page(self, name):
-            self._send(200, _read(name), 'text/html; charset=utf-8')
+            page = _read(name).replace(b'<!--install-->', b'<script>' + _read('install.js') + b'</script>')
+            self._send(200, page, 'text/html; charset=utf-8')
 
         def _problem(self, err):
             self._json({'error': err.message}, err.status)
@@ -160,6 +177,10 @@ def make_handler(app, role, allow_from=None):
                 if not self._allowed():
                     return self._json({'error': 'Ikke tilladt'}, 403)
                 if role == 'kid':
+                    if self.client_address[0] == HA_CORE and self.headers.get('X-Pligt-Outside') is not None:
+                        app.learn_outside(self.headers.get('X-Pligt-Outside'))
+                    if path == '/_ha/hello' and self.client_address[0] == HA_CORE:
+                        return self._json({'ok': True})
                     self._kid(method, path)
                 else:
                     self._admin(method, path)
@@ -179,19 +200,19 @@ def make_handler(app, role, allow_from=None):
                     return self._json({'error': 'Linket passer ikke'}, 404)
                 if m.group(2) is None:
                     self.send_response(301)
-                    self.send_header('Location', path + '/')
+                    self.send_header('Location', path.rstrip('/').rsplit('/', 1)[-1] + '/')
                     self.end_headers()
                     return
-                if method == 'GET' and m.group(2) in ('/manifest.json', '/sw.js', '/icon.png'):
+                if method == 'GET' and m.group(2) in ('/manifest.json', '/sw.js', '/icon.png', '/icon-512.png'):
                     if m.group(2) == '/sw.js':
                         return self._send(200, _read('sw.js'), 'application/javascript; charset=utf-8')
-                    if m.group(2) == '/icon.png':
-                        return self._send(200, ICON, 'image/png')
+                    if m.group(2) in ('/icon.png', '/icon-512.png'):
+                        return self._send(200, ICON if m.group(2) == '/icon.png' else ICON_BIG, 'image/png')
                     manifest = {'name': 'Pligter – forælder', 'short_name': parent['name'][:12] or 'Pligter',
                                 'start_url': './', 'scope': './', 'display': 'standalone',
                                 'background_color': '#FFF6E9', 'theme_color': '#0B7A70',
-                                'icons': [{'src': 'icon.png', 'sizes': '192x192', 'type': 'image/png',
-                                           'purpose': 'any'}]}
+                                'icons': [{'src': 'icon.png', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
+                                          {'src': 'icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'}]}
                     return self._send(200, json.dumps(manifest).encode('utf-8'), 'application/manifest+json')
                 self.via_parent = parent
                 return self._admin(method, m.group(2))
@@ -201,7 +222,7 @@ def make_handler(app, role, allow_from=None):
                     return self._json({'error': 'Linket passer ikke'}, 404)
                 if not path.endswith('/'):
                     self.send_response(301)
-                    self.send_header('Location', path + '/')
+                    self.send_header('Location', path.rstrip('/').rsplit('/', 1)[-1] + '/')
                     self.end_headers()
                     return
                 return self._page('kid.html')
@@ -213,13 +234,13 @@ def make_handler(app, role, allow_from=None):
                 name = m.group(2)
                 if name == 'sw.js':
                     return self._send(200, _read('sw.js'), 'application/javascript; charset=utf-8')
-                if name == 'icon.png':
-                    return self._send(200, ICON, 'image/png')
+                if name in ('icon.png', 'icon-512.png'):
+                    return self._send(200, ICON if name == 'icon.png' else ICON_BIG, 'image/png')
                 manifest = {'name': 'Pligter', 'short_name': kid['name'][:12], 'start_url': './',
                             'scope': './', 'display': 'standalone', 'lang': 'da',
                             'background_color': '#FFF6E9', 'theme_color': kid['color'],
-                            'icons': [{'src': 'icon.png', 'sizes': '192x192', 'type': 'image/png',
-                                       'purpose': 'any'}]}
+                            'icons': [{'src': 'icon.png', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
+                                      {'src': 'icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'}]}
                 return self._send(200, json.dumps(manifest).encode('utf-8'),
                                   'application/manifest+json')
             m = KID_PUSH_KEY.match(path)
@@ -320,7 +341,7 @@ def make_handler(app, role, allow_from=None):
                     return self._page('admin.html')
                 if path == '/api/state':
                     state = store.admin_state()
-                    state['public_url'] = app.options.get('public_url', '')
+                    state['public_url'] = app.outside_url()
                     state['notify_on'] = bool(app.ha.enabled and app.ha.notify_service)
                     state['kid_https'] = bool(app.options.get('https'))
                     ip = app.ha.local_ip()

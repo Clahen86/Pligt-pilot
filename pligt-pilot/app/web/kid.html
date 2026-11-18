@@ -136,6 +136,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     document.documentElement.lang = data.lang === 'nb' ? 'nb' : data.lang;
     document.title = T(document.title);
   }
+  window.ppT = function (s) { return T(s); };
   function T(s) {
     if (!s || !I18N.rx) { return s; }
     var core = String(s).trim();
@@ -520,5 +521,6 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   load().then(detectPush).then(render);
 })();
 </script>
+<!--install-->
 </body>
 </html>
