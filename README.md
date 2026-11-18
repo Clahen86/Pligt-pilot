@@ -51,6 +51,7 @@ Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
 
 - **Godkend med ét tryk**, eller godkend alt på én gang. Opgaver kan kræve et foto som bevis.
 - **Giv en opgave med ét tryk:** hurtigknapper øverst på Oversigt med de mest brugte opgaver (eller dem, du har fastgjort). Hver knap viser **Alle** eller **Én**: en "Alle"-opgave (fx red din seng) sendes med ét tryk til hvert barn som deres egen; en "Én"-opgave (fx dæk bord) giver du til ét barn eller gør ledig for alle. Appen gætter ud fra navnet på 5 sprog, og du kan rette det på opgaven.
+- **Fast eller kun når du giver den:** en fast opgave kommer af sig selv, evt. kun på faste ugedage (fx søndag). En opgave, der står til "Kun når jeg giver den", ser børnene aldrig af sig selv, men den kan gives med hurtigknapperne.
 - **Opsætning på få minutter:** en startpakke opretter opgaver, der passer til børnenes alder. Appen kan også foreslå opgaver ud fra husets rum og enheder.
 - **Fleksible opgaver:** pris, gentagelse, flere gange om dagen, kun til bestemte børn, sæsonopgaver (fx løv om efteråret) og låsning efter alder, der åbner af sig selv, når barnet har fødselsdag.
 - **Årstid og vejr af sig selv:** græs, hæk, løv, havemøbler og sne får selv de rigtige måneder og højst én gang om ugen (hæk hver 3. uge), ud fra titlen. Med en vejr-entity i Home Assistant venter udendørs opgaver på en tør dag, og sneopgaver kommer kun, når det har sneet.

@@ -104,3 +104,21 @@ Du laver mad i dag: || You are cooking today: || Du kochst heute: || Du lagar ma
  Tryk for at se opskriften. ||  Tap to see the recipe. ||  Tippe, um das Rezept zu sehen. ||  Tryck för att se receptet. ||  Trykk for å se oppskriften.
 =Maddag || Cooking day || Kochtag || Matlagningsdag || Middagsdag
 Klar kl. || Ready at || Fertig um || Klart kl. || Klar kl.
+# Kun når jeg giver den, faste dage
+Hvornår får børnene den? || When do the children get it? || Wann bekommen die Kinder sie? || När får barnen den? || Når får barna den?
+=Fast || Fixed || Fest || Fast || Fast
+Kun når jeg giver den || Only when I give it || Nur wenn ich sie gebe || Bara när jag ger den || Bare når jeg gir den
+Når jeg giver den || When I give it || Wenn ich sie gebe || När jag ger den || Når jeg gir den
+Kommer af sig selv, som gentagelsen siger. || Comes by itself, as often as it repeats. || Kommt von selbst, so oft wie sie sich wiederholt. || Kommer av sig själv, så ofta som den upprepas. || Kommer av seg selv, så ofte som den gjentas.
+Børnene ser den aldrig af sig selv. Giv den med hurtigknapperne eller + Tilføj. || The children never see it by themselves. Give it with the quick buttons or + Add. || Die Kinder sehen sie nie von selbst. Gib sie mit den Schnelltasten oder + Hinzufügen. || Barnen ser den aldrig av sig själva. Ge den med snabbknapparna eller + Lägg till. || Barna ser den aldri av seg selv. Gi den med hurtigknappene eller + Legg til.
+Faste dage || Fixed days || Feste Tage || Fasta dagar || Faste dager
+Ingen valgt: alle dage. En ugentlig opgave kommer på den første valgte dag. || None chosen: every day. A weekly task comes on the first chosen day. || Keiner gewählt: jeden Tag. Eine wöchentliche Aufgabe kommt am ersten gewählten Tag. || Ingen vald: alla dagar. En veckouppgift kommer på den första valda dagen. || Ingen valgt: alle dager. En ukentlig oppgave kommer på den første valgte dagen.
+Ukendte ugedage || Unknown weekdays || Unbekannte Wochentage || Okända veckodagar || Ukjente ukedager
+Startpakken er oprettet. Slet det, du ikke vil have. || The starter pack was created. Delete what you don't want. || Das Startpaket wurde erstellt. Lösche, was du nicht willst. || Startpaketet är skapat. Ta bort det du inte vill ha. || Startpakken er opprettet. Slett det du ikke vil ha.
+Mandag || Monday || Montag || Måndag || Mandag
+Tirsdag || Tuesday || Dienstag || Tisdag || Tirsdag
+Onsdag || Wednesday || Mittwoch || Onsdag || Onsdag
+Torsdag || Thursday || Donnerstag || Torsdag || Torsdag
+Fredag || Friday || Freitag || Fredag || Fredag
+Lørdag || Saturday || Samstag || Lördag || Lørdag
+Søndag || Sunday || Sonntag || Söndag || Søndag

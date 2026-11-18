@@ -348,6 +348,26 @@ class Store:
                 self._save()
 
     @staticmethod
+    def _clean_days(value):
+        """Faste ugedage (0 = mandag). Tom liste: alle dage som før."""
+        try:
+            days = sorted({int(x) for x in (value or [])})
+        except (TypeError, ValueError):
+            raise Problem('Ukendte ugedage')
+        if any(x < 0 or x > 6 for x in days):
+            raise Problem('Ukendte ugedage')
+        return days
+
+    def _on_day(self, task, d):
+        """Faste dage: en daglig opgave kun på de valgte dage, en ugentlig fra den første valgte dag i perioden."""
+        days = task.get('days') or []
+        if not days:
+            return True
+        if _period_kind(self._period(task, d)) == 'D':
+            return d.weekday() in days
+        return d.weekday() >= days[0]
+
+    @staticmethod
     def _clean_times(value):
         try:
             times = int(value or 1)
@@ -568,7 +588,7 @@ class Store:
     # ---- opgaver -------------------------------------------------------
     def add_task(self, title, price, room='', repeat='daily', open_job=False,
                  kids=None, age_min=0, age_max=99, times=1, photo=False, auto_rule=None,
-                 season='', surprise=False, icon='', auto_season=None):
+                 season='', surprise=False, icon='', auto_season=None, days=None, active=True):
         with self.lock:
             if repeat not in REPEATS:
                 raise Problem('Ukendt gentagelse')
@@ -588,8 +608,10 @@ class Store:
                 'surprise': bool(surprise),
                 'auto_season': (not season) if auto_season is None else bool(auto_season),
                 'created': self._now().isoformat(timespec='seconds'),
-                'active': True,
+                'active': bool(active),             # False: kun når forælderen giver den
             }
+            if days:
+                task['days'] = self._clean_days(days)
             if auto_rule:
                 task['auto_rule'] = auto_rule
             self.data['tasks'].append(task)
@@ -612,7 +634,9 @@ class Store:
             if 'open' in fields:
                 task['open'] = bool(fields['open'])
             if 'active' in fields:
-                task['active'] = bool(fields['active'])
+                task['active'] = bool(fields['active'])     # False: kun når forælderen giver den
+            if 'days' in fields:
+                task['days'] = self._clean_days(fields['days'])
             if 'kids' in fields:
                 task['kids'] = list(fields['kids'] or [])
             if 'times' in fields:
@@ -667,6 +691,7 @@ class Store:
             copy.update({'id': _id(), 'title': (src['title'] + ' (kopi)')[:60],
                          'created': self._now().isoformat(timespec='seconds')})
             copy['kids'] = list(src.get('kids') or [])
+            copy['days'] = list(src.get('days') or [])
             self.data['tasks'].append(copy)
             self._save()
             return copy
@@ -838,6 +863,8 @@ class Store:
                 out.append('%s har endnu ikke åbnet sit link. Send det igen.' % k['name'])
         since = (today - dt.timedelta(days=14)).isoformat()
         for t in self.data['tasks']:
+            if not t.get('active', True):
+                continue                    # kun når forælderen giver den: ikke barnets skyld
             n = sum(1 for i in self.data['items']
                     if i['task_id'] == t['id'] and i['status'] == 'missed' and (i['created'] or '')[:10] >= since)
             if n >= 3:
@@ -973,12 +1000,14 @@ class Store:
                     self._credit(it['kid_id'], -cut, 'penalty', it['title'], it['id'])
                 continue
             day_over = t is not None and t.get('meal') and d > self._day_end(t)
-            stale = t is None or not t['active'] or paused or expired or off_season or day_over
+            # en opgave, forælderen selv har givet, lever videre, selvom opgaven kun gives på bestilling
+            live_task = t is not None and (t['active'] or it.get('given'))
+            stale = t is None or not live_task or paused or expired or off_season or day_over
             if stale:
                 it['status'] = 'missed'
                 self.delete_photo(it['id'])
                 changed = True
-                if penalty and expired and t['active'] and not paused and not off_season \
+                if penalty and expired and live_task and not paused and not off_season \
                         and not t.get('open') and _period_kind(it['period']) == _period_kind(current):
                     cut = min(penalty, max(0, self.balance(it['kid_id'])))
                     if cut:
@@ -997,6 +1026,8 @@ class Store:
                 continue
             if self._weather_blocks(t, d):
                 continue                    # regn eller ingen sne: kommer næste gang, vejret passer
+            if not self._on_day(t, d):
+                continue                    # faste dage: ikke i dag
             period = self._period(t, d)
             for kid in self.data['kids']:
                 if kid.get('paused') or not self._in_scope(t, kid):
@@ -1067,7 +1098,7 @@ class Store:
             return jobs
         for t in self.data['tasks']:
             if not t['active'] or not t['open'] or t.get('surprise') or not self._in_scope(t, kid) \
-                    or not self._in_season(t, d) or self._weather_blocks(t, d):
+                    or not self._in_season(t, d) or self._weather_blocks(t, d) or not self._on_day(t, d):
                 continue
             period = self._period(t, d)
             taken = sum(1 for i in self.data['items'] if i['task_id'] == t['id']
@@ -1338,7 +1369,8 @@ class Store:
     # ---- hurtigknapper: giv en opgave for i dag ----------------------------
     @staticmethod
     def _giveable(task):
-        return task['active'] and not (task.get('duty') or task.get('meal') or task.get('auto_rule'))
+        """Også opgaver, der kun kommer, når forælderen giver dem (active False). Aldrig pligter, maddage og husets."""
+        return not (task.get('duty') or task.get('meal') or task.get('auto_rule'))
 
     @staticmethod
     def _each(task):
@@ -1490,6 +1522,7 @@ class Store:
                 'pending': pending,
                 'duties': self._duty_views(),
                 'icons': icons.ICONS,
+                'day_names': i18n.DAYS[self.lang_of()],
                 'tasks': [dict(t, icon_shown=t.get('icon') or icons.guess(t['title'], t['room']),
                                each=self._each(t), each_auto=t.get('each_auto', True),
                                fair=self.fairness(t['price'], t['repeat'], t.get('times', 1), t['id']),
@@ -1929,16 +1962,38 @@ class Store:
             self._save()
             return task
 
+    # ---- navne udefra (Madplan, Hus-chat) ---------------------------------
+    def kid_by_name(self, name):
+        """Barnet med navnet. Helt ens vinder, ellers det første ord i barnets navn ("Dennis" -> "Dennis opgaver").
+        Passer flere børn, gives None."""
+        wanted = ' '.join(str(name or '').split()).lower()
+        if not wanted:
+            return None
+        for test in (lambda k: ' '.join(k['name'].split()).lower() == wanted,
+                     lambda k: (k['name'].split() or [''])[0].lower() == wanted):
+            found = [k for k in self.data['kids'] if test(k)]
+            if found:
+                return found[0] if len(found) == 1 else None
+        return None
+
+    def meal_kid(self, data):
+        """Barnet til en maddag: ud fra 'kid', ellers ud fra personen (person.dennis -> dennis)."""
+        data = data if isinstance(data, dict) else {}
+        person = str(data.get('person') or '')
+        names = [str(data.get('kid') or ''),
+                 person.split('.', 1)[1].replace('_', ' ') if person.startswith('person.') else person]
+        for name in names:
+            kid = self.kid_by_name(name)
+            if kid:
+                return kid
+        return None
+
     # ---- maddage fra Madplan --------------------------------------------
     def add_meal(self, data):
         """Madplan har givet et barn en maddag. Samme barn og dato igen opdaterer opgaven. None, hvis barnet ikke findes."""
         with self.lock:
             data = data if isinstance(data, dict) else {}
-            names = [str(data.get('kid') or '')]
-            person = str(data.get('person') or '')
-            names.append(person.split('.', 1)[1].replace('_', ' ') if person.startswith('person.') else person)
-            wanted = [n.strip().lower() for n in names if n.strip()]
-            kid = next((k for n in wanted for k in self.data['kids'] if k['name'].strip().lower() == n), None)
+            kid = self.meal_kid(data)
             if not kid:
                 return None
             try:

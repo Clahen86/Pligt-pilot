@@ -4,8 +4,15 @@
 
 1. Start add-onen og åbn **Pligter** i sidemenuen.
 2. Tilføj børnene under **Børn** (navn og alder).
-3. Under **Opgaver** kan du trykke **Vis forslag**. Appen kigger på husets rum og foreslår opgaver, som du slår til eller fra.
+3. Under **Opgaver** kan du trykke **Vis forslag**. Appen kigger på husets rum og foreslår opgaver, som du vælger til eller fra.
 4. Kopiér hvert barns personlige link, send det til barnet, og vælg "Føj til hjemmeskærm" i browseren.
+
+## Fast eller kun når jeg giver den
+
+Under **Rediger** på en opgave vælger du, hvornår børnene får den:
+
+- **Fast:** den kommer af sig selv, så tit som gentagelsen siger. Vælg evt. **Faste dage** (Man–Søn). En daglig opgave kommer så kun på de dage, og en ugentlig kommer på den første valgte dag og er åben resten af ugen. Ingen dage valgt betyder alle dage. Træk for glemte opgaver tæller kun de dage, opgaven blev givet.
+- **Kun når jeg giver den:** børnene ser den aldrig af sig selv. Du giver den med hurtigknapperne eller **+ Tilføj**. Den står med mærket *Når jeg giver den* i listen.
 
 ## Giv en opgave hurtigt
 
@@ -63,6 +70,7 @@ Under **Børn → Indstillinger** kan du sætte en alder (fx 13) og et antal god
 
 Kræver integrationen **Pligt-pilot**. Den lytter efter `hus_chat_machine` og `madplan_cook` og sender dem videre til add-on'en.
 - Tømmes en maskine (eller tages den) i Hus-chat, fjernes en ledig husopgave for samme slags maskine.
+- Navnet fra Madplan og Hus-chat passer, når det er helt ens med barnets navn, eller med det første ord i det ("Dennis" passer på "Dennis opgaver"). Passer flere børn, bruges det ikke.
 - Giver Madplan et barn en maddag, får barnet opgaven "Maddag: <ret>" på dagen med opskrift og ingredienser. Prisen vælges under Indstillinger (standard 0 = en pligt uden betaling).
 - Pligt-pilot fyrer selv `pligt_pilot_task` (taken, done, removed) for husopgaver, maddage og pligter.
 
@@ -130,7 +138,7 @@ Nye sprog tilføjes i `app/lang/strings*.txt`: én linje pr. tekst, dansk først
 - **Backup:** "Hent backup af alt" nederst under Børn henter en fil med al data (ikke billederne). Gem den et sikkert sted. Den indeholder børnenes links.
 
 ## Gør det nemt
-- **Startpakke:** på Oversigt (før du har opgaver) opretter knappen "Startpakke" opgaver, der passer til børnenes alder. Du kan slå dem fra eller ændre dem bagefter.
+- **Startpakke:** på Oversigt (før du har opgaver) opretter knappen "Startpakke" opgaver, der passer til børnenes alder. Du kan slette dem eller ændre dem bagefter.
 - **Godkend alle:** knappen vises over de ventende opgaver. Opgaver med billede godkendes ikke automatisk.
 - **QR-kode:** under Børn, ved barnets link. Appen laver koden selv, uden internet.
 - **Søndagsopsummering:** kræver `notify_service`. Kan slås fra under Indstillinger.

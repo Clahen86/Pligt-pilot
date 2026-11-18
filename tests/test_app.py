@@ -1240,6 +1240,31 @@ class MealTests(unittest.TestCase):
         app.ha_event('madplan_cook', {'kid': 'Silas', 'date': today, 'meal': 'Lasagne', 'time': '18:00'})
         self.assertEqual(sent, [('Silas', 'Maddag', 'Du laver mad i dag: Lasagne. Klar kl. 18:00. Tryk for at se opskriften.')])
 
+    def test_cook_is_only_marked_told_when_the_message_went_out(self):
+        sent, ok = [], [False]
+
+        class Ha(HomeAssistant):
+            def notify_kid(self, kid, title, message):
+                sent.append(kid['name'])
+                return ok[0]
+        app = App(self.store, Ha())
+        today = self.clock().date().isoformat()
+        with self.assertLogs('pligt', 'INFO') as logs:
+            self.assertTrue(app.ha_event('madplan_cook', {'kid': 'Silas', 'date': today, 'meal': 'Suppe'}))
+        self.assertIn('Maddag til Silas: Suppe %s' % today, '\n'.join(logs.output))
+        self.assertIn('ikke sendt', '\n'.join(logs.output))
+        meal = [t for t in self.store.data['tasks'] if t.get('meal')][0]['meal']
+        self.assertNotIn('told', meal)                                      # ingen besked kom ud
+        ok[0] = True
+        app.ha_event('madplan_cook', {'kid': 'Silas', 'date': today, 'meal': 'Suppe'})
+        app.ha_event('madplan_cook', {'kid': 'Silas', 'date': today, 'meal': 'Suppe'})
+        self.assertEqual(sent, ['Silas', 'Silas'])                          # prøvet igen, så kun én gang
+        meal = [t for t in self.store.data['tasks'] if t.get('meal')][0]['meal']
+        self.assertEqual(meal['told'], today)
+        with self.assertLogs('pligt', 'WARNING') as logs:
+            self.assertFalse(app.ha_event('madplan_cook', {'kid': 'Bo', 'date': today, 'meal': 'Suppe'}))
+        self.assertIn('passer ikke', logs.output[0])
+
     def test_meal_day_is_not_left_hanging(self):
         self.meal(date='2026-11-16')
         self.assertEqual(len(self.store.kid_view(self.silas['token'])['items']), 1)
@@ -1513,11 +1538,12 @@ class QuickTests(unittest.TestCase):
         self.store.update_task(normal['id'], quick=True)
         self.store.add_duty('Pligt', [self.emil['id']], '2026-11-20')
         self.store.add_task('Ryd sne', 30, season='vinter', auto_season=False)   # ikke i sæson i november
-        off = self.store.add_task('Slukket', 3)
-        self.store.update_task(off['id'], active=False)
+        off = self.store.add_task('Når jeg giver den', 3)
+        self.store.update_task(off['id'], active=False)                   # kun når forælderen giver den: med
         self.store.add_task('Tøm vaskemaskinen', 5, 'Fra huset', 'once', True, auto_rule='abcdef1234')   # husets
         choices = self.store.admin_state()['quick_choices']
-        self.assertEqual([(c['title'], c['price'], c['quick']) for c in choices], [('Dæk bord', 3, True)])
+        self.assertEqual([(c['title'], c['price'], c['quick']) for c in choices],
+                         [('Dæk bord', 3, True), ('Når jeg giver den', 3, False)])
         self.assertTrue(choices[0]['icon_shown'])
         self.store.update_task(normal['id'], quick=False)
         self.assertFalse(self.store.admin_state()['quick_choices'][0]['quick'])
@@ -1649,6 +1675,165 @@ class QuickTests(unittest.TestCase):
         with self.assertRaises(Problem):
             self.store.give_task(sne['id'], self.maja['id'])
         self.assertNotIn('Ryd sne', self.quick())
+
+
+class OnDemandTests(unittest.TestCase):
+    """Kun når jeg giver den (active False) og faste dage."""
+
+    def setUp(self):
+        self.clock = Clock(monday())                       # mandag 16. november
+        self.store = Store(None, self.clock)
+        self.emil = self.store.add_kid('Emil', 8)
+        self.maja = self.store.add_kid('Maja', 12)
+
+    def items(self, kid):
+        return self.store.kid_view(kid['token'])['items']
+
+    def test_on_demand_tasks_never_come_by_themselves_but_can_be_given(self):
+        self.store.set_setting('penalty', 2)
+        task = self.store.add_task('Tøm opvaskeren', 5, active=False)
+        job = self.store.add_task('Vask bilen', 20, open_job=True)
+        self.store.update_task(job['id'], active=False)
+        self.assertEqual(self.items(self.emil), [])
+        self.assertEqual(self.store.kid_view(self.emil['token'])['jobs'], [])
+        state = self.store.admin_state()
+        self.assertEqual(sorted(q['title'] for q in state['quick']), ['Tøm opvaskeren', 'Vask bilen'])
+        self.assertEqual(len(state['quick_choices']), 2)
+        self.store.give_task(task['id'], self.emil['id'])
+        self.assertEqual([i['title'] for i in self.items(self.emil)], ['Tøm opvaskeren'])   # bliver ikke "misset"
+        self.store.give_task(task['id'], 'all')
+        self.assertEqual(len(self.items(self.maja)), 1)
+        given, _, _ = self.store.give_task(job['id'], None)                 # først til mølle
+        self.assertEqual([j['title'] for j in self.store.kid_view(self.maja['token'])['jobs']], ['Vask bilen'])
+        self.assertTrue(given['active'])
+        self.store._credit(self.emil['id'], 10, 'bonus')
+        self.clock.advance(days=1)
+        self.assertEqual(self.items(self.emil), [])                         # kommer ikke igen af sig selv
+        self.assertEqual(self.store.balance(self.emil['id']), 6)             # givet to gange og glemt: to træk
+
+    def test_switching_to_on_demand_takes_todays_task_away_without_penalty(self):
+        self.store.set_setting('penalty', 2)
+        self.store._credit(self.emil['id'], 10, 'bonus')
+        task = self.store.add_task('Dæk bord', 3)
+        self.assertEqual(len(self.items(self.emil)), 1)
+        self.store.update_task(task['id'], active=False)
+        self.assertEqual(self.items(self.emil), [])
+        self.assertEqual(self.store.balance(self.emil['id']), 10)
+
+    def test_duties_meals_house_tasks_and_season_still_cannot_be_given(self):
+        duty = self.store.add_duty('Ryd op', [self.emil['id']], '2026-11-20')
+        self.store.update_task(duty['id'], active=False)
+        house = self.store.add_task('Tøm vaskemaskinen', 5, 'Fra huset', 'once', True, auto_rule='abcdef1234')
+        self.store.update_task(house['id'], active=False)
+        sne = self.store.add_task('Ryd sne', 30, season='vinter', auto_season=False, active=False)
+        self.store.add_meal({'kid': 'Emil', 'date': '2026-11-16', 'meal': 'Suppe'})
+        meal = [t for t in self.store.data['tasks'] if t.get('meal')][0]
+        meal['active'] = False
+        for t in (duty, house, sne, meal):
+            with self.assertRaises(Problem):
+                self.store.give_task(t['id'], self.emil['id'])
+        self.assertEqual(self.store.admin_state()['quick_choices'], [])
+
+    def test_missed_advice_ignores_on_demand_tasks(self):
+        task = self.store.add_task('Dæk bord', 3)
+        for day in range(4):
+            self.store.kid_view(self.emil['token'])
+            self.clock.advance(days=1)
+        self.store.kid_view(self.emil['token'])
+        self.store.touch(self.emil['token'])
+        self.store.touch(self.maja['token'])
+        self.assertTrue(any('er misset' in a for a in self.store.advice()))
+        self.store.update_task(task['id'], active=False)
+        self.assertFalse(any('er misset' in a for a in self.store.advice()))
+
+    def test_on_demand_and_days_are_saved_and_copied(self):
+        task = self.store.add_task('Støvsug', 10, active=False, days=[6])
+        self.assertEqual((task['active'], task['days']), (False, [6]))
+        copy = self.store.duplicate_task(task['id'])
+        copy['days'].append(0)
+        self.assertEqual(task['days'], [6])                                  # kopien har sin egen liste
+
+    def test_daily_task_only_on_chosen_days(self):
+        self.store.set_setting('penalty', 2)
+        self.store._credit(self.emil['id'], 20, 'bonus')
+        task = self.store.add_task('Tøm skraldespanden', 4, days=[2, 6])    # onsdag og søndag
+        seen = []
+        for _ in range(7):
+            seen.append(len(self.items(self.emil)))
+            self.clock.advance(days=1)
+        self.items(self.emil)
+        self.assertEqual(seen, [0, 0, 1, 0, 0, 0, 1])
+        self.assertEqual(self.store.balance(self.emil['id']), 16)            # to glemte dage, ikke syv
+        missed = [i for i in self.store.data['items'] if i['task_id'] == task['id'] and i['status'] == 'missed']
+        self.assertEqual(len(missed), 4)                                     # 2 dage x 2 børn
+
+    def test_weekly_task_comes_on_the_first_chosen_day_and_stays_open(self):
+        task = self.store.add_task('Ryd dit værelse', 10, repeat='weekly', days=[3, 5])   # torsdag og lørdag
+        seen = []
+        for _ in range(7):
+            seen.append(len(self.items(self.emil)))
+            self.clock.advance(days=1)
+        self.assertEqual(seen, [0, 0, 0, 1, 1, 1, 1])
+        self.assertEqual(len([i for i in self.store.data['items'] if i['task_id'] == task['id']
+                              and i['kid_id'] == self.emil['id']]), 1)
+        self.store.update_task(task['id'], days=[])                         # tom: som før, hele ugen
+        self.assertEqual(len(self.items(self.emil)), 1)
+
+    def test_open_job_only_on_chosen_days(self):
+        self.store.add_task('Vask bilen', 20, open_job=True, days=[5])
+        self.assertEqual(self.store.kid_view(self.emil['token'])['jobs'], [])
+        self.clock.advance(days=5)
+        self.assertEqual(len(self.store.kid_view(self.emil['token'])['jobs']), 1)
+
+    def test_days_are_checked(self):
+        task = self.store.add_task('Dæk bord', 3)
+        for bad in ([7], [-1], ['x'], 'abc'):
+            with self.assertRaises(Problem):
+                self.store.update_task(task['id'], days=bad)
+        self.store.update_task(task['id'], days=['6', 2, 2])
+        self.assertEqual(self.store.data['tasks'][0]['days'], [2, 6])
+        self.assertEqual(self.store.admin_state()['day_names'][6], 'Søn')
+        self.store.set_setting('lang', 'en')
+        self.assertEqual(self.store.admin_state()['day_names'][0], 'Mon')
+
+    def test_texts_in_five_languages(self):
+        import i18n
+        self.assertEqual(i18n.translate('en', 'Kun når jeg giver den'), 'Only when I give it')
+        self.assertEqual(i18n.translate('de', 'Fast'), 'Fest')
+        self.assertEqual(i18n.translate('sv', 'Hver uge · Søndag'), 'Varje vecka · Söndag')
+        self.assertEqual(i18n.translate('nb', 'Når jeg giver den'), 'Når jeg gir den')
+        self.assertEqual(i18n.translate('en', 'Fast og fint'), 'Fast og fint')   # kun hele teksten 'Fast'
+
+
+class NameTests(unittest.TestCase):
+    """Navne udefra (Madplan, Hus-chat)."""
+
+    def setUp(self):
+        self.store = Store(None, Clock(monday()))
+        self.dennis = self.store.add_kid('Dennis opgaver', 12)
+        self.lilly = self.store.add_kid('Lilly Opgaver', 9)
+
+    def test_first_word_or_whole_name_case_does_not_matter(self):
+        self.assertIs(self.store.kid_by_name('Dennis'), self.dennis)
+        self.assertIs(self.store.kid_by_name('lilly'), self.lilly)
+        self.assertIs(self.store.kid_by_name(' dennis  OPGAVER '), self.dennis)
+        self.assertIsNone(self.store.kid_by_name('Opgaver'))
+        self.assertIsNone(self.store.kid_by_name('Den'))
+        self.assertIsNone(self.store.kid_by_name(''))
+
+    def test_several_children_match_gives_nothing_but_exact_name_wins(self):
+        other = self.store.add_kid('Dennis', 7)
+        self.assertIs(self.store.kid_by_name('Dennis'), other)              # helt ens vinder
+        self.store.add_kid('Lilly Mus', 5)
+        self.assertIsNone(self.store.kid_by_name('Lilly'))                  # to passer: ingen
+
+    def test_meal_finds_the_child_by_first_word_or_person(self):
+        task = self.store.add_meal({'kid': 'Dennis', 'date': '2026-11-17', 'meal': 'Suppe'})
+        self.assertEqual(task['meal']['kid_id'], self.dennis['id'])
+        task = self.store.add_meal({'kid': '', 'person': 'person.lilly', 'date': '2026-11-17', 'meal': 'Pizza'})
+        self.assertEqual(task['meal']['kid_id'], self.lilly['id'])
+        self.store.add_kid('Lilly Mus', 5)
+        self.assertIsNone(self.store.add_meal({'kid': 'lilly', 'date': '2026-11-18', 'meal': 'Pizza'}))
 
 
 class AutoSeasonTests(unittest.TestCase):
@@ -2179,6 +2364,20 @@ class ServerTests(unittest.TestCase):
         self.assertTrue(mine['quick'])
         status, state = self.call(self.adm, '/api/tasks/%s' % task['id'], {'quick': False})   # langt tryk / Tilføj-arket
         self.assertFalse([c for c in state['quick_choices'] if c['id'] == task['id']][0]['quick'])
+
+    def test_on_demand_and_days_through_http(self):
+        status, state = self.call(self.adm, '/api/tasks', {'title': 'Fej trappen', 'price': 5, 'active': False,
+                                                           'days': [6], 'open': True})
+        self.assertEqual(status, 200)
+        task = [t for t in state['tasks'] if t['title'] == 'Fej trappen'][0]
+        self.assertEqual((task['active'], task['days']), (False, [6]))
+        self.assertIn(task['id'], [c['id'] for c in state['quick_choices']])
+        self.assertEqual(len(state['day_names']), 7)
+        status, state = self.call(self.adm, '/api/tasks/%s' % task['id'], {'active': True, 'days': [0, 3]})
+        task = [t for t in state['tasks'] if t['id'] == task['id']][0]
+        self.assertEqual((task['active'], task['days']), (True, [0, 3]))
+        status, err = self.call(self.adm, '/api/tasks/%s' % task['id'], {'days': [9]})
+        self.assertEqual(status, 400)
 
     def test_parent_server_can_be_limited_to_ingress(self):
         locked, _ = serve(self.app, 'admin', 0, allow_from={'172.30.32.2'}, host='127.0.0.1')

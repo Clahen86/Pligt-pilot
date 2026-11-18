@@ -98,8 +98,15 @@ class App:
         if event == 'hus_chat_machine' and data.get('kind') in ('taken', 'emptied'):
             return bool(self.store.drop_open_job(machine=str(data.get('machine') or '')))
         if event == 'madplan_cook':
+            who = str(data.get('kid') or data.get('person') or '')
+            log.info('Maddag til %s: %s %s', who, data.get('meal', ''), data.get('date', ''))
+            if not self.store.meal_kid(data):
+                log.warning('Maddag: "%s" passer ikke på noget barn (eller på flere)', who)
+                return False
             task = self.store.add_meal(data)
-            if task:
+            if not task:
+                log.warning('Maddag til %s kunne ikke læses (dato eller ret mangler)', who)
+            else:
                 self.store.housekeeping()       # er det i dag, kommer opgaven frem med det samme
                 self._tell_cook(task)
             return bool(task)
@@ -114,12 +121,15 @@ class App:
         kid = next((k for k in self.store.data['kids'] if k['id'] == meal.get('kid_id')), None)
         if not kid or kid.get('paused'):
             return
-        meal['told'] = today
-        self.store._save()
         text = 'Du laver mad i dag: %s.' % meal.get('meal', '')
         if meal.get('time'):
             text += ' Klar kl. %s.' % meal['time']
-        self.ha.notify_kid(kid, 'Maddag', text + ' Tryk for at se opskriften.')
+        sent = self.ha.notify_kid(kid, 'Maddag', text + ' Tryk for at se opskriften.')
+        if sent:
+            with self.store.lock:
+                meal['told'] = today        # kun når beskeden kom ud: ellers prøves igen næste gang
+                self.store._save()
+        log.info('Besked om maddag til %s: %s', kid['name'], 'sendt' if sent else 'ikke sendt')
 
     def outside_url(self):
         """The address that works away from home: the one Home Assistant gave (Nabu Casa or its own), else public_url."""
@@ -478,8 +488,9 @@ def make_handler(app, role, allow_from=None):
                                body.get('kids'), body.get('age_min', 0),
                                body.get('age_max', 99), body.get('times', 1),
                                body.get('photo', False), None, body.get('season', ''),
-                               body.get('surprise', False), body.get('icon', ''))
-                if body.get('open'):
+                               body.get('surprise', False), body.get('icon', ''),
+                               days=body.get('days'), active=body.get('active', True))
+                if body.get('open') and store.data['tasks'][-1]['active']:
                     task = store.data['tasks'][-1]
                     for kid in store.data['kids']:
                         if not kid.get('paused') and store._in_scope(task, kid):
@@ -489,7 +500,7 @@ def make_handler(app, role, allow_from=None):
             m = re.match(r'^/api/tasks/' + ID + r'$', path)
             if m:
                 allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids', 'age_min', 'times', 'photo', 'season',
-                           'surprise', 'icon', 'quick', 'each')
+                           'surprise', 'icon', 'quick', 'each', 'days')
                 store.update_task(m.group(1), **{k: v for k, v in body.items() if k in allowed})
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'/delete$', path)
