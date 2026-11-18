@@ -159,3 +159,16 @@ Tag et billede eller skriv, hvad der skal laves || Take a picture or write what 
 Du har allerede tre forslag, der venter || You already have three suggestions waiting || Du hast schon drei Vorschläge, die warten || Du har redan tre förslag som väntar || Du har allerede tre forslag som venter
 Forslaget findes ikke || The suggestion doesn't exist || Den Vorschlag gibt es nicht || Förslaget finns inte || Forslaget finnes ikke
 Du fik dit forslag: || You got your suggestion: || Du hast deinen Vorschlag bekommen: || Du fick ditt förslag: || Du fikk forslaget ditt:
+# Vælg dørsensor (søg)
+=Ingen (valgfri) || None (optional) || Keiner (optional) || Ingen (valfritt) || Ingen (valgfritt)
+=Vælg dørsensor || Pick door sensor || Türsensor wählen || Välj dörrsensor || Velg dørsensor
+Dørsensor til || Door sensor for || Türsensor für || Dörrsensor för || Dørsensor for
+Søg på navn, rum eller id. Åbn lågen og se, hvilken der skifter. || Search by name, room or id. Open the door and see which one changes. || Suche nach Name, Raum oder ID. Öffne die Tür und sieh, welcher sich ändert. || Sök på namn, rum eller id. Öppna luckan och se vilken som ändras. || Søk på navn, rom eller id. Åpne luken og se hvilken som endrer seg.
+Søg, fx vaskerum eller låge || Search, e.g. laundry or door || Suche, z. B. Waschraum oder Tür || Sök, t.ex. tvättstuga eller lucka || Søk, f.eks. vaskerom eller luke
+Henter sensorer… || Loading sensors… || Sensoren werden geladen… || Hämtar sensorer… || Henter sensorer…
+Ingen sensor passer til søgningen || No sensor matches the search || Kein Sensor passt zur Suche || Ingen sensor matchar sökningen || Ingen sensor passer til søket
+=Åben || Open || Offen || Öppen || Åpen
+=Lukket || Closed || Geschlossen || Stängd || Lukket
+=Svarer ikke || Not responding || Antwortet nicht || Svarar inte || Svarer ikke
+Dørsensor valgt || Door sensor chosen || Türsensor gewählt || Dörrsensor vald || Dørsensor valgt
+Dørsensor fjernet || Door sensor removed || Türsensor entfernt || Dörrsensor borttagen || Dørsensor fjernet

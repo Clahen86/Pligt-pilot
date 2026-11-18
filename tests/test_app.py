@@ -938,6 +938,18 @@ class StubHA:
 
 
 class AutomationTests(unittest.TestCase):
+    def test_door_list_puts_the_machines_room_first(self):
+        from house import door_candidates
+        ents = [
+            ['sensor.vask_effekt', 'Vask effekt', 'power', 'W', 'Vaskerum'],
+            ['binary_sensor.myggbett_1', 'Myggbett 1', 'door', '', 'Vaskerum'],
+            ['binary_sensor.entre_dor', 'Entre dør', 'door', '', 'Entre'],
+            ['binary_sensor.vaskerum_pir', 'Vaskerum bevægelse', 'motion', '', 'Vaskerum'],
+            ['binary_sensor.myggbett_1_batteri', 'Myggbett 1 Batteri', 'battery', '', 'Vaskerum'],
+        ]
+        got = [d['entity'] for d in door_candidates(ents, 'sensor.vask_effekt')]
+        self.assertEqual(got, ['binary_sensor.myggbett_1', 'binary_sensor.entre_dor', 'binary_sensor.vaskerum_pir'])
+
     def test_machine_rules_find_their_door_sensor_by_themselves(self):
         clock = Clock(monday())
         store = Store(None, clock)

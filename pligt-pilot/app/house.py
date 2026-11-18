@@ -240,6 +240,25 @@ DOOR_WORDS = ('dør', 'door', 'låge', 'lage', 'luge', 'contact', 'kontakt')
 NOT_DOOR = ('batteri', 'battery', 'problem', 'tamper', 'sabotage')
 
 
+def door_candidates(entities, near=''):
+    """Binary sensors to pick a machine's door sensor from: door sensors in the machine's room first, then other door
+    sensors, then the rest - battery and problem sensors left out. near: the machine's own sensor (for the room)."""
+    area = next((row[4] for row in entities if row[0] == near), '') if near else ''
+    out = []
+    for row in entities:
+        eid, name, dclass, room = row[0], row[1], row[2], row[4]
+        if not eid.startswith('binary_sensor.'):
+            continue
+        text = (eid + ' ' + name).lower()
+        if any(w in text for w in NOT_DOOR):
+            continue
+        door = dclass in DOOR_CLASSES or any(w in text for w in DOOR_WORDS)
+        same = bool(area) and room == area
+        out.append({'entity': eid, 'name': name or eid, 'area': room, 'door': door, 'same': same})
+    out.sort(key=lambda d: (not (d['same'] and d['door']), not d['door'], not d['same'], d['name'].lower()))
+    return out[:400]
+
+
 def find_door(entities, machine):
     """The door sensor (binary_sensor) on a machine type (washer, dryer, dishwasher) - only when exactly one fits.
     None when there is none or several: then the parent picks from the list."""

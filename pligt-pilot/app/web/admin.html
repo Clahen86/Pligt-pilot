@@ -68,7 +68,7 @@ h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; disp
 .sw[aria-checked="true"] span { background: var(--accent); }
 .sw[aria-checked="true"] span::after { left: 25px; }
 label { font-size: 13px; font-weight: 800; color: var(--muted); display: block; margin-bottom: 4px; }
-input[type=text], input[type=number], input[type=date], input[type=time], select { width: 100%; height: 44px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 0 12px; font-size: 16px; font-weight: 700; color: var(--ink); background: #fff; }
+input[type=text], input[type=search], input[type=number], input[type=date], input[type=time], select { width: 100%; height: 44px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 0 12px; font-size: 16px; font-weight: 700; color: var(--ink); background: #fff; }
 .dates { display: grid; grid-template-columns: 1fr 1.6fr 1.2fr; gap: 6px; }
 .qr { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
 .qrsvg { border-radius: 14px; border: 2px solid #D9CFBE; max-width: 100%; height: auto; }
@@ -308,7 +308,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   function typing() {
     var a = document.activeElement;
     // en åben redigering eller et åbent ark må ikke tegnes om under fingrene på en (fx valgte dage)
-    return (a && (a.tagName === 'INPUT' || a.tagName === 'SELECT')) || sugEdit >= 0 || !!quickTask || quickAdd || !!tSheet || !!ruleEdit;
+    return (a && (a.tagName === 'INPUT' || a.tagName === 'SELECT')) || sugEdit >= 0 || !!quickTask || quickAdd || !!tSheet || !!ruleEdit || !!doorPick;
   }
   var SEASON = { '': 'Hele året', 'forår': 'Forår (mar–maj)', 'sommer': 'Sommer (jun–aug)', 'efterår': 'Efterår (sep–nov)', 'vinter': 'Vinter (dec–feb)' };
   var SEASON_SHORT = { 'forår': 'om foråret', 'sommer': 'om sommeren', 'efterår': 'om efteråret', 'vinter': 'om vinteren' };
@@ -1048,6 +1048,42 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     doors.sort(function (a, b) { return like(b) - like(a); });
     return (doors.length ? doors : all).slice(0, 200);
   }
+  // ark: vælg maskinens dørsensor - søg på navn, rum eller id; åben/lukket vises live, så man kan prøve lågen
+  var doorPick = '', doorData = null, doorQ = '', doorTimer = null;
+  function entName(id) { var e = entityList.filter(function (x) { return x[0] === id; })[0]; return e && e[1] ? e[1] : id; }
+  function doorLoad() {
+    if (!doorPick) { return; }
+    var id = doorPick;
+    call('api/doors?rule=' + id).then(function (r) { if (doorPick === id) { doorData = r; doorPaint(); } }).catch(function () {});
+  }
+  function doorOpen(id) {
+    doorPick = id; doorData = null; doorQ = ''; render(); doorLoad();
+    clearInterval(doorTimer); doorTimer = setInterval(doorLoad, 4000);
+  }
+  function doorClose() { doorPick = ''; doorData = null; clearInterval(doorTimer); render(); }
+  function doorStateText(v, door) { return v === 'on' ? (door ? 'Åben' : 'Til') : v === 'off' ? (door ? 'Lukket' : 'Fra') : v === 'unavailable' || v === 'unknown' ? 'Svarer ikke' : v || ''; }
+  function doorRows() {
+    if (!doorData) { return '<div class="empty">Henter sensorer…</div>'; }
+    var q = doorQ.trim().toLowerCase();
+    var list = doorData.doors.filter(function (d) { return !q || (d.name + ' ' + d.entity + ' ' + d.area).toLowerCase().indexOf(q) >= 0; });
+    if (!list.length) { return '<div class="empty">Ingen sensor passer til søgningen</div>'; }
+    return list.slice(0, 120).map(function (d) {
+      var cur = d.entity === doorData.current;
+      return '<button class="qrow" data-doorset="' + esc(d.entity) + '" aria-pressed="' + cur + '"><span class="grow"><b>' + esc(d.name) + '</b>' +
+        '<span class="qp">' + esc([d.area, doorStateText(d.state, d.door), d.entity].filter(Boolean).join(' · ')) + '</span></span>' +
+        '<span class="tick">' + (cur ? CHECK : '') + '</span></button>';
+    }).join('');
+  }
+  function doorPaint() { var box = document.querySelector('.doorlist'); if (box) { box.innerHTML = doorRows(); } }
+  function doorSheet() {
+    var r = (state.rules || []).filter(function (x) { return x.id === doorPick; })[0];
+    if (!r) { doorPick = ''; return ''; }
+    return '<div class="qsheet" data-qclose="1"><div class="in" role="dialog" aria-modal="true" aria-label="Dørsensor til ' + esc(r.name) + '">' +
+      '<div><b style="font-size:19px;font-weight:900">Dørsensor til ' + esc(r.name) + '</b><div class="sub">Søg på navn, rum eller id. Åbn lågen og se, hvilken der skifter.</div></div>' +
+      '<input id="door-q" type="search" placeholder="Søg, fx vaskerum eller låge" value="' + esc(doorQ) + '" autocomplete="off">' +
+      '<div class="qlist doorlist">' + doorRows() + '</div>' +
+      '<div class="row" style="gap:10px"><button class="btn ghost" style="flex:1" data-doorset="">Ingen</button><button class="btn" style="flex:1" data-doorclose="1">Luk</button></div></div></div>';
+  }
   function doorList(id, preset) {
     return '<datalist id="' + id + '">' + doorCandidates(preset).map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[1]) + '</option>'; }).join('') + '</datalist>';
   }
@@ -1092,8 +1128,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
               '<div><label for="rp-' + r.id + '">Pris (kr.)</label><input id="rp-' + r.id + '" type="number" inputmode="numeric" min="0" max="1000" value="' + r.price + '"></div></div>' +
               '<div class="row"><button class="btn small" data-saverule="' + r.id + '">Gem</button><button class="btn small ghost" data-editrule="">Annuller</button></div>'
             : '<div class="row"><div class="note grow">Når den er færdig: ' + esc(r.title) + ' (' + r.price + ' kr)</div><button class="btn small ghost" data-editrule="' + r.id + '">Ret</button></div>') +
-          '<div><label for="rd-' + r.id + '">Dørsensor (valgfri)</label><div class="linkbox"><input id="rd-' + r.id + '" type="text" list="dl-' + r.id + '" placeholder="Fx binary_sensor.vaskemaskine_dor" value="' + esc(r.door || '') + '">' +
-          '<button class="btn small" data-savedoor="' + r.id + '">Gem</button></div>' + doorList('dl-' + r.id, r.name) + '</div></div>';
+          '<div class="row"><div class="grow t"><b>Dørsensor</b><span>' + (r.door ? esc(entName(r.door)) : 'Ingen (valgfri)') + '</span></div>' +
+          '<button class="btn small ghost" data-doorpick="' + r.id + '">' + (r.door ? 'Skift' : 'Vælg dørsensor') + '</button></div></div>';
       });
       out += '</div>';
     }
@@ -1126,7 +1162,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   function render() {
     if (state && state.lang && state.lang !== I18N.lang) { loadLang(); if (!I18N.rx) { return; } }
     if (!state) { return; }
-    app.innerHTML = (tab === 'home' ? home() + (quickTask ? quickSheet() : quickAdd ? addSheet() : '') : tab === 'tasks' ? tasks() + (tSheet ? taskSheet() : '') : tab === 'house' ? house() : kids());
+    app.innerHTML = (tab === 'home' ? home() + (quickTask ? quickSheet() : quickAdd ? addSheet() : '') : tab === 'tasks' ? tasks() + (tSheet ? taskSheet() : '') : tab === 'house' ? house() + (doorPick ? doorSheet() : '') : kids());
     var pend = state.pending.length + (state.suggestions || []).length;
     nav.innerHTML =
       '<button data-tab="home"' + (tab === 'home' ? ' aria-current="page"' : '') + '>Oversigt' + (pend ? '<span class="dot">' + pend + '</span>' : '') + '</button>' +
@@ -1143,6 +1179,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   document.addEventListener('input', function (e) {
     var t = e.target;
     if (t.id && t.id.indexOf('sg-') === 0) { sugVals[t.id] = t.value; }
+    if (t.id === 'door-q') { doorQ = t.value; doorPaint(); }
     if (t.dataset && t.dataset.draft) {
       setDraft(t.dataset.draft, t.type === 'checkbox' ? t.checked : t.value);
     }
@@ -1164,7 +1201,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     }
   });
   document.addEventListener('click', function (e) {
-    if (e.target.classList && e.target.classList.contains('qsheet')) { quickTask = ''; quickAdd = false; tSheet = null; render(); return; }
+    if (e.target.classList && e.target.classList.contains('qsheet')) { if (doorPick) { doorClose(); return; } quickTask = ''; quickAdd = false; tSheet = null; render(); return; }
     var b = e.target.closest('button');
     if (!b) { return; }
     var d = b.dataset;
@@ -1280,6 +1317,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       post('api/suggestions/' + d.sugyes + '/give', { title: document.getElementById('sg-t-' + d.sugyes).value, price: document.getElementById('sg-p-' + d.sugyes).value }, 'Opgaven er givet');
     }
     else if (d.sugno) { post('api/suggestions/' + d.sugno + '/reject', {}); }
+    else if (d.doorpick) { doorOpen(d.doorpick); }
+    else if (d.doorclose) { doorClose(); }
+    else if (d.doorset !== undefined && doorPick) {
+      var rid = doorPick;
+      post('api/rules/' + rid, { door: d.doorset }, d.doorset ? 'Dørsensor valgt' : 'Dørsensor fjernet').then(function () { doorClose(); }).catch(function () {});
+    }
     else if (d.savedoor) { post('api/rules/' + d.savedoor, { door: document.getElementById('rd-' + d.savedoor).value }, 'Gemt'); }
     else if (d.savehours) { post('api/settings', { auto_task_hours: document.getElementById('h-hours').value }, 'Gemt'); }
     else if (d.addduty) {

@@ -20,7 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import i18n
 import icons
-from house import find_sensors, power_sensors
+from house import door_candidates, find_sensors, power_sensors
 from store import Problem
 from suggestions import suggest
 
@@ -438,6 +438,15 @@ def make_handler(app, role, allow_from=None):
                     if not data:
                         return self._json({'error': 'Findes ikke'}, 404)
                     return self._send(200, data, 'image/jpeg')
+                if path == '/api/doors':
+                    rid = (self.query.get('rule') or [''])[0]
+                    rule = next((r for r in store.data['rules'] if r['id'] == rid), None)
+                    doors = door_candidates(app.ha.entities(), rule['entity'] if rule else '')
+                    vals = app.ha.states([d['entity'] for d in doors])
+                    for d in doors:
+                        d['state'] = vals.get(d['entity'], '')
+                    return self._json({'doors': doors, 'current': (rule or {}).get('door') or '',
+                                       'on': app.ha.enabled})
                 if path == '/api/house_find':
                     names = [r['name'] for r in store.data['rules']]
                     ents = app.ha.entities()
