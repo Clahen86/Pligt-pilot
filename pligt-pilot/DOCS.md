@@ -58,7 +58,7 @@ Finder appen ikke din vaskemaskine eller tørretumbler på navnet, viser Huset e
 Lav fx to regler: vaskemaskinen giver "Flyt tøj til tørretumbleren", og tørretumbleren giver "Tag tøj ud og fold det".
 
 En ledig opgave, som ingen har taget, forsvinder igen, når
-- lågen åbnes: vælg en dørsensor (binary_sensor) på reglen under **Huset**. Appen foreslår sensorer, der ligner maskinen.
+- lågen åbnes: en dørsensor (binary_sensor) på reglen under **Huset**. Passer præcis én sensor til maskinen (fx "Vaskemaskine låge"), vælger appen den selv. Ellers foreslår den sensorer, der ligner maskinen. Fjerner du den, sætter appen den ikke ind igen.
 - maskinen starter igen.
 - den har ligget i det antal timer, du vælger under **Huset** (standard 4).
 

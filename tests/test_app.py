@@ -938,6 +938,30 @@ class StubHA:
 
 
 class AutomationTests(unittest.TestCase):
+    def test_machine_rules_find_their_door_sensor_by_themselves(self):
+        clock = Clock(monday())
+        store = Store(None, clock)
+        wash = store.add_rule('Vaskemaskine', 'sensor.vask_effekt', 'Flyt tøj', 5)
+        dry = store.add_rule('Tørretumbler', 'sensor.tumbler_effekt', 'Fold tøj', 5)
+        dish = store.add_rule('Opvaskemaskine', 'sensor.opvask_effekt', 'Tøm den', 5)
+        ha = StubHA()
+        ha.entities = lambda: [
+            ['binary_sensor.vaskemaskine_lage_contact', 'Vaskemaskine låge Dør', 'door', '', ''],
+            ['binary_sensor.myggbett_door_window_sensor_dor', 'Tørretumbler Låge Dør', 'door', '', ''],
+            ['binary_sensor.vaskerum_torretumbler_lage_batteri', 'Tørretumbler Låge Batteri', 'battery', '', ''],
+            ['binary_sensor.vaskemaskine_korer', 'Vaskemaskine Kører', 'running', '', ''],
+            ['binary_sensor.opvask_dor_1', 'Opvask dør 1', 'door', '', ''],
+            ['binary_sensor.opvask_dor_2', 'Opvask dør 2', 'door', '', ''],     # two fit: the parent picks
+        ]
+        Automation(store, ha, clock).tick()
+        self.assertEqual(wash.get('door'), 'binary_sensor.vaskemaskine_lage_contact')
+        self.assertEqual(dry.get('door'), 'binary_sensor.myggbett_door_window_sensor_dor')
+        self.assertFalse(dish.get('door'))
+        store.update_rule(wash['id'], door='')      # the parent removes it: it stays away
+        clock.advance(minutes=20)
+        Automation(store, ha, clock).tick()
+        self.assertFalse(wash.get('door'))
+
     def test_finished_washer_creates_job_and_tells_children(self):
         clock = Clock(monday())
         store = Store(None, clock)

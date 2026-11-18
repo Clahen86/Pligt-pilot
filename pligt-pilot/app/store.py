@@ -1959,6 +1959,7 @@ class Store:
                 rule['active'] = bool(active)
             if door is not None:
                 rule['door'] = self._clean_door(door)
+                rule['door_tried'] = True       # the parent's own choice (also none): never filled in by itself
             if title is not None:
                 rule['title'] = self._clean_text(title, 'Navn på opgaven')
             if price is not None:
@@ -1968,6 +1969,17 @@ class Store:
                     t['title'], t['price'] = rule['title'], rule['price']
             self._save()
             return rule
+
+    def auto_door(self, rule_id, door):
+        """Pligt-pilot found the machine's door sensor itself - set once (door_tried), never again after that."""
+        with self.lock:
+            rule = self._rule(rule_id)
+            if rule.get('door') or rule.get('door_tried'):
+                return False
+            rule['door'] = self._clean_door(door)
+            rule['door_tried'] = True
+            self._save()
+            return True
 
     def machine_link(self, name, machine):
         """Barnets link til en maskineopgave (Hus-chat): 'k/<token>/?machine=washer', når navnet er et barn og en

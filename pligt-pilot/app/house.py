@@ -20,6 +20,7 @@ POWER_OFF = 5.0     # watt: maskinen er stoppet
 SETTLE_POWER = dt.timedelta(minutes=3)   # maskiner holder pause midt i et program
 SETTLE_TEXT = dt.timedelta(seconds=30)
 WEATHER_EVERY = dt.timedelta(minutes=5)
+DOORS_EVERY = dt.timedelta(minutes=10)
 
 
 def _number(value):
@@ -70,18 +71,38 @@ class Automation:
         self.states = {}
         self.doors = {}         # sidste kendte tilstand for hver regels dørsensor
         self.weather_at = None
+        self.doors_at = None
         self._stop = threading.Event()
 
     def tick(self):
         now = self.clock()
         self._weather(now)
         self.store.housekeeping()
+        self._doors(now)
         self._rules(now)
         self._allowance()
         self._surprise()
         self._reminders()
         self._birthdays()
         self._summary()
+
+    def _doors(self, now):
+        """A machine rule without a door sensor gets one by itself, when exactly one fits the machine. Once: one the
+        parent has removed again is not put back."""
+        if self.doors_at and now - self.doors_at < DOORS_EVERY:
+            return
+        self.doors_at = now
+        rules = [r for r in self.store.data['rules'] if not r.get('door') and not r.get('door_tried')]
+        if not rules or not hasattr(self.ha, 'entities'):
+            return
+        ents = self.ha.entities()
+        if not ents:
+            return
+        from store import machine_type
+        for rule in rules:
+            door = find_door(ents, machine_type(rule['name']))
+            if door:
+                self.store.auto_door(rule['id'], door)
 
     def _rules(self, now):
         rules = [r for r in self.store.data['rules'] if r['active']]
@@ -212,6 +233,33 @@ def score_entity(row, words, not_words):
     if ent.startswith(('switch.', 'input_boolean.')):
         score -= 6                      # en stikkontakt er tændt, uanset om maskinen kører
     return max(score, 1)
+
+
+DOOR_CLASSES = ('door', 'opening', 'window', 'garage_door')
+DOOR_WORDS = ('dør', 'door', 'låge', 'lage', 'luge', 'contact', 'kontakt')
+NOT_DOOR = ('batteri', 'battery', 'problem', 'tamper', 'sabotage')
+
+
+def find_door(entities, machine):
+    """The door sensor (binary_sensor) on a machine type (washer, dryer, dishwasher) - only when exactly one fits.
+    None when there is none or several: then the parent picks from the list."""
+    from store import machine_type
+    hits = []
+    for row in entities:
+        eid, name, dclass = row[0], row[1], row[2]
+        if not eid.startswith('binary_sensor.'):
+            continue
+        text = (eid + ' ' + name).lower()
+        if any(w in text for w in NOT_DOOR):
+            continue
+        if dclass not in DOOR_CLASSES and not any(w in text for w in DOOR_WORDS):
+            continue
+        kind = machine_type(name)
+        if kind == 'other':
+            kind = machine_type(eid)
+        if kind == machine:
+            hits.append(eid)
+    return hits[0] if len(hits) == 1 else None
 
 
 def find_sensors(entities, existing_names=()):
