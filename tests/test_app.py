@@ -403,6 +403,61 @@ class StoreTests(unittest.TestCase):
         with self.assertRaises(Problem):
             self.store.add_rule('X', 'ikke et id', 'T', 1)
 
+    def test_machine_rule_can_be_edited_and_the_open_job_follows(self):
+        rule = self.store.add_rule('Vaskemaskine', 'sensor.vask', 'Flyt tøj', 2)
+        task = self.store.fire_rule(rule['id'])
+        self.store.update_rule(rule['id'], title='Flyt tøj til tørretumbleren', price='4')
+        self.assertEqual((task['title'], task['price']), ('Flyt tøj til tørretumbleren', 4))
+        now = self.store.admin_state()['house_now']
+        self.assertEqual([(n['status'], n['kid'], n['machine']) for n in now], [('free', '', 'Vaskemaskine')])
+        self.store.claim(self.emil['token'], task['id'])
+        self.store.update_rule(rule['id'], price=9)
+        self.assertEqual(task['price'], 4)                      # taget: prisen står fast
+        self.assertEqual(self.store.admin_state()['house_now'][0]['kid'], 'Emil')
+        with self.assertRaises(Problem):
+            self.store.update_rule(rule['id'], title='')
+
+    def test_machine_link_for_a_child_from_the_chat(self):
+        self.store.add_rule('Vaskemaskine', 'sensor.vask', 'Flyt tøj', 2)
+        self.assertEqual(self.store.machine_link('emil hansen', 'washer'), 'k/%s/?machine=washer' % self.emil['token'])
+        self.assertIsNone(self.store.machine_link('Far', 'washer'))         # en voksen: tager den i chatten
+        self.assertIsNone(self.store.machine_link('Emil', 'dryer'))         # ingen regel for tørretumbleren
+        task = self.store.fire_rule(self.store.data['rules'][0]['id'])
+        self.assertEqual(self.store.kid_view(self.emil['token'])['jobs'][0]['machine'], 'washer')
+        self.assertTrue(task)
+
+    def test_child_suggests_a_chore_with_a_picture_and_gets_it(self):
+        jpeg = b'\xff\xd8\xff' + b'0' * 50
+        with self.assertRaises(Problem):
+            self.store.suggest(self.emil['token'])                     # intet billede og ingen tekst
+        kid, sug = self.store.suggest(self.emil['token'], '', jpeg)
+        self.assertEqual(self.store.photo(sug['id']), jpeg)
+        self.assertEqual(self.store.kid_view(self.emil['token'])['suggestions'][0]['photo'], True)
+        state = self.store.admin_state()
+        self.assertEqual([(x['name'], x['photo']) for x in state['suggestions']], [('Emil', True)])
+        with self.assertRaises(Problem):
+            self.store.decide_suggestion(sug['id'], True, '', 5)        # et forslag uden tekst skal have et navn
+        kid, task = self.store.decide_suggestion(sug['id'], True, 'Skraldet ud', 5)
+        self.assertEqual([(i['title'], i['price']) for i in self.kid_items(self.emil)], [('Skraldet ud', 5)])
+        self.assertEqual(self.kid_items(self.maja), [])
+        self.assertIsNone(self.store.photo(sug['id']))
+        self.assertEqual(self.store.data['suggestions'], [])
+
+    def test_suggestions_can_be_withdrawn_refused_and_are_limited(self):
+        for n in range(3):
+            self.store.suggest(self.emil['token'], 'Forslag %d' % n)
+        with self.assertRaises(Problem):
+            self.store.suggest(self.emil['token'], 'Et for meget')
+        first, second = self.store.data['suggestions'][:2]
+        with self.assertRaises(Problem):
+            self.store.cancel_suggestion(self.maja['token'], first['id'])  # ikke hendes
+        self.store.cancel_suggestion(self.emil['token'], first['id'])
+        kid, task = self.store.decide_suggestion(second['id'], False)
+        self.assertIsNone(task)
+        self.assertEqual(len(self.store.data['suggestions']), 1)
+        self.store.delete_kid(self.emil['id'])
+        self.assertEqual(self.store.data['suggestions'], [])
+
     def test_machine_is_done_after_it_has_been_quiet_for_a_while(self):
         t0 = dt.datetime(2026, 11, 16, 12, 0)
         state, done = step(None, '1200', t0)           # watt

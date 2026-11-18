@@ -132,3 +132,30 @@ Flere valg || More options || Weitere Optionen || Fler val || Flere valg
 =Luk || Close || Schließen || Stäng || Lukk
 =Kopi lavet || Copy made || Kopie erstellt || Kopia skapad || Kopi laget
 =Forslag || Suggestions || Vorschläge || Förslag || Forslag
+# Maskineregler kan rettes, "Lige nu" på oversigten
+=Lige nu || Right now || Gerade jetzt || Just nu || Akkurat nå
+=Ret || Edit || Bearbeiten || Ändra || Endre
+Ledig – venter på et barn || Open – waiting for a child || Offen – wartet auf ein Kind || Ledig – väntar på ett barn || Ledig – venter på et barn
+er færdig – venter på dig || is done – waiting for you || ist fertig – wartet auf dich || är klar – väntar på dig || er ferdig – venter på deg
+har taget den || has taken it || hat sie übernommen || har tagit den || har tatt den
+er færdig || is done || ist fertig || är klar || er ferdig
+# Forslag fra børnene
+Foreslå en opgave || Suggest a chore || Eine Aufgabe vorschlagen || Föreslå en uppgift || Foreslå en oppgave
+Ser du noget, der skal laves? Tag et billede af det. || See something that needs doing? Take a picture of it. || Siehst du etwas, das erledigt werden muss? Mach ein Foto davon. || Ser du något som behöver göras? Ta en bild på det. || Ser du noe som må gjøres? Ta et bilde av det.
+Hvad skal laves? (valgfri) || What needs doing? (optional) || Was muss erledigt werden? (optional) || Vad behöver göras? (valfritt) || Hva må gjøres? (valgfritt)
+Fx Skraldet skal ud || E.g. The trash needs taking out || Z. B. Der Müll muss raus || T.ex. Soporna ska ut || F.eks. Søppelet må ut
+Send uden billede || Send without a picture || Ohne Foto senden || Skicka utan bild || Send uten bilde
+=Send forslag || Send suggestion || Vorschlag senden || Skicka förslag || Send forslag
+=Tag igen || Retake || Neu aufnehmen || Ta igen || Ta på nytt
+Dit forslag: || Your suggestion: || Dein Vorschlag: || Ditt förslag: || Ditt forslag:
+=Et billede || A picture || Ein Foto || En bild || Et bilde
+=Dit billede || Your picture || Dein Foto || Din bild || Ditt bilde
+foreslår en opgave || suggests a chore || schlägt eine Aufgabe vor || föreslår en uppgift || foreslår en oppgave
+=Med et billede || With a picture || Mit einem Foto || Med en bild || Med et bilde
+Fx Skraldet ud || E.g. Trash out || Z. B. Müll raus || T.ex. Soporna ut || F.eks. Søppel ut
+=Giv den || Give it || Vergeben || Ge den || Gi den
+Opgaven er givet || The chore was given || Die Aufgabe wurde vergeben || Uppgiften har getts || Oppgaven er gitt
+Tag et billede eller skriv, hvad der skal laves || Take a picture or write what needs doing || Mach ein Foto oder schreib, was zu tun ist || Ta en bild eller skriv vad som behöver göras || Ta et bilde eller skriv hva som må gjøres
+Du har allerede tre forslag, der venter || You already have three suggestions waiting || Du hast schon drei Vorschläge, die warten || Du har redan tre förslag som väntar || Du har allerede tre forslag som venter
+Forslaget findes ikke || The suggestion doesn't exist || Den Vorschlag gibt es nicht || Förslaget finns inte || Forslaget finnes ikke
+Du fik dit forslag: || You got your suggestion: || Du hast deinen Vorschlag bekommen: || Du fick ditt förslag: || Du fikk forslaget ditt:

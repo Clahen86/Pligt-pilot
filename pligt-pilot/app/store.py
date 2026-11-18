@@ -165,7 +165,7 @@ class Store:
                          'trading': True, 'surprise_plan': {}, 'streak_bonus': 5,
                          'auto_task_hours': 4, 'min_tasks_age': 0, 'min_tasks_week': 5,
                          'meal_price': 0},
-            'trades': [], 'rewards': [], 'claims': [], 'parents': [],
+            'trades': [], 'rewards': [], 'claims': [], 'parents': [], 'suggestions': [],
         }
         self._photos = {}
         self.listener = None        # fx: fyr pligt_pilot_task i Home Assistant
@@ -579,6 +579,9 @@ class Store:
                 if i['kid_id'] == kid_id:
                     self.delete_photo(i['id'])
             d['items'] = [i for i in d['items'] if i['kid_id'] != kid_id]
+            for x in [x for x in d['suggestions'] if x['kid_id'] == kid_id]:
+                self.delete_photo(x['id'])
+            d['suggestions'] = [x for x in d['suggestions'] if x['kid_id'] != kid_id]
             d['ledger'] = [e for e in d['ledger'] if e['kid_id'] != kid_id]
             for t in d['tasks']:
                 if kid_id in (t.get('kids') or []):
@@ -815,6 +818,62 @@ class Store:
                 kid['wish'] = {'title': self._clean_text(title, 'Hvad ønsker du dig', 40), 'price': cost}
             self._save()
             return kid
+
+    # ---- forslag fra børnene ------------------------------------------
+    def suggest(self, token, text='', photo=None):
+        """Barnet foreslår en opgave: et billede (de små) og/eller en tekst. Højst tre, der venter, pr. barn."""
+        with self.lock:
+            kid = self.kid_by_token(token)
+            if not kid:
+                raise Problem('Linket passer ikke', 404)
+            text = ' '.join(str(text or '').split())[:80]
+            if not text and not photo:
+                raise Problem('Tag et billede eller skriv, hvad der skal laves')
+            if sum(1 for x in self.data['suggestions'] if x['kid_id'] == kid['id']) >= 3:
+                raise Problem('Du har allerede tre forslag, der venter')
+            sug = {'id': _id(), 'kid_id': kid['id'], 'text': text, 'photo': bool(photo),
+                   'created': self._now().isoformat(timespec='seconds')}
+            if photo:
+                self.save_photo(sug['id'], photo)
+            self.data['suggestions'].append(sug)
+            self._save()
+            return kid, sug
+
+    def _suggestion(self, sug_id):
+        sug = next((x for x in self.data['suggestions'] if x['id'] == sug_id), None)
+        if not sug:
+            raise Problem('Forslaget findes ikke', 404)
+        return sug
+
+    def cancel_suggestion(self, token, sug_id):
+        with self.lock:
+            kid = self.kid_by_token(token)
+            sug = self._suggestion(sug_id)
+            if not kid or sug['kid_id'] != kid['id']:
+                raise Problem('Forslaget findes ikke', 404)
+            self._drop_suggestion(sug)
+
+    def _drop_suggestion(self, sug):
+        self.data['suggestions'].remove(sug)
+        if sug.get('photo'):
+            self.delete_photo(sug['id'])
+        self._save()
+
+    def decide_suggestion(self, sug_id, accept, title='', price=0):
+        """Ja: barnet, der foreslog den, får opgaven i dag til den pris. Nej: forslaget forsvinder.
+        Returnerer (barn, opgave eller None)."""
+        with self.lock:
+            sug = self._suggestion(sug_id)
+            kid = self._kid(sug['kid_id'])
+            task = None
+            if accept:
+                task = self.add_task(title or sug['text'], price, 'Dit forslag', 'once', False, [kid['id']],
+                                     auto_rule='given', active=False)
+                now = self._now()
+                item = self._new_item(task, kid, now)
+                item.update(period=now.strftime('%Y-%m-%d'), given=True, slot=1, of=1)
+            self._drop_suggestion(sug)
+            return kid, task
 
     def decide_wish(self, kid_id, accept):
         with self.lock:
@@ -1091,6 +1150,11 @@ class Store:
                 self._save()
             return out
 
+    def _job_machine(self, task):
+        """Maskinetypen for en opgave fra en maskineregel (så Hus-chats link kan finde den), ellers ''."""
+        rule = next((r for r in self.data['rules'] if r['id'] == task.get('auto_rule')), None)
+        return machine_type(rule['name']) if rule else ''
+
     def _open_jobs_for(self, kid):
         d = self._now()
         jobs = []
@@ -1285,9 +1349,11 @@ class Store:
                            'icon': self._icon_for(i['task_id'], i['title'], i['room']),
                            'streak': self._item_streak(kid['id'], i),
                            **self._extra_for(i)} for i in items],
+                'suggestions': [{'id': x['id'], 'text': x['text'], 'photo': x['photo']}
+                                for x in self.data['suggestions'] if x['kid_id'] == kid['id']],
                 'jobs': [{'task_id': t['id'], 'title': t['title'], 'room': t['room'],
                           'icon': t.get('icon') or icons.guess(t['title'], t['room']),
-                          'price': t['price'], 'expires': t.get('expires', '')}
+                          'price': t['price'], 'expires': t.get('expires', ''), 'machine': self._job_machine(t)}
                          for t in self._open_jobs_for(kid)],
             }
 
@@ -1460,6 +1526,8 @@ class Store:
             self._refresh()
             hero = self._hero_id()
             week = week_key(self._now())
+            names = {k['id']: k['name'] for k in self.data['kids']}
+            colors = {k['id']: k['color'] for k in self.data['kids']}
             kids = []
             for k in self.data['kids']:
                 done = self._week_items(k['id'], ('done',))
@@ -1510,6 +1578,9 @@ class Store:
                 'claims': [dict(c, name=next((k['name'] for k in self.data['kids'] if k['id'] == c['kid_id']), ''),
                                 color=next((k['color'] for k in self.data['kids'] if k['id'] == c['kid_id']), '#888'))
                            for c in self.data['claims']],
+                'suggestions': [{'id': x['id'], 'kid_id': x['kid_id'], 'name': names.get(x['kid_id'], '?'),
+                                 'color': colors.get(x['kid_id'], '#888'), 'text': x['text'], 'photo': x['photo']}
+                                for x in self.data['suggestions']],
                 'wishes': [{'kid_id': k['id'], 'name': k['name'], 'color': k['color'], 'title': k['wish']['title'],
                             'price': k['wish']['price']} for k in self.data['kids'] if k.get('wish')],
                 'to_pay': sum(max(0, self.balance(k['id'])) for k in self.data['kids']),
@@ -1531,6 +1602,7 @@ class Store:
                                outdoor=not t.get('auto_rule') and outdoor.is_outdoor(t['title'], t['room']),
                                snow=not t.get('auto_rule') and outdoor.is_snow(t['title'], t['room']))
                           for t in self.data['tasks']],
+                'house_now': self._house_now(),
                 'quick': self._quick(),
                 'quick_choices': self._quick_choices(),
                 'weather': self._weather_view(),
@@ -1879,15 +1951,50 @@ class Store:
             self._save()
             return rule
 
-    def update_rule(self, rule_id, active=None, door=None):
+    def update_rule(self, rule_id, active=None, door=None, title=None, price=None):
+        """Slå til/fra, dørsensor, opgavens navn og pris. En ledig opgave fra reglen får det nye navn og den nye pris."""
         with self.lock:
             rule = self._rule(rule_id)
             if active is not None:
                 rule['active'] = bool(active)
             if door is not None:
                 rule['door'] = self._clean_door(door)
+            if title is not None:
+                rule['title'] = self._clean_text(title, 'Navn på opgaven')
+            if price is not None:
+                rule['price'] = self._clean_price(price)
+            for t in self.data['tasks']:
+                if t.get('auto_rule') == rule_id and not self._taken(t):
+                    t['title'], t['price'] = rule['title'], rule['price']
             self._save()
             return rule
+
+    def machine_link(self, name, machine):
+        """Barnets link til en maskineopgave (Hus-chat): 'k/<token>/?machine=washer', når navnet er et barn og en
+        tændt regel har den maskinetype. Ellers None - så tager man den i chatten som før."""
+        with self.lock:
+            if machine not in MACHINES:
+                return None
+            kid = self.kid_by_name(name) or self.kid_by_name((str(name or '').split() or [''])[0])
+            if not kid or kid.get('paused'):
+                return None
+            if not any(r['active'] and machine_type(r['name']) == machine for r in self.data['rules']):
+                return None
+            return 'k/%s/?machine=%s' % (kid['token'], machine)
+
+    def _house_now(self):
+        """Maskineopgaver lige nu til forælderen: ledige, og hvem der har taget dem."""
+        rules = {r['id']: r for r in self.data['rules']}
+        names = {k['id']: k['name'] for k in self.data['kids']}
+        out = []
+        for t in self.data['tasks']:
+            if t.get('auto_rule') not in rules:
+                continue
+            item = next((i for i in self.data['items'] if i['task_id'] == t['id'] and i['status'] != 'missed'), None)
+            out.append({'task_id': t['id'], 'title': t['title'], 'price': t['price'], 'machine': rules[t['auto_rule']]['name'],
+                        'icon': t.get('icon') or icons.guess(t['title'], t['room']),
+                        'kid': names.get(item['kid_id'], '') if item else '', 'status': item['status'] if item else 'free'})
+        return out
 
     def drop_open_job(self, rule_id=None, machine=None):
         """Fjerner en LEDIG husopgave (ingen har taget den): maskinen er tømt eller kører igen.

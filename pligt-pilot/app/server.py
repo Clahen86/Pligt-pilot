@@ -39,6 +39,8 @@ KID_I18N = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/i18n$')
 KID_BUY = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/rewards/([a-f0-9]{10})/buy$')
 KID_UNBUY = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/claims/([a-f0-9]{10})/cancel$')
 KID_WISH = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/wish$')
+KID_SUGGEST = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/suggest$')
+KID_SUGGEST_END = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/suggest/([a-f0-9]{10})/cancel$')
 KID_CLAIM = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/tasks/([a-f0-9]{10})/claim$')
 
 KID_FILE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/(sw\.js|manifest\.json|icon\.png|icon-512\.png)$')
@@ -222,6 +224,10 @@ def make_handler(app, role, allow_from=None):
                         app.learn_outside(self.headers.get('X-Pligt-Outside'))
                     if path == '/_ha/hello' and self.client_address[0] == HA_CORE:
                         return self._json({'ok': True})
+                    if path == '/_ha/kidlink' and method == 'POST' and self.client_address[0] == HA_CORE:
+                        body = self._body()
+                        return self._json({'link': app.store.machine_link(body.get('name'), body.get('machine')),
+                                           'outside': app.outside_url().rstrip('/')})
                     if path == '/_ha/event' and method == 'POST' and self.client_address[0] == HA_CORE:
                         body = self._body()
                         return self._json({'ok': True, 'done': app.ha_event(body.get('event'), body.get('data'))})
@@ -363,6 +369,24 @@ def make_handler(app, role, allow_from=None):
                 if kid.get('wish'):
                     app.ha.notify('Pligt-pilot', '%s ønsker sig: %s (%d kr.). Åbn Pligter for at svare.'
                                   % (kid['name'], kid['wish']['title'], kid['wish']['price']))
+                return self._json(store.kid_view(m.group(1)))
+            m = KID_SUGGEST.match(path)
+            if m and method == 'POST':
+                body = self._body(MAX_PHOTO_BODY)
+                photo = None
+                if body.get('image'):
+                    try:
+                        photo = base64.b64decode(str(body['image']), validate=True)
+                    except (binascii.Error, ValueError):
+                        raise Problem('Billedet kunne ikke læses')
+                kid, sug = store.suggest(m.group(1), body.get('text', ''), photo)
+                app.ha.notify('Pligt-pilot', '%s foreslår en opgave%s. Åbn Pligter for at give den en pris.'
+                              % (kid['name'], ': ' + sug['text'] if sug['text'] else ' (med et billede)'))
+                return self._json(store.kid_view(m.group(1)))
+            m = KID_SUGGEST_END.match(path)
+            if m and method == 'POST':
+                self._body()
+                store.cancel_suggestion(m.group(1), m.group(2))
                 return self._json(store.kid_view(m.group(1)))
             m = KID_CLAIM.match(path)
             if m and method == 'POST':
@@ -530,6 +554,13 @@ def make_handler(app, role, allow_from=None):
             if m:
                 store.delete_reward(m.group(1))
                 return self._json(store.admin_state())
+            m = re.match(r'^/api/suggestions/' + ID + r'/(give|reject)$', path)
+            if m:
+                kid, task = store.decide_suggestion(m.group(1), m.group(2) == 'give', body.get('title', ''),
+                                                    body.get('price', 0))
+                if task:
+                    app.ha.notify_kid(kid, 'Ny opgave', 'Du fik dit forslag: %s (%d kr.)' % (task['title'], task['price']))
+                return self._json(store.admin_state())
             m = re.match(r'^/api/claims/' + ID + r'/(approve|reject)$', path)
             if m:
                 approve = m.group(2) == 'approve'
@@ -607,7 +638,7 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.admin_state())
             m = re.match(r'^/api/rules/' + ID + r'$', path)
             if m:
-                store.update_rule(m.group(1), body.get('active'), body.get('door'))
+                store.update_rule(m.group(1), body.get('active'), body.get('door'), body.get('title'), body.get('price'))
                 return self._json(store.admin_state())
             if path == '/api/duties':
                 task = store.add_duty(body.get('title'), body.get('kids'), body.get('date'),

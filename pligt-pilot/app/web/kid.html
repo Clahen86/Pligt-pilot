@@ -79,6 +79,15 @@ h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; disp
 .job .t b { display: block; font-size: 16px; font-weight: 800; overflow-wrap: break-word; hyphens: auto; }
 .job .t span { font-size: 13px; color: var(--muted); font-weight: 700; }
 .job.surprise { outline: 3px dashed #C73A30; outline-offset: -3px; }
+.sughead { font-size: 17px; font-weight: 900; }
+.btn.sugcam { height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 18px; }
+.sugimg { width: 100%; height: 190px; object-fit: cover; border-radius: 16px; }
+.btn.sugcam svg { width: 40px; height: 40px; }
+.card > .shop:first-child { border-top: 0; padding-top: 0; }
+.sugrow { display: flex; gap: 10px; }
+.sugrow .btn { flex: 1; } .sugrow .btn + .btn { flex: 2; }
+.tradeform .btn.small { align-self: flex-start; }
+.job.hl { outline: 3px solid var(--accent); outline-offset: -3px; animation: nudge 1.2s ease-in-out 3; }
 .job .price { background: #FFF1CF; color: #22304A; border-radius: 999px; padding: 4px 10px; font-weight: 900; font-size: 14px; }
 .btn.grab { background: #22304A; min-height: 44px; }
 @media (prefers-reduced-motion: no-preference) { .jobs { animation: nudge 2.4s ease-in-out 2; } }
@@ -118,7 +127,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 </main>
 <script>
 (function () {
-  var state = null, busy = false, tradeOpen = '', wishOpen = false, recipeOpen = '';
+  var state = null, busy = false, tradeOpen = '', wishOpen = false, recipeOpen = '', sugPhoto = '', sugText = '';
   var app = document.getElementById('app'), errBox = document.getElementById('err');
   // ---- sprog: udskifter kendte danske tekststykker (samme metode som serverens i18n.py) ----
   var I18N = { lang: 'da', locale: 'da-DK', rx: null, map: {}, exact: {}, loading: false };
@@ -285,7 +294,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
         (tradeOpen === i.id ? tradeForm(i, s) : '');
     }).join('');
     var jobs = s.jobs.map(function (j) {
-      return '<div class="job' + (j.expires ? ' surprise' : '') + '">' + icoSpan(j.icon) + '<div class="t"><b>' + esc(j.title) + '</b><span>' +
+      return '<div class="job' + (j.expires ? ' surprise' : '') + (WANT && j.machine === WANT ? ' hl' : '') + '">' + icoSpan(j.icon) + '<div class="t"><b>' + esc(j.title) + '</b><span>' +
         esc(j.expires ? 'Overraskelse! Slutter kl. ' + j.expires.slice(11, 16) : (j.room || 'Først til mølle')) + '</span></div><div class="price">' + j.price +
         ' kr</div><button class="btn grab" data-claim="' + j.task_id + '">Tag den</button></div>';
     }).join('');
@@ -305,6 +314,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       '<div class="mid"><b>' + s.completed + '/' + s.goal + '</b><span>i ugen</span></div></div></div>' +
       (s.birthday_today ? '<div class="card"><b>Tillykke med fødselsdagen, ' + esc(k.name) + '!</b><div class="sub">Du er ' + k.age + ' år i dag.</div></div>' : '') +
       jobsCard +
+      suggestCard(s) +
       (s.paused ? '<div class="card"><b>Du har pause</b><div class="sub">Ingen opgaver lige nu. God fornøjelse!</div></div>' : '') +
       pushCard() +
       characterCard(s) +
@@ -321,6 +331,16 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       (items || '<div class="empty">Ingen opgaver lige nu. Godt gået!</div>') + '</div>' +
       '';
     i18nApply(document.body);
+    showWanted();
+  }
+
+  // Fra Hus-chat: ?machine=washer fremhæver maskineopgaven og ruller hen til den (én gang)
+  var WANT = (function () { try { return new URLSearchParams(location.search).get('machine') || ''; } catch (e) { return ''; } })();
+  var wantShown = false;
+  function showWanted() {
+    if (!WANT || wantShown) { return; }
+    var el = app.querySelector('.job.hl');
+    if (el) { wantShown = true; el.scrollIntoView({ block: 'center' }); }
   }
 
   function fmtDue(due) {
@@ -497,6 +517,28 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     return '';
   }
 
+  // forslag: et billede (de små) og/eller en tekst; en voksen sætter navn og pris
+  var CAM = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>';
+  function suggestCard(s) {
+    if (s.paused) { return ''; }
+    var mine = (s.suggestions || []).map(function (x) {
+      return '<div class="shop"><div class="t"><b>Dit forslag: ' + esc(x.text || T('Et billede')) + '</b><span>Venter på svar</span></div>' +
+        '<button class="btn small ghost" data-sugdel="' + x.id + '">Træk tilbage</button></div>';
+    }).join('');
+    var form = '';
+    if ((s.suggestions || []).length < 3) {
+      form = '<b class="sughead">Foreslå en opgave</b>' +
+        (sugPhoto
+          ? '<img class="sugimg" src="data:image/jpeg;base64,' + sugPhoto + '" alt="' + esc(T('Dit billede')) + '">' +
+            '<div class="sugrow"><button class="btn ghost" data-sugpick="1">Tag igen</button><button class="btn" data-sugsend="1">Send forslag</button></div>'
+          : '<div class="sub">Ser du noget, der skal laves? Tag et billede af det.</div>' +
+            '<button class="btn sugcam" data-sugpick="1">' + CAM + '<span>Tag et billede</span></button>') +
+        '<label for="sug-text">Hvad skal laves? (valgfri)</label><input id="sug-text" type="text" maxlength="80" placeholder="Fx Skraldet skal ud" value="' + esc(sugText) + '">' +
+        (sugPhoto ? '' : '<button class="btn small ghost" data-sugsend="1">Send uden billede</button>');
+    }
+    return (form ? '<div class="card tradeform">' + form + '</div>' : '') + (mine ? '<div class="card">' + mine + '</div>' : '');
+  }
+
   function saving(s) { return goalCard(s.saving, ''); }
 
   // billede: formindskes i telefonen, så det er hurtigt at sende
@@ -522,6 +564,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   picker.addEventListener('change', function () {
     var file = picker.files && picker.files[0], id = pickFor;
     picker.value = '';
+    if (file && id === 'sug') { shrink(file, function (b64) { sugPhoto = b64; render(); }); return; }
     if (file && id) { shrink(file, function (b64) { act('api/items/' + id + '/done', { image: b64 }); }); }
   });
 
@@ -550,11 +593,19 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     if (b.dataset.tradeyes) { act('api/trades/' + b.dataset.tradeyes + '/accept'); }
     if (b.dataset.tradeno) { act('api/trades/' + b.dataset.tradeno + '/end'); }
     if (b.dataset.pick) { pickFor = b.dataset.pick; picker.click(); }
+    if (b.dataset.sugpick) { pickFor = 'sug'; picker.click(); }
+    if (b.dataset.sugsend) {
+      var sp = sugPhoto, st = sugText;
+      sugPhoto = ''; sugText = '';
+      act('api/suggest', sp ? { text: st, image: sp } : { text: st });
+    }
+    if (b.dataset.sugdel) { act('api/suggest/' + b.dataset.sugdel + '/cancel'); }
     if (b.dataset.done) { act('api/items/' + b.dataset.done + '/done'); }
     if (b.dataset.claim) { act('api/tasks/' + b.dataset.claim + '/claim'); }
   });
+  app.addEventListener('input', function (e) { if (e.target.id === 'sug-text') { sugText = e.target.value; } });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { load(); } });
-  setInterval(function () { if (!tradeOpen && !wishOpen) { load(); } }, 15000);
+  setInterval(function () { if (!tradeOpen && !wishOpen && !sugPhoto && !(document.activeElement && document.activeElement.id === 'sug-text')) { load(); } }, 15000);
   load().then(detectPush).then(render);
 })();
 </script>

@@ -64,6 +64,12 @@ En ledig opgave, som ingen har taget, forsvinder igen, når
 
 En sensor, der er "unavailable" eller "unknown", fjerner aldrig noget. Har et barn taget opgaven, bliver den liggende.
 
+Tryk **Ret** på en regel for at ændre opgavens navn og pris. En ledig opgave fra reglen får det nye med det samme. Oversigt viser under **Lige nu** maskineopgaverne, og om de er ledige, eller hvem der har taget dem.
+
+## Forslag fra børnene
+
+Børnene kan trykke **Tag et billede** under "Foreslå en opgave" (kameraet åbner direkte) og evt. skrive, hvad der skal laves. Du får en besked, og forslaget står under **Til godkendelse** med billedet. Giv det et navn og en pris, og tryk **Giv den** (barnet, der foreslog den, får opgaven i dag) eller **Nej tak**. Hvert barn kan have tre forslag, der venter.
+
 ## Pligter uden betaling
 
 Under **Opgaver → Pligter uden betaling** sender du en pligt til et eller flere børn med en frist (dato og evt. klokkeslæt) og et træk. Barnet ser den med mærket **Pligt** og fristen. Er den ikke meldt færdig inden fristen, trækkes beløbet (aldrig mere end barnets saldo).
@@ -76,6 +82,7 @@ Under **Børn → Indstillinger** kan du sætte en alder (fx 13) og et antal god
 
 Kræver integrationen **Pligt-pilot**. Den lytter efter `hus_chat_machine` og `madplan_cook` og sender dem videre til add-on'en.
 - Tømmes en maskine (eller tages den) i Hus-chat, fjernes en ledig husopgave for samme slags maskine.
+- Et barn ser "Tag den i Pligter" i Hus-chat (og i beskeden på telefonen) i stedet for "Jeg tager den". Knappen åbner barnets egen side med maskineopgaven fremhævet. Kræver en tændt regel for den slags maskine. Voksne tager den i chatten som før.
 - Navnet fra Madplan og Hus-chat passer, når det er helt ens med barnets navn, eller med det første ord i det ("Dennis" passer på "Dennis opgaver"). Passer flere børn, bruges det ikke.
 - Giver Madplan et barn en maddag, får barnet opgaven "Maddag: <ret>" på dagen med opskrift og ingredienser. Prisen vælges under Indstillinger (standard 0 = en pligt uden betaling).
 - Pligt-pilot fyrer selv `pligt_pilot_task` (taken, done, removed) for husopgaver, maddage og pligter.

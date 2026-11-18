@@ -96,6 +96,26 @@ class Link:
             _LOGGER.debug("Could not pass %s on to Pligt-pilot", event_type, exc_info=True)
 
 
+    async def kid_link(self, name: str, machine: str) -> str | None:
+        """The child's link to a machine chore (for Hus-chat), or None when the name isn't a child in Pligt-pilot or
+        no machine rule of that type is on. Outside address when there is one, else the path on Home Assistant."""
+        if not self.base:
+            await self.hello()
+        if not self.base:
+            return None
+        try:
+            async with async_get_clientsession(self.hass, verify_ssl=False).post(
+                    f"{self.base}/_ha/kidlink", json={"name": name, "machine": machine},
+                    headers={"X-Pligt-Outside": self.outside()}, timeout=aiohttp.ClientTimeout(total=5)) as r:
+                data = await r.json() if r.status == 200 else {}
+        except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
+            return None
+        path = data.get("link") if isinstance(data, dict) else None
+        if not isinstance(path, str) or not PATH.match(path.split("?", 1)[0]):
+            return None
+        return f"{self.outside() or PREFIX}/{path}"
+
+
 class PligtView(HomeAssistantView):
     """/pligter/k/<token>/... and /pligter/p/<token>/... - passed on to the add-on as they are."""
 
