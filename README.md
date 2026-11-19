@@ -42,6 +42,15 @@ Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
 - **Pligter** står med et rødt mærke og en frist, så barnet kan se, hvad der skal nås.
 - **Maddage** fra Madplan med opskrift og ingredienser, som kan foldes ud.
 - **Foreslå en opgave:** ser barnet noget, der skal laves, tager det et billede (eller skriver det). Du sætter navn og pris, og barnet får opgaven.
+- **Sådan gør du:** hver opgave kan have en kort trin-for-trin-guide med "Færdig når …". AI'en i Home Assistant kan skrive den, med ekstra trin til de store (fx afkalkning).
+- **Syg i dag:** barnet kan sige, at det er syg. Siger du ja, forsvinder dagens skoleopgaver (madpakke, skoletaske) uden træk.
+- **Siden vokser med barnet:** legende med store billeder og en stor flueben-knap til de mindste (0–8 år), ryddelig til 9–12 år og mørk og enkel som en tjekliste fra 13 år. Det skifter selv med alderen, eller du vælger pr. barn.
+
+<p align="center">
+  <img src="docs/barn_lille.png" alt="Barnets side, 0–8 år" width="200">
+  <img src="docs/barn.png" alt="Barnets side, 9–12 år" width="200">
+  <img src="docs/barn_stor.png" alt="Barnets side, 13+ år" width="200">
+</p>
 
 ### Til forældrene
 
@@ -50,10 +59,11 @@ Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
   <img src="docs/boern.png" alt="Børn" width="260">
 </p>
 
-- **Lige nu** på Oversigt viser maskineopgaverne, og om de er ledige, eller hvem der har taget dem.
-- **Godkend med ét tryk**, eller godkend alt på én gang. Opgaver kan kræve et foto som bevis.
+- **Oversigt på ét blik:** hvad der venter på dig, hvad der er i gang, og hvad der skal udbetales. "Pr. måned" og "Seneste" er foldet væk, til du åbner dem.
+- **Godkend pr. barn med ét tryk**, eller godkend alt på én gang. Tryk på barnet for at se og afvise de enkelte. Opgaver kan kræve et foto som bevis.
+- **I gang nu** viser maskineopgaver og ledige opgaver, et barn har taget. Har et andet barn lavet den, giver du den videre med **Giv til**, eller du tager den tilbage med **Fjern**.
 - **Giv en opgave med ét tryk:** hurtigknapper øverst på Oversigt med de mest brugte opgaver (eller dem, du har fastgjort). Hver knap viser **Alle** eller **Én**: en "Alle"-opgave (fx red din seng) sendes med ét tryk til hvert barn som deres egen; en "Én"-opgave (fx dæk bord) giver du til ét barn eller gør ledig for alle. Appen gætter ud fra navnet på 5 sprog, og du kan rette det på opgaven.
-- **Fast eller kun når du giver den:** en fast opgave kommer af sig selv, evt. kun på faste ugedage (fx søndag). En opgave, der står til "Kun når jeg giver den", ser børnene aldrig af sig selv, men den kan gives med hurtigknapperne.
+- **Fast eller kun når du giver den:** en fast opgave kommer af sig selv, evt. kun på faste ugedage (fx søndag) og først fra et bestemt klokkeslæt (**Frigives kl.**). En opgave, der står til "Kun når jeg giver den", ser børnene aldrig af sig selv, men den kan gives med hurtigknapperne.
 - **Opsætning på få minutter:** en startpakke opretter opgaver, der passer til børnenes alder. Appen kan også foreslå opgaver ud fra husets rum og enheder.
 - **Fleksible opgaver:** pris, gentagelse, flere gange om dagen, kun til bestemte børn, sæsonopgaver (fx løv om efteråret) og låsning efter alder, der åbner af sig selv, når barnet har fødselsdag.
 - **Årstid og vejr af sig selv:** græs, hæk, løv, havemøbler og sne får selv de rigtige måneder og højst én gang om ugen (hæk hver 3. uge), ud fra titlen. Med en vejr-entity i Home Assistant venter udendørs opgaver på en tør dag, og sneopgaver kommer kun, når det har sneet.
@@ -71,7 +81,7 @@ Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
   <img src="docs/huset.png" alt="Huset" width="260">
 </p>
 
-Når vaskemaskinen, tørretumbleren eller opvaskemaskinen er færdig, får børnene en ledig opgave og en besked, fx "Flyt tøj til tørretumbleren". Appen finder selv målerne i Home Assistant, og hvis navnene ikke passer, peger du på dem fra en liste. En lampe kan blinke grønt, når du godkender.
+Når vaskemaskinen, tørretumbleren eller opvaskemaskinen er færdig, får børnene en ledig opgave og en besked, fx "Flyt tøj til tørretumbleren". Appen finder selv målerne i Home Assistant, og hvis navnene ikke passer, søger du den rigtige frem under **Brug en anden måler**. En lampe kan blinke grønt, når du godkender.
 
 Tryk **Ret** på en regel for at ændre opgavens navn og pris.
 
