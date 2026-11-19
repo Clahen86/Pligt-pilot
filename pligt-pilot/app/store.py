@@ -850,10 +850,11 @@ class Store:
             self._save()
             return copy
 
-    def decide_all(self):
-        """Godkender alt, der venter. Opgaver med billede springes over, så de ses først."""
+    def decide_all(self, kid_id=None):
+        """Godkender alt, der venter (fra ét barn, eller fra alle). Opgaver med billede springes over, så de ses først."""
         with self.lock:
-            ids = [i['id'] for i in self.data['items'] if i['status'] == 'wait' and not i.get('photo')]
+            ids = [i['id'] for i in self.data['items'] if i['status'] == 'wait' and not i.get('photo')
+                   and (kid_id is None or i['kid_id'] == kid_id)]
         return [self.decide(item_id, True) for item_id in ids]
 
     # ---- dage i træk ----------------------------------------------------
@@ -2178,18 +2179,50 @@ class Store:
             return 'k/%s/?machine=%s' % (kid['token'], machine)
 
     def _house_now(self):
-        """Maskineopgaver lige nu til forælderen: ledige, og hvem der har taget dem."""
+        """Lige nu til forælderen: maskineopgaver (ledige eller taget) og ledige opgaver, et barn har taget og ikke er færdig med."""
         rules = {r['id']: r for r in self.data['rules']}
         names = {k['id']: k['name'] for k in self.data['kids']}
+        d = self._now()
         out = []
         for t in self.data['tasks']:
-            if t.get('auto_rule') not in rules:
+            machine = t.get('auto_rule') in rules
+            if not machine and not t.get('open'):
                 continue
-            item = next((i for i in self.data['items'] if i['task_id'] == t['id'] and i['status'] != 'missed'), None)
-            out.append({'task_id': t['id'], 'title': t['title'], 'price': t['price'], 'machine': rules[t['auto_rule']]['name'],
-                        'icon': t.get('icon') or icons.guess(t['title'], t['room']),
-                        'kid': names.get(item['kid_id'], '') if item else '', 'status': item['status'] if item else 'free'})
+            period = self._period(t, d)
+            items = [i for i in self.data['items'] if i['task_id'] == t['id'] and i['status'] != 'missed'
+                     and (machine or (i['period'] == period and i['status'] == 'todo'))]
+            if not machine and not items:
+                continue
+            base = {'task_id': t['id'], 'title': t['title'], 'price': t['price'],
+                    'machine': rules[t['auto_rule']]['name'] if machine else '',
+                    'icon': t.get('icon') or icons.guess(t['title'], t['room'])}
+            if machine and not items:
+                out.append(dict(base, kid='', kid_id='', item_id='', status='free'))
+            for i in items[:1] if machine else items:
+                out.append(dict(base, kid=names.get(i['kid_id'], ''), kid_id=i['kid_id'], item_id=i['id'], status=i['status']))
         return out
+
+    def move_item(self, item_id, kid_id):
+        """Forælderen flytter en taget opgave til det barn, der faktisk lavede den."""
+        with self.lock:
+            item = self._item(item_id)
+            if item['status'] != 'todo':
+                raise Problem('Opgaven er allerede meldt færdig')
+            kid = self._kid(kid_id)
+            item['kid_id'] = kid['id']
+            self._save()
+            return kid, item
+
+    def free_item(self, item_id):
+        """Forælderen tager en opgave fra barnet: den bliver ledig igen, uden penge og uden at tælle som misset."""
+        with self.lock:
+            item = self._item(item_id)
+            if item['status'] != 'todo':
+                raise Problem('Opgaven er allerede meldt færdig')
+            self.data['items'].remove(item)
+            self.delete_photo(item_id)
+            self._save()
+            return item
 
     def drop_open_job(self, rule_id=None, machine=None):
         """Fjerner en LEDIG husopgave (ingen har taget den): maskinen er tømt eller kører igen.

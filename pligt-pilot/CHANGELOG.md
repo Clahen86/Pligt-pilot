@@ -2,6 +2,12 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.20.0 – 2026-11-19
+
+- New overview: header with what waits, what's in progress and what to pay out; approve everything from one child with one tap
+- "In progress" shows every job a child has taken; the three dots give it to another child or take it back
+- Quick buttons as small tiles, children side by side with a ring for the week, the boss as a bar, floating menu
+
 ## 0.19.1 – 2026-11-19
 
 - "Write with AI" is more thorough: 5-8 concrete steps in order (toilet, room desk, under the bed and so on)

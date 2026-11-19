@@ -222,3 +222,20 @@ Alle får hver sin || Everyone gets their own || Jeder bekommt seine eigene || A
 Færdig når || Done when || Fertig, wenn || Klart när || Ferdig når
 Barnet ser det under opgaven. Én ting pr. linje. Skriv fx || The child sees it under the task. One step per line. Write e.g. || Das Kind sieht es unter der Aufgabe. Ein Schritt pro Zeile. Schreib z. B. || Barnet ser det under uppgiften. Ett steg per rad. Skriv t.ex. || Barnet ser det under oppgaven. Ett steg per linje. Skriv f.eks.
 foran en linje, så ser kun børn fra 10 år den. || in front of a line, and only children from 10 see it. || vor eine Zeile, dann sehen sie nur Kinder ab 10. || framför en rad, så ser bara barn från 10 år den. || foran en linje, så ser bare barn fra 10 år den.
+# Ny oversigt, giv til og fjern
+familien || family || Familie || familjen || familien
+i gang nu || in progress || läuft gerade || pågår nu || i gang nå
+I gang nu || In progress || Läuft gerade || Pågår nu || I gang nå
+Giv til || Give to || Geben an || Ge till || Gi til
+Fjern fra || Take from || Wegnehmen von || Ta från || Ta fra
+Fjern || Remove || Entfernen || Ta bort || Fjern
+Ledig || Free || Frei || Ledig || Ledig
+Flere || More || Mehr || Fler || Flere
+Udbetal til alle || Pay out to all || An alle auszahlen || Betala ut till alla || Betal ut til alle
+med billede || with photo || mit Foto || med bild || med bilde
+får besked || gets a message || bekommt Bescheid || får besked || får beskjed
+Opgaven er ledig igen || The task is free again || Die Aufgabe ist wieder frei || Uppgiften är ledig igen || Oppgaven er ledig igjen
+Opgaven er givet til || The task was given to || Die Aufgabe wurde gegeben an || Uppgiften gavs till || Oppgaven ble gitt til
+Fjerne opgaven fra barnet? Den bliver ledig igen, og der gives ingen penge. || Take the task from the child? It becomes free again, and no money is given. || Die Aufgabe dem Kind wegnehmen? Sie wird wieder frei, und es gibt kein Geld. || Ta uppgiften från barnet? Den blir ledig igen, och inga pengar ges. || Ta oppgaven fra barnet? Den blir ledig igjen, og det gis ingen penger.
+Godkend alt fra || Approve all from || Alles genehmigen von || Godkänn allt från || Godkjenn alt fra
+Mere for || More for || Mehr für || Mer för || Mer for

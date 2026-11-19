@@ -448,6 +448,23 @@ class StoreTests(unittest.TestCase):
         self.store.decide_sick(self.maja['id'], False)
         self.assertFalse(self.store.kid_view(self.maja['token'])['sick_ask'])
 
+    def test_parent_moves_or_frees_a_taken_job(self):
+        job = self.store.add_task('Fej indkørslen', 10, open_job=True)
+        kid, item = self.store.claim(self.emil['token'], job['id'])
+        now = [n for n in self.store.admin_state()['house_now'] if n['task_id'] == job['id']]
+        self.assertEqual((now[0]['kid'], now[0]['item_id']), ('Emil', item['id']))
+        self.store.move_item(item['id'], self.maja['id'])                       # Maja lavede den
+        self.assertEqual(self.kid_items(self.maja)[-1]['title'], 'Fej indkørslen')
+        self.store.free_item(item['id'])                                        # ingen har den
+        self.assertEqual([j['title'] for j in self.store.kid_view(self.emil['token'])['jobs']], ['Fej indkørslen'])
+        self.assertEqual([n for n in self.store.admin_state()['house_now'] if n['task_id'] == job['id']], [])
+        kid, item = self.store.claim(self.emil['token'], job['id'])
+        self.store.mark_done(self.emil['token'], item['id'])
+        with self.assertRaises(Problem):
+            self.store.free_item(item['id'])                                    # meldt færdig: brug Afvis
+        self.assertEqual([i['title'] for i in self.store.decide_all(self.maja['id'])], [])  # kun Majas
+        self.assertEqual([i['title'] for i in self.store.decide_all(self.emil['id'])], ['Fej indkørslen'])
+
     def test_task_released_at_a_time(self):
         task = self.store.add_task('Tøm opvasken', 3)
         self.store.update_task(task['id'], release='15:30', days=[0, 2])

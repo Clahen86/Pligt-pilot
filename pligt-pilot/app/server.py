@@ -510,6 +510,15 @@ def make_handler(app, role, allow_from=None):
             if m:
                 store.set_goal(m.group(1), body.get('title'), body.get('amount'))
                 return self._json(store.admin_state())
+            m = re.match(r'^/api/items/' + ID + r'/move/' + ID + r'$', path)
+            if m:
+                kid, item = store.move_item(m.group(1), m.group(2))
+                app.ha.notify_kid(kid, 'Pligt-pilot', 'Du har fået opgaven: %s' % item['title'])
+                return self._json(store.admin_state())
+            m = re.match(r'^/api/items/' + ID + r'/free$', path)
+            if m:
+                store.free_item(m.group(1))
+                return self._json(store.admin_state())
             m = re.match(r'^/api/items/' + ID + r'/undo$', path)
             if m:
                 store.undo(m.group(1))
@@ -629,7 +638,7 @@ def make_handler(app, role, allow_from=None):
                 store.add_starter_pack()
                 return self._json(store.admin_state())
             if path == '/api/approve_all':
-                for item in store.decide_all():
+                for item in store.decide_all(body.get('kid_id') or None):
                     kid = next((k for k in store.data['kids'] if k['id'] == item['kid_id']), None)
                     if kid:
                         app.ha.notify_kid(kid, 'Pligt-pilot', 'Godkendt: %s. Du fik %d kr.!'
