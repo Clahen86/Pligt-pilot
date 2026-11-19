@@ -2,6 +2,10 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.21.1 – 2026-11-19
+
+- Overview: "Per month" and "Recent" are folded away and open with a tap
+
 ## 0.21.0 – 2026-11-19
 
 - The child's page grows with the child: a playful look for 0-8 (big pictures and a big tick button), a tidy one for 9-12 and a dark, plain checklist for 13+

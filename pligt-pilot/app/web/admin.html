@@ -223,6 +223,12 @@ h2.hrow > span { display: flex; align-items: center; gap: 8px; }
 nav { left: 12px; right: 12px; bottom: max(10px, env(safe-area-inset-bottom)); background: var(--ink); border: 0; border-radius: 22px; padding: 6px; box-shadow: 0 10px 30px rgba(34,48,74,.25); }
 nav button { color: rgba(255,255,255,.62); }
 nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff; }
+
+.foldh { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: #fff; border-radius: 18px; padding: 14px 16px; color: var(--ink); text-align: left; box-shadow: 0 4px 14px rgba(34,48,74,.06); }
+.foldh b { font-size: 16px; font-weight: 900; flex: 1; }
+.foldh .fn { background: #F1E8D6; border-radius: 999px; padding: 2px 9px; font-size: 13px; font-weight: 900; color: var(--muted); }
+.foldh .fc { display: grid; place-items: center; color: var(--muted); transition: transform .2s; }
+.foldh.on .fc { transform: rotate(90deg); }
 </style>
 </head>
 <body>
@@ -771,16 +777,18 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
         '<div class="meter"><i style="width:' + Math.round(100 * s.family.saved / s.family.amount) + '%"></i></div></div>';
     }
     if (s.months && s.months.some(function (m) { return m.total > 0; })) {
-      out += '<h2>Pr. måned</h2><div class="list">';
-      s.months.forEach(function (m) {
+      out += foldHead('months', 'Pr. måned', s.months.filter(function (m) { return m.total > 0; }).length);
+      if (fold.months) { out += '<div class="list">'; }
+      if (fold.months) s.months.forEach(function (m) {
         out += '<div class="card"><div class="row"><div class="grow t"><b>' + esc(m.label) + '</b><span>' +
           m.kids.map(function (k) { return esc(k.name) + ' ' + k.amount + ' kr'; }).join(' · ') + '</span></div><div class="price">' + m.total + ' kr</div></div></div>';
       });
-      out += '</div>';
+      if (fold.months) { out += '</div>'; }
     }
     if (s.history && s.history.length) {
-      out += '<h2>Seneste</h2><div class="list">';
-      s.history.slice(0, 12).forEach(function (h) {
+      out += foldHead('history', 'Seneste', Math.min(12, s.history.length));
+      if (fold.history) { out += '<div class="list">'; }
+      if (fold.history) s.history.slice(0, 12).forEach(function (h) {
         var label = h.kind === 'task' ? h.note : h.kind === 'payout' ? 'Udbetalt' : h.kind === 'allowance' ? 'Lommepenge' : h.kind === 'penalty' ? 'Træk: ' + h.note : h.kind === 'reward' ? 'Belønning: ' + h.note : h.note || 'Bonus';
         var when = new Date(h.at);
         var day = isNaN(when) ? '' : when.toLocaleDateString(I18N.locale, { weekday: 'short', day: 'numeric', month: 'short' });
@@ -789,7 +797,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
           '<div class="price" style="color:' + (h.amount < 0 ? '#C73A30' : '#0B7A70') + '">' + (h.amount > 0 ? '+' : '') + h.amount + ' kr</div>' +
           (h.can_undo ? '<button class="btn small ghost" data-undo="' + h.item_id + '">Fortryd</button>' : '') + '</div>';
       });
-      out += '</div>';
+      if (fold.history) { out += '</div>'; }
     }
     if (s.advice && s.advice.length) {
       out += '<h2>Gode råd</h2><div class="list">' + s.advice.map(function (t) { return '<div class="card note">' + esc(t) + '</div>'; }).join('') + '</div>';
@@ -803,6 +811,12 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
   // ---- Hurtigknapper: giv en opgave for i dag ------------------------
   function quickById(id) { return (state.quick || []).filter(function (q) { return q.id === id; })[0]; }
   // "Lige nu": maskineopgaver, der ligger ledige eller er taget af et barn
+  var fold = { months: false, history: false };  // "Pr. måned" og "Seneste" er lukket, til man åbner dem
+  var CHEV = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  function foldHead(key, title, n) {
+    return '<button class="foldh' + (fold[key] ? ' on' : '') + '" data-fold="' + key + '" aria-expanded="' + fold[key] + '"><b>' + title + '</b>' +
+      (n ? '<span class="fn">' + n + '</span>' : '') + '<span class="fc">' + CHEV + '</span></button>';
+  }
   var moveOpen = '', apprOpen = '', kidOpen = '';  // hvad der er foldet ud på Oversigt
   var DOTS = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#55627A" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
   function nowBox() {
@@ -1515,6 +1529,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
       post('api/kids/' + d.savegoal + '/goal', { title: document.getElementById('g-t-' + d.savegoal).value, amount: document.getElementById('g-a-' + d.savegoal).value }, 'Sparemål gemt');
     }
     else if (d.cleargoal) { post('api/kids/' + d.cleargoal + '/goal', { title: '', amount: '' }, 'Sparemål fjernet'); }
+    else if (d.fold) { fold[d.fold] = !fold[d.fold]; render(); }
     else if (d.apprsee) { apprOpen = apprOpen === d.apprsee ? '' : d.apprsee; render(); }
     else if (d.approvekid) { var ak = kidById(d.approvekid); post('api/approve_all', { kid_id: d.approvekid }, 'Godkendt' + (ak ? ' – ' + ak.name + ' får besked' : '')); }
     else if (d.kidopen) { kidOpen = kidOpen === d.kidopen ? '' : d.kidopen; render(); }
