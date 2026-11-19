@@ -116,6 +116,11 @@ h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; disp
 .recipe ul { margin: 0; padding-left: 20px; font-size: 15px; font-weight: 600; }
 .recipe p { margin: 0; font-size: 15px; font-weight: 600; white-space: pre-wrap; }
 .recipe a { color: var(--accent); font-weight: 800; }
+.sickbtn { display: block; width: 100%; margin-top: 14px; padding: 14px; border-radius: 16px; border: 2px dashed #D9CFBE; background: transparent; color: var(--muted, #6B6457); font: inherit; font-size: 16px; font-weight: 800; cursor: pointer; }
+.sickc { margin-top: 14px; }
+.sickc .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.how ol { margin: 0; padding-left: 22px; font-size: 16px; font-weight: 700; line-height: 1.5; }
+.how li + li { margin-top: 2px; }
 button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 </style>
 </head>
@@ -287,16 +292,18 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
         ? '<button class="btn ghost small" data-trade="' + i.id + '" aria-label="Byt: ' + esc(i.title) + '">Byt</button>' : '';
       var tag = i.duty ? '<span class="new">Pligt</span>' : '<div class="price">' + i.price + ' kr</div>';
       var more = i.meal && (i.meal.recipe || i.meal.ingredients.length || i.meal.url)
-        ? '<button class="btn ghost small" data-recipe="' + i.id + '" aria-expanded="' + (recipeOpen === i.id) + '">' + (recipeOpen === i.id ? 'Skjul opskrift' : 'Opskrift') + '</button>' : '';
+        ? '<button class="btn ghost small" data-recipe="' + i.id + '" aria-expanded="' + (recipeOpen === i.id) + '">' + (recipeOpen === i.id ? 'Skjul opskrift' : 'Opskrift') + '</button>'
+        : i.how && i.status === 'todo' ? howBtn(i.id) : '';
       return '<div class="task' + (i.duty ? ' duty' : '') + '">' + icoSpan(i.icon) + '<div class="t"><b>' + esc(i.title) + '</b><span>' + esc(sub) +
         '</span></div>' + tag + more + swap + right + '</div>' +
-        (recipeOpen === i.id ? recipeCard(i.meal) : '') +
+        (recipeOpen === i.id ? (i.meal ? recipeCard(i.meal) : howCard(i.how)) : '') +
         (tradeOpen === i.id ? tradeForm(i, s) : '');
     }).join('');
     var jobs = s.jobs.map(function (j) {
       return '<div class="job' + (j.expires ? ' surprise' : '') + (WANT && j.machine === WANT ? ' hl' : '') + '">' + icoSpan(j.icon) + '<div class="t"><b>' + esc(j.title) + '</b><span>' +
         esc(j.expires ? 'Overraskelse! Slutter kl. ' + j.expires.slice(11, 16) : (j.room || 'Først til mølle')) + '</span></div><div class="price">' + j.price +
-        ' kr</div><button class="btn grab" data-claim="' + j.task_id + '">Tag den</button></div>';
+        ' kr</div>' + (j.how ? howBtn('j' + j.task_id) : '') + '<button class="btn grab" data-claim="' + j.task_id + '">Tag den</button></div>' +
+        (j.how && recipeOpen === 'j' + j.task_id ? howCard(j.how) : '');
     }).join('');
     var jobsCard = s.jobs.length && !s.paused
       ? '<section class="jobs" aria-label="Ledige opgaver"><div class="jobshead"><b>' + (s.jobs.length === 1 ? 'Der er en ledig opgave!' : 'Der er ' + s.jobs.length + ' ledige opgaver!') +
@@ -329,6 +336,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       '<div class="bars">' + bars + '</div></div>' +
       '<h2>Dine opgaver</h2><div class="list">' +
       (items || '<div class="empty">Ingen opgaver lige nu. Godt gået!</div>') + '</div>' +
+      sickCard(s) +
       '';
     i18nApply(document.body);
     showWanted();
@@ -347,6 +355,21 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     var d = new Date(due);
     var day = isNaN(d) ? due.slice(0, 10) : d.toLocaleDateString(I18N.locale, { weekday: 'short', day: 'numeric', month: 'short' });
     return day + ' kl. ' + due.slice(11, 16);
+  }
+  function sickCard(s) {
+    if (s.paused) { return ''; }
+    if (s.sick) { return '<div class="card sickc"><b>God bedring!</b><div class="sub">Dine skoleopgaver er væk i dag. I morgen er alt som før.</div></div>'; }
+    if (s.sick_ask) {
+      return '<div class="card sickc"><div class="row"><div><b>Du har sagt, at du er syg</b><div class="sub">Venter på, at en voksen siger ja.</div></div>' +
+        '<button class="btn ghost small" data-sick="off">Fortryd</button></div></div>';
+    }
+    return s.has_school ? '<button class="sickbtn" data-sick="on">Jeg er syg i dag</button>' : '';
+  }
+  function howBtn(id) {
+    return '<button class="btn ghost small" data-recipe="' + id + '" aria-expanded="' + (recipeOpen === id) + '">' + (recipeOpen === id ? 'Skjul' : 'Sådan') + '</button>';
+  }
+  function howCard(text) {
+    return '<div class="card recipe how"><b>Sådan gør du</b><ol>' + String(text).split('\n').map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></div>';
   }
   function recipeCard(m) {
     var out = '<div class="card recipe">';
@@ -582,6 +605,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       wishOpen = false;
       act('api/wish', { title: wt, price: wp });
     }
+    if (b.dataset.sick) { act('api/sick', { on: b.dataset.sick === 'on' }); }
     if (b.dataset.recipe) { recipeOpen = recipeOpen === b.dataset.recipe ? '' : b.dataset.recipe; render(); }
     if (b.dataset.trade) { tradeOpen = b.dataset.trade; render(); }
     if (b.dataset.tradecancel) { tradeOpen = ''; render(); }

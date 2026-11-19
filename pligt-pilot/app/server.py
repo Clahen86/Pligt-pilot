@@ -41,6 +41,7 @@ KID_UNBUY = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/claims/([a-f0-9]{10})/can
 KID_WISH = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/wish$')
 KID_SUGGEST = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/suggest$')
 KID_SUGGEST_END = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/suggest/([a-f0-9]{10})/cancel$')
+KID_SICK = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/sick$')
 KID_CLAIM = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/tasks/([a-f0-9]{10})/claim$')
 
 KID_FILE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/(sw\.js|manifest\.json|icon\.png|icon-512\.png)$')
@@ -388,6 +389,13 @@ def make_handler(app, role, allow_from=None):
                 self._body()
                 store.cancel_suggestion(m.group(1), m.group(2))
                 return self._json(store.kid_view(m.group(1)))
+            m = KID_SICK.match(path)
+            if m and method == 'POST':
+                on = bool(self._body().get('on', True))
+                kid = store.ask_sick(m.group(1), on)
+                if on and kid.get('sick_ask'):
+                    app.ha.notify('Pligt-pilot', '%s siger: Jeg er syg i dag. Åbn Pligter for at sige ja.' % kid['name'])
+                return self._json(store.kid_view(m.group(1)))
             m = KID_CLAIM.match(path)
             if m and method == 'POST':
                 self._body()
@@ -506,6 +514,16 @@ def make_handler(app, role, allow_from=None):
             if m:
                 store.undo(m.group(1))
                 return self._json(store.admin_state())
+            m = re.match(r'^/api/kids/' + ID + r'/sick/(on|off|yes|no)$', path)
+            if m:
+                kid_id, what = m.groups()
+                if what in ('yes', 'no'):
+                    kid = store.decide_sick(kid_id, what == 'yes')
+                    app.ha.notify_kid(kid, 'Pligt-pilot', 'God bedring! Dine skoleopgaver er væk i dag.' if what == 'yes'
+                                      else 'En voksen sagde nej til syg i dag.')
+                else:
+                    store.set_sick(kid_id, what == 'on')
+                return self._json(store.admin_state())
             m = re.match(r'^/api/kids/' + ID + r'/(delete|payout|newlink)$', path)
             if m:
                 kid_id, action = m.groups()
@@ -516,6 +534,14 @@ def make_handler(app, role, allow_from=None):
                 else:
                     store.new_token(kid_id)
                 return self._json(store.admin_state())
+            if path == '/api/how':
+                title = str(body.get('title') or '').strip()[:60]
+                if not title:
+                    raise Problem('Skriv først et navn på opgaven')
+                if not app.ha.enabled:
+                    raise Problem('Kræver Home Assistant')
+                return self._json({'how': store.write_how(app.ha, title, body.get('room', ''),
+                                                          body.get('age_min', 0), body.get('kids'))})
             if path == '/api/tasks':
                 task = store.add_task(body.get('title'), body.get('price', 0), body.get('room', ''),
                                       body.get('repeat', 'daily'), body.get('open', False),
@@ -524,10 +550,12 @@ def make_handler(app, role, allow_from=None):
                                       body.get('photo', False), None, body.get('season', ''),
                                       body.get('surprise', False), body.get('icon', ''),
                                       days=body.get('days'), active=body.get('active', True))
-                extra = {k: body[k] for k in ('each', 'quick') if k in body}   # fra arket "Ny opgave"
+                extra = {k: body[k] for k in ('each', 'quick', 'how', 'release', 'school') if k in body}   # fra arket "Ny opgave"
                 if extra:
                     store.update_task(task['id'], **extra)
-                if body.get('open') and task['active']:
+                if task.get('release'):
+                    task['released_on'] = store._now().date().isoformat() if store._released(task, store._now()) else ''
+                if body.get('open') and task['active'] and store._released(task, store._now()):
                     for kid in store.data['kids']:
                         if not kid.get('paused') and store._in_scope(task, kid):
                             app.ha.notify_kid(kid, 'Ny opgave',
@@ -536,7 +564,7 @@ def make_handler(app, role, allow_from=None):
             m = re.match(r'^/api/tasks/' + ID + r'$', path)
             if m:
                 allowed = ('title', 'price', 'room', 'repeat', 'open', 'active', 'kids', 'age_min', 'times', 'photo', 'season',
-                           'surprise', 'icon', 'quick', 'each', 'days')
+                           'surprise', 'icon', 'quick', 'each', 'days', 'how', 'release', 'school')
                 store.update_task(m.group(1), **{k: v for k, v in body.items() if k in allowed})
                 return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'/delete$', path)
@@ -629,7 +657,7 @@ def make_handler(app, role, allow_from=None):
             if path == '/api/settings':
                 for key in ('goal', 'hero_bonus', 'penalty', 'perfect_bonus',
                             'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading', 'weekly_summary', 'streak_bonus', 'lang',
-                            'auto_task_hours', 'min_tasks_age', 'min_tasks_week', 'meal_price'):
+                            'auto_task_hours', 'min_tasks_age', 'min_tasks_week', 'meal_price', 'ai_entity'):
                     if key in body:
                         store.set_setting(key, body[key])
                 if 'family_title' in body or 'family_amount' in body:

@@ -83,6 +83,7 @@ class Automation:
         self._allowance()
         self._surprise()
         self._reminders()
+        self._releases()
         self._birthdays()
         self._summary()
 
@@ -169,6 +170,11 @@ class Automation:
         for kid, n in self.store.due_reminders():
             self.ha.notify_kid(kid, 'Husk dine pligter',
                                'Du har %d opgave%s i dag.' % (n, '' if n == 1 else 'r'))
+
+    def _releases(self):
+        for kid, task in self.store.due_releases():
+            self.ha.notify_kid(kid, 'Ny opgave', '%s (%d kr.)%s' % (
+                task['title'], task['price'], '. Først til mølle!' if task['open'] else ''))
 
     def _birthdays(self):
         for kid, age in self.store.birthday_notices():

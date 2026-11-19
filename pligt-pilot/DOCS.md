@@ -11,24 +11,32 @@
 
 Fanen **Opgaver** viser dine opgaver i to grupper: **Faste** og **Når jeg giver dem**. Hver opgave fylder én linje med dage eller hyppighed, pris, *hver sin* og rummet. Tryk på linjen for at rette opgaven, eller tryk **+ Ny opgave**. Pligter, maddage og husets opgaver står ikke i listen.
 
-Arket har **Navn**, **Pris**, **Hvornår?**, **Hvem?** (*Hver sin* eller *Én af børnene*) og **Gem**. Under **Flere valg** finder du alder, hvor tit, antal gange, årstid, foto, overraskelse, hurtigknap, billede og bestemte børn, og nederst **Kopiér** og **Slet**. Slet spørger først.
+Arket har **Navn**, **Pris**, **Hvornår?**, **Hvem?** (*Hver sin* eller *Én af børnene*), **Sådan gør du** og **Gem**. Under **Flere valg** finder du alder, hvor tit, antal gange, årstid, foto, overraskelse, hurtigknap, skoledag, billede og bestemte børn, og nederst **Kopiér** og **Slet**. Slet spørger først.
+
+**Sådan gør du** er en kort vejledning, én ting pr. linje. Barnet ser den med knappen **Sådan** ved opgaven. Tryk **Lav med AI**, så skriver husets AI (en `ai_task` i Home Assistant, fx Google Gemini) 3-5 punkter, der passer til det yngste barn. Du kan rette teksten, før du gemmer. AI'en bruges kun, når du trykker. Vælg hvilken AI under **Indstillinger**. Står den på *Automatisk*, og en AI ikke svarer, prøves de næste. Maskineopgaver (vask, tørretumbler, opvask) har en fast tekst.
+
+## Syg i dag
+
+Tænd **Syg i dag** på barnet under **Børn**. Så forsvinder dagens skoleopgaver uden træk, og næste dag er alt normalt igen af sig selv. Barnet kan også selv trykke **Jeg er syg i dag** nederst i appen. Du får en besked og et kort under *Til godkendelse*.
+
+En opgave er en skoleopgave, når **Skoledag** er sat under *Flere valg*. Det sættes af sig selv for navne som *madpakke*, *skoletaske* og *lektier*. De andre opgaver kan barnet stadig lave. Er barnet væk i længere tid, så brug **På pause**.
 
 ## Fast eller kun når jeg giver den
 
 Under **Hvornår?** i arket vælger du, hvornår børnene får opgaven:
 
-- **Faste dage:** den kommer af sig selv, så tit som gentagelsen siger. Vælg evt. dagene (Man–Søn), eller **Hver dag**. Et tryk på en dag gør opgaven fast. En daglig opgave kommer så kun på de dage, og en ugentlig kommer på den første valgte dag og er åben resten af ugen. Ingen dage valgt betyder alle dage. Træk for glemte opgaver tæller kun de dage, opgaven blev givet.
+- **Faste dage:** den kommer af sig selv, så tit som gentagelsen siger. Vælg evt. dagene (Man–Søn), eller **Hver dag**. Et tryk på en dag gør opgaven fast. En daglig opgave kommer så kun på de dage, og en ugentlig kommer på den første valgte dag og er åben resten af ugen. Ingen dage valgt betyder alle dage. Træk for glemte opgaver tæller kun de dage, opgaven blev givet. Med **Frigives kl.** (fx 15:30) ser børnene først opgaven på det tidspunkt, og de får en besked. Tomt betyder fra morgenen.
 - **Når jeg giver den:** børnene ser den aldrig af sig selv. Du giver den med hurtigknapperne eller **+ Tilføj**. Den står under *Når jeg giver dem* i listen.
 
 ## Giv en opgave hurtigt
 
-Øverst på **Oversigt** står **Giv en opgave** med op til 8 knapper: dem, du har fastgjort, først, og derefter dem, I bruger mest. Tryk på en, og vælg barnet eller **Først til mølle**. Så er den sendt for i dag.
+Øverst på **Oversigt** står **Giv en opgave** med op til 8 knapper: dem, du har fastgjort, først, og derefter dem, I bruger mest. Tryk på en, og vælg barnet eller alle (**Først til mølle**, eller **Alle får hver sin**). Så er den sendt for i dag.
 
 Tryk på **+ Tilføj** for at vælge, hvilke opgaver der altid skal stå som knap. Et flueben betyder fastgjort. Tryk igen for at fjerne det, og tryk **Færdig**. Du fjerner også en fastgjort knap ved at holde den inde et øjeblik, eller med **Fjern fra hurtigknapperne**, når du har trykket på den. Det samme valg findes som **Vis som hurtigknap** på opgaven.
 
 Hver knap har et lille mærke:
 
-- **Alle**: hvert barn laver sin egen (fx *Red din seng*, *Smør madpakke*, *Lektier*). Ét tryk sender den til alle børn, der må få den (alder, pause og valgte børn tæller med).
+- **Alle**: hvert barn laver sin egen (fx *Red din seng*, *Smør madpakke*, *Lektier*). Vælg ét barn, eller **Alle får hver sin** til alle børn, der må få den (alder, pause og valgte børn tæller med).
 - **Én**: én af børnene gør det (fx *Dæk bord*, *Tøm opvaskeren*). Tryk og vælg barnet eller **Først til mølle**.
 
 Appen gætter ud fra opgavens navn. Er gættet forkert, så ret **Hvem?** i opgavens ark. Dit valg vinder, også hvis du senere ændrer navnet.

@@ -281,3 +281,35 @@ class HomeAssistant:
         except Exception as err:  # noqa: BLE001
             log.warning('Kunne ikke hente rum fra Home Assistant: %s', err)
             return []
+
+    def ai_tasks(self):
+        """AI-opgaverne i Home Assistant: [[entity_id, navn], ...]."""
+        return [[r[0], r[1]] for r in self.entities() if r[0].startswith('ai_task.')]
+
+    def describe(self, entity, title, room='', age=0, language='dansk'):
+        """Kort "Sådan gør du" til et barn fra husets AI (ai_task.generate_data). '' hvis det ikke lykkes."""
+        if not self.enabled:
+            return ''
+        # det valgte først (eller en med "pligt" i navnet), så de andre: Google kan være travl et øjeblik
+        tasks = sorted((t[0] for t in self.ai_tasks()), key=lambda e: 'pligt' not in e)
+        if entity and entity.startswith('ai_task.') and ENTITY.match(entity):
+            tasks = [entity] + [t for t in tasks if t != entity]
+        who = 'et barn på %d år' % age if age else 'et barn'
+        where = ' (rum: %s)' % room if room else ''
+        prompt = ('Skriv en kort vejledning til %s om husopgaven "%s"%s, så barnet ved, hvad der skal gøres, '
+                  'og hvornår den er færdig. Forstå navnet, som en familie i hverdagen gør (fx "Skraldet ud" betyder: '
+                  'tag posen op af skraldespanden, bind den, bær den ud i containeren, sæt en ny pose i). '
+                  '3 til 5 korte punkter, ét pr. linje, højst 8 ord hvert. '
+                  'Ingen overskrift, ingen numre, ingen emojis, ingen farlige opgaver. Skriv på %s. '
+                  'Svar kun med punkterne.') % (who, title, where, language)
+        for entity in tasks[:3]:
+            try:
+                raw = self._post('/services/ai_task/generate_data?return_response',
+                                 {'task_name': 'Pligter: sådan gør du', 'entity_id': entity, 'instructions': prompt},
+                                 timeout=45)
+                data = str((json.loads(raw).get('service_response') or {}).get('data') or '').strip()
+                if data:
+                    return data
+            except Exception as err:  # noqa: BLE001
+                log.warning('Kunne ikke få en beskrivelse fra %s: %s', entity, err)
+        return ''

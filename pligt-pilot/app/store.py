@@ -105,6 +105,33 @@ def machine_type(name):
     return 'other'
 
 
+# Fast "Sådan gør du" til maskineopgaver (en linje pr. trin). Bruges, når forælderen ikke selv har skrevet en.
+MACHINE_HOW = {
+    'washer': 'Tøm vaskemaskinen helt\nRyst tøjet, og hæng det op\nLæg det, der må tørretumbles, i tørretumbleren\nLad lågen stå på klem',
+    'dryer': 'Tøm tørretumbleren helt\nFold tøjet, eller læg det i kurven\nRens fnugfilteret\nLad lågen stå på klem',
+    'dishwasher': 'Tøm opvaskemaskinen\nSæt tallerkener og glas på plads\nLæg bestik i skuffen\nSig til, hvis noget ikke er rent',
+}
+
+
+# Skoleopgaver (madpakke, skoletaske, lektier ...): forsvinder, når barnet er sygt. Forælderen kan ændre det.
+SCHOOL = re.compile(r'madpakke|skole|lektie|gymnastiktøj|idrætstøj|lunch ?box|school|homework|brotdose|schul|hausaufgabe'
+                    r'|matlåda|skolväska|läx|matpakke|lekse', re.I)
+
+
+def is_school(task):
+    return bool(task['school']) if 'school' in task else bool(SCHOOL.search(task.get('title') or ''))
+
+
+def clean_how(text):
+    """Beskrivelsen af en opgave: højst 8 korte linjer, uden punkttegn og numre."""
+    lines = []
+    for line in str(text or '').replace('\r', '').split('\n'):
+        line = re.sub(r'^\s*(?:[-*•·]|\d+[.)])\s*', '', line).strip().strip('*').strip()
+        if line:
+            lines.append(line[:100])
+    return '\n'.join(lines[:8])
+
+
 def age_on(birth, today):
     return today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
 
@@ -366,6 +393,95 @@ class Store:
         if _period_kind(self._period(task, d)) == 'D':
             return d.weekday() in days
         return d.weekday() >= days[0]
+
+    # ---- syg i dag ------------------------------------------------------
+    def _sick(self, kid, d=None):
+        return kid.get('sick_on') == (d or self._now()).date().isoformat()
+
+    def _sick_skip(self, task, kid, d):
+        """Syg i dag: skoleopgaverne forsvinder (kun dem), resten kan barnet stadig lave."""
+        return self._sick(kid, d) and is_school(task)
+
+    def set_sick(self, kid_id, on=True):
+        """Forælderen: barnet er sygt i dag. Dagens skoleopgaver fjernes uden træk. I morgen er alt normalt."""
+        with self.lock:
+            kid = self._kid(kid_id)
+            d = self._now()
+            kid.pop('sick_ask', None)
+            kid['sick_on'] = d.date().isoformat() if on else ''
+            if on:
+                tasks = {t['id']: t for t in self.data['tasks']}
+                self.data['items'] = [
+                    i for i in self.data['items']
+                    if not (i['kid_id'] == kid_id and i['status'] == 'todo' and i['task_id'] in tasks
+                            and is_school(tasks[i['task_id']]) and _period_kind(i['period']) == 'D')]
+            else:
+                self._refresh()
+            self._save()
+            return kid
+
+    def ask_sick(self, token, on=True):
+        """Barnet: "Jeg er syg i dag" (eller fortryder). En voksen skal sige ja."""
+        with self.lock:
+            kid = self.kid_by_token(token)
+            if not kid:
+                raise Problem('Linket passer ikke', 404)
+            if on and not self._sick(kid):
+                kid['sick_ask'] = self._now().date().isoformat()
+            else:
+                kid.pop('sick_ask', None)
+            self._save()
+            return kid
+
+    def decide_sick(self, kid_id, yes):
+        with self.lock:
+            kid = self._kid(kid_id)
+            if not yes:
+                kid.pop('sick_ask', None)
+                self._save()
+                return kid
+        return self.set_sick(kid_id, True)
+
+    def _sick_view(self, kid):
+        today = self._now().date().isoformat()
+        return {'sick': self._sick(kid), 'sick_ask': kid.get('sick_ask') == today and not self._sick(kid)}
+
+    def _released(self, task, d):
+        """Frigives kl.: før tidspunktet ser børnene ikke opgaven den dag."""
+        return not task.get('release') or d.strftime('%H:%M') >= task['release']
+
+    @staticmethod
+    def _clean_release(value):
+        value = (value or '').strip()
+        if value and not re.match(r'^([01]\d|2[0-3]):[0-5]\d$', value):
+            raise Problem('Tidspunktet skal være som 15:00')
+        return value
+
+    def due_releases(self):
+        """[(barn, opgave)], der lige er frigivet i dag (en gang pr. dag), så børnene kan få besked."""
+        out = []
+        with self.lock:
+            d = self._now()
+            today = d.date().isoformat()
+            for t in self.data['tasks']:
+                if not t.get('release') or not t['active'] or t.get('released_on') == today or not self._released(t, d):
+                    continue
+                if not self._on_day(t, d) or not self._in_season(t, d) or self._weather_blocks(t, d):
+                    continue
+                days = t.get('days') or [0]
+                if _period_kind(self._period(t, d)) != 'D' and d.weekday() != days[0]:
+                    continue                # ugentlig: kun den første dag
+                t['released_on'] = today
+                for kid in self.data['kids']:
+                    if kid.get('paused') or not self._in_scope(t, kid):
+                        continue
+                    if t['open'] and t in self._open_jobs_for(kid):
+                        out.append((kid, t))
+                    elif not t['open'] and any(i['task_id'] == t['id'] and i['kid_id'] == kid['id'] and i['status'] == 'todo'
+                                               and i['created'][:10] == today for i in self.data['items']):
+                        out.append((kid, t))
+            self._save()
+        return out
 
     @staticmethod
     def _clean_times(value):
@@ -640,6 +756,9 @@ class Store:
                 task['active'] = bool(fields['active'])     # False: kun når forælderen giver den
             if 'days' in fields:
                 task['days'] = self._clean_days(fields['days'])
+            if 'release' in fields:
+                task['release'] = self._clean_release(fields['release'])
+                task.pop('released_on', None)
             if 'kids' in fields:
                 task['kids'] = list(fields['kids'] or [])
             if 'times' in fields:
@@ -661,6 +780,10 @@ class Store:
                 task['surprise'] = bool(fields['surprise'])
             if 'icon' in fields:
                 task['icon'] = icons.valid(fields['icon'])
+            if 'how' in fields:
+                task['how'] = clean_how(fields['how'])
+            if 'school' in fields:
+                task['school'] = bool(fields['school'])
             if 'age_min' in fields:
                 try:
                     task['age_min'] = max(0, min(25, int(fields['age_min'] or 0)))
@@ -1087,9 +1210,11 @@ class Store:
                 continue                    # regn eller ingen sne: kommer næste gang, vejret passer
             if not self._on_day(t, d):
                 continue                    # faste dage: ikke i dag
+            if not self._released(t, d):
+                continue                    # frigives først senere i dag
             period = self._period(t, d)
             for kid in self.data['kids']:
-                if kid.get('paused') or not self._in_scope(t, kid):
+                if kid.get('paused') or not self._in_scope(t, kid) or self._sick_skip(t, kid, d):
                     continue
                 have = existing.get((t['id'], kid['id'], period), 0)
                 for slot in range(have + 1, t.get('times', 1) + 1):
@@ -1150,6 +1275,29 @@ class Store:
                 self._save()
             return out
 
+    def write_how(self, ha, title, room='', age_min=0, kids=None):
+        """Beder husets AI om "Sådan gør du" til det yngste barn, der kan få opgaven. Gemmes ikke her."""
+        try:
+            lo = int(age_min or 0)
+        except (TypeError, ValueError):
+            lo = 0
+        ages = [k['age'] for k in self.data['kids'] if not k.get('paused') and (not kids or k['id'] in kids)
+                and isinstance(k.get('age'), int) and k['age'] >= lo]
+        lang = self.lang_of()
+        text = clean_how(ha.describe(self.data['settings'].get('ai_entity', ''), title, room,
+                                     min(ages) if ages else lo, i18n.NAMES.get(lang, 'Dansk')))
+        if not text:
+            raise Problem('AI\'en svarede ikke. Prøv igen senere, eller skriv selv.')
+        return text
+
+    def _how(self, task_id, lang):
+        """Sådan gør du: forælderens egen tekst, ellers den faste til maskineopgaver, ellers ''."""
+        task = next((t for t in self.data['tasks'] if t['id'] == task_id), None) or {}
+        if task.get('how'):
+            return task['how']
+        fixed = MACHINE_HOW.get(self._job_machine(task)) if task else None
+        return i18n.translate(lang, fixed) if fixed else ''
+
     def _job_machine(self, task):
         """Maskinetypen for en opgave fra en maskineregel (så Hus-chats link kan finde den), ellers ''."""
         rule = next((r for r in self.data['rules'] if r['id'] == task.get('auto_rule')), None)
@@ -1162,7 +1310,8 @@ class Store:
             return jobs
         for t in self.data['tasks']:
             if not t['active'] or not t['open'] or t.get('surprise') or not self._in_scope(t, kid) \
-                    or not self._in_season(t, d) or self._weather_blocks(t, d) or not self._on_day(t, d):
+                    or not self._in_season(t, d) or self._weather_blocks(t, d) or not self._on_day(t, d) \
+                    or not self._released(t, d) or self._sick_skip(t, kid, d):
                 continue
             period = self._period(t, d)
             taken = sum(1 for i in self.data['items'] if i['task_id'] == t['id']
@@ -1312,6 +1461,8 @@ class Store:
                 'kid': {'id': kid['id'], 'name': kid['name'], 'age': kid['age'],
                         'color': kid['color']},
                 'paused': bool(kid.get('paused')),
+                **self._sick_view(kid),
+                'has_school': any(t['active'] and is_school(t) and self._in_scope(t, kid) for t in self.data['tasks']),
                 'saving': self._saving(kid),
                 'family': self._family(),
                 'badges': self._badges(kid),
@@ -1348,12 +1499,14 @@ class Store:
                            'need_photo': i['status'] == 'todo' and self._needs_photo(i),
                            'icon': self._icon_for(i['task_id'], i['title'], i['room']),
                            'streak': self._item_streak(kid['id'], i),
+                           'how': self._how(i['task_id'], self.lang_of(kid)),
                            **self._extra_for(i)} for i in items],
                 'suggestions': [{'id': x['id'], 'text': x['text'], 'photo': x['photo']}
                                 for x in self.data['suggestions'] if x['kid_id'] == kid['id']],
                 'jobs': [{'task_id': t['id'], 'title': t['title'], 'room': t['room'],
                           'icon': t.get('icon') or icons.guess(t['title'], t['room']),
-                          'price': t['price'], 'expires': t.get('expires', ''), 'machine': self._job_machine(t)}
+                          'price': t['price'], 'expires': t.get('expires', ''), 'machine': self._job_machine(t),
+                          'how': self._how(t['id'], self.lang_of(kid))}
                          for t in self._open_jobs_for(kid)],
             }
 
@@ -1550,6 +1703,7 @@ class Store:
                     'badges': self._badges(k),
                     'level': self._level(k),
                     'streak': self._best_streak(k['id']),
+                    **self._sick_view(k),
                 })
             kid_names = {k['id']: k for k in self.data['kids']}
             pending = []
@@ -1588,13 +1742,13 @@ class Store:
                 'settings': dict({k: settings.get(k) for k in
                                   ('penalty', 'perfect_bonus', 'reminder_time', 'celebrate_light',
                                    'boss_hp', 'boss_bonus', 'trading', 'streak_bonus', 'auto_task_hours',
-                                   'min_tasks_age', 'min_tasks_week', 'meal_price')},
+                                   'min_tasks_age', 'min_tasks_week', 'meal_price', 'ai_entity')},
                                  weekly_summary=bool(settings.get('weekly_summary', True))),
                 'pending': pending,
                 'duties': self._duty_views(),
                 'icons': icons.ICONS,
                 'day_names': i18n.DAYS[self.lang_of()],
-                'tasks': [dict(t, icon_shown=t.get('icon') or icons.guess(t['title'], t['room']),
+                'tasks': [dict(t, icon_shown=t.get('icon') or icons.guess(t['title'], t['room']), school=is_school(t),
                                each=self._each(t), each_auto=t.get('each_auto', True),
                                fair=self.fairness(t['price'], t['repeat'], t.get('times', 1), t['id']),
                                auto=outdoor.describe(self._auto_rule(t)),
@@ -2295,6 +2449,10 @@ class Store:
                 value = (value or '').strip().rstrip('/')
                 if value and not re.match(r'^https?://[^\s/]+(/[A-Za-z0-9_./-]*)?$', value):
                     raise Problem('Forkert adresse')
+            elif key == 'ai_entity':
+                value = (value or '').strip().lower()
+                if value and not (ENTITY.match(value) and value.startswith('ai_task.')):
+                    raise Problem('Vælg en AI-opgave, fx ai_task.google_ai_task')
             elif key == 'celebrate_light':
                 value = (value or '').strip().lower()
                 if value and not (ENTITY.match(value) and value.startswith('light.')):

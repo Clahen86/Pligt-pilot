@@ -2,6 +2,16 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.19.0 – 2026-11-19
+
+- "How to do it" on each task: a short step list the child sees under the task
+- "Write with AI": Home Assistant's AI (ai_task) writes the steps for the youngest child; tries the next AI if one is busy
+- Machine chores get fixed steps
+- "Released at": a fixed task can appear at a set time, and the children get a message
+- "Sick today": school chores (lunch box, school bag, homework) disappear for the day without a deduction; back to normal tomorrow
+- Children can say "I am sick today" in their app; a parent approves it
+- Quick buttons always let you pick one child or everyone
+
 ## 0.18.4 – 2026-11-18
 
 - Door sensor list: sensors named after the machine first

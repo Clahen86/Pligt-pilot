@@ -69,6 +69,12 @@ h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; disp
 .sw[aria-checked="true"] span::after { left: 25px; }
 label { font-size: 13px; font-weight: 800; color: var(--muted); display: block; margin-bottom: 4px; }
 input[type=text], input[type=search], input[type=number], input[type=date], input[type=time], select { width: 100%; height: 44px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 0 12px; font-size: 16px; font-weight: 700; color: var(--ink); background: #fff; }
+.relrow { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.relrow label { margin: 0; white-space: nowrap; font-weight: 800; }
+.relrow input[type=time] { width: 130px; flex: none; }
+textarea.how { width: 100%; min-height: 104px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 10px 12px; font: inherit; font-size: 15px; font-weight: 600; line-height: 1.45; color: var(--ink); background: #fff; resize: vertical; }
+.howhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.howhead .btn[disabled] { opacity: .6; }
 .dates { display: grid; grid-template-columns: 1fr 1.6fr 1.2fr; gap: 6px; }
 .qr { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
 .qrsvg { border-radius: 14px; border: 2px solid #D9CFBE; max-width: 100%; height: auto; }
@@ -148,7 +154,7 @@ nav button { font-size: 13px; }
 .qhead .grow { min-width: 0; }
 .qhead .qsub { font-size: 13px; font-weight: 700; color: var(--muted); }
 .fld { display: flex; flex-direction: column; gap: 8px; }
-.fld > .lbl { font-size: 15px; font-weight: 900; color: var(--ink); }
+.fld > .lbl, .howhead .lbl, .relrow label { font-size: 15px; font-weight: 900; color: var(--ink); }
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: #F1E8D6; border-radius: 14px; padding: 4px; }
 .seg button { border: 0; background: transparent; min-height: 40px; border-radius: 11px; font-size: 14.5px; font-weight: 800; color: var(--muted); padding: 0 6px; }
 .seg button[aria-pressed="true"] { background: #fff; color: var(--accent); box-shadow: 0 1px 3px rgba(34,48,74,.14); }
@@ -596,9 +602,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     }
     var out = '<div class="head"><div><h1>Oversigt</h1><div class="sub">' + esc(s.week_label) + ' · Familien</div></div><div class="badge">Forælder</div></div>';
     out += nowBox() + quickBox();
-    var sugs = s.suggestions || [], waiting = s.pending.length + sugs.length;
+    var sugs = s.suggestions || [], sickAsk = s.kids.filter(function (k) { return k.sick_ask; }), waiting = s.pending.length + sugs.length + sickAsk.length;
     out += '<h2>Til godkendelse' + (waiting ? ' <span class="count">' + waiting + '</span>' : '') + '</h2><div class="list">';
     if (!waiting) { out += '<div class="empty">Alt er godkendt. Godt gået!</div>'; }
+    sickAsk.forEach(function (k) {
+      out += '<div class="card"><div class="row"><div class="avatar" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' +
+        '<div class="grow t"><b>' + esc(k.name) + ' er syg i dag</b><span>Skoleopgaverne forsvinder i dag uden træk</span></div>' +
+        '<button class="icon no" data-sickno="' + k.id + '" aria-label="Nej til syg i dag">' + CROSS + '</button>' +
+        '<button class="icon yes" data-sickyes="' + k.id + '" aria-label="Ja, ' + esc(k.name) + ' er syg i dag">' + CHECK + '</button></div></div>';
+    });
     sugs.forEach(function (x) {
       out += '<div class="card"><div class="row"><div class="avatar" style="background:' + esc(x.color) + '" aria-hidden="true">' + esc(x.name.charAt(0).toUpperCase()) + '</div>' +
         '<div class="grow t"><b>' + esc(x.name) + ' foreslår en opgave</b><span>' + esc(x.text || 'Med et billede') + '</span></div></div>' +
@@ -652,7 +664,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     out += '<h2>Børnene</h2>' + (s.to_pay > 0 && s.kids.filter(function (k) { return k.balance > 0; }).length > 1 ? '<button class="btn" data-payall="1">Udbetal til alle (' + s.to_pay + ' kr)</button>' : '') + '<div class="list">';
     s.kids.forEach(function (k) {
       out += '<div class="card"><div class="kid-top"><div class="avatar big" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' +
-        '<div class="grow"><div class="name">' + esc(k.name) + (k.paused ? ' <span class="badge" style="font-size:12px;padding:3px 8px">På pause</span>' : '') + '</div><div class="sub">' + k.age + ' år · ' + k.tasks_week + (k.tasks_week === 1 ? ' opgave' : ' opgaver') + ' i ugen' + (k.level ? ' · ' + esc(k.level.name) : '') + '</div></div>' +
+        '<div class="grow"><div class="name">' + esc(k.name) + (k.paused ? ' <span class="badge" style="font-size:12px;padding:3px 8px">På pause</span>' : k.sick ? ' <span class="badge" style="font-size:12px;padding:3px 8px">Syg i dag</span>' : '') + '</div><div class="sub">' + k.age + ' år · ' + k.tasks_week + (k.tasks_week === 1 ? ' opgave' : ' opgaver') + ' i ugen' + (k.level ? ' · ' + esc(k.level.name) : '') + '</div></div>' +
         '<div class="money"><b style="color:' + esc(k.color) + '">' + k.balance + ' kr</b><span>at udbetale</span></div></div>' +
         '<div class="between"><div class="mini" aria-hidden="true">' + miniBars(k) + '</div>' +
         (k.is_hero ? '<div class="hero">' + CROWN + 'Ugens helt</div>' : '') + '</div>';
@@ -755,7 +767,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       (kids.length ? '<div class="qkids">' + kids.map(function (k) {
         return '<button class="qkid" data-qgive="' + k.id + '"><div class="avatar" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' + esc(k.name) + '</button>';
       }).join('') + '</div>' +
-      '<button class="btn sun" style="width:100%" data-qall="1">Først til mølle – alle kan tage den</button>'
+      (q.each ? '<button class="btn sun" style="width:100%" data-qeach="1">Alle får hver sin</button>'
+        : '<button class="btn sun" style="width:100%" data-qall="1">Først til mølle – alle kan tage den</button>')
         : '<div class="empty">Intet barn kan få den opgave lige nu</div>') +
       (q.quick ? '<button class="btn small ghost" style="width:100%" data-qunpin="' + q.id + '">Fjern fra hurtigknapperne</button>' : '') +
       '<button class="btn ghost" style="width:100%" data-qcancel="1">Annuller</button></div></div>';
@@ -781,7 +794,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   function plainTask(t) { return !t.duty && !t.meal && !t.auto_rule; }
   function taskLine(t) {
     var bits = [];
-    if (t.active) { bits.push(t.days && t.days.length && t.days.length < 7 ? daysText(t.days) : REPEAT[t.repeat]); }
+    if (t.active) { bits.push((t.days && t.days.length && t.days.length < 7 ? daysText(t.days) : REPEAT[t.repeat]) + (t.release ? ' kl. ' + t.release : '')); }
     bits.push(t.price + ' kr.');
     if (t.each) { bits.push('hver sin'); }
     return '<button class="trow" data-topen="' + t.id + '">' + icoSpan(t.icon_shown) +
@@ -799,24 +812,25 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var s = t || {};
     tSheet = { id: s.id || '', src: s, title: s.title || '', price: t ? String(t.price) : '5', active: !!s.active, days: (s.days || []).slice(),
       each: t ? !!s.each : true, more: false, age_min: s.age_min || 0, repeat: s.repeat || 'daily', times: s.times || 1, season: null,
-      photo: !!s.photo, surprise: !!s.surprise, quick: !!s.quick, icon: s.icon || '' };
+      photo: !!s.photo, surprise: !!s.surprise, quick: !!s.quick, icon: s.icon || '', how: s.how || '', howBusy: false, release: s.release || '', school: !!s.school };
     editKids = (s.kids || []).slice();
   }
   // læser felterne ind i tSheet, så arket kan tegnes igen uden at miste noget
   function readSheet() {
     [['title', 'ts-t'], ['price', 'ts-p'], ['age_min', 'ts-a'], ['repeat', 'ts-r'], ['times', 'ts-n'], ['season', 'ts-se'],
-      ['photo', 'ts-ph'], ['surprise', 'ts-su'], ['quick', 'ts-qk'], ['icon', 'ts-ic']].forEach(function (f) {
+      ['photo', 'ts-ph'], ['surprise', 'ts-su'], ['quick', 'ts-qk'], ['icon', 'ts-ic'], ['how', 'ts-h'], ['release', 'ts-rel'], ['school', 'ts-sc']].forEach(function (f) {
       var el = document.getElementById(f[1]);
       if (el) { tSheet[f[0]] = el.type === 'checkbox' ? el.checked : el.value; }
     });
   }
   function sheetBody() {
     var d = tSheet, s = d.src, f = { title: d.title, price: d.price, active: d.active, days: d.days, kids: editKids.slice(), age_min: d.age_min,
-      repeat: d.repeat, times: d.times, photo: d.photo, surprise: d.surprise, icon: d.icon, quick: d.quick, each: d.each };
+      repeat: d.repeat, times: d.times, photo: d.photo, surprise: d.surprise, icon: d.icon, quick: d.quick, each: d.each, how: d.how, release: d.active ? d.release : '', school: d.school };
     if (d.season !== null) { f.season = d.season; }
     if (d.id) {                                   // kun det, der er ændret: ellers vinder et gæt over titlen
       if (d.each === !!s.each) { delete f.each; }
       if (d.quick === !!s.quick) { delete f.quick; }
+      if (d.school === !!s.school) { delete f.school; }     // ellers gætter titlen stadig
       if (f.season === seasonOf(s)) { delete f.season; }
     }
     return f;
@@ -840,8 +854,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       out += '<button type="button" class="ic day' + (on ? ' on' : '') + '" data-tday="' + n + '" aria-pressed="' + on + '">' + esc((state.day_names || [])[n] || DAY_FULL[n].slice(0, 3)) + '</button>';
     }
     out += '</div><button type="button" class="ic every' + (every ? ' on' : '') + '" data-tday="all" aria-pressed="' + every + '">Hver dag</button></div>' +
+      (d.active ? '<div class="relrow"><label for="ts-rel">Frigives kl.</label><input id="ts-rel" type="time" value="' + esc(d.release) + '">' +
+        (d.release ? '<button type="button" class="btn small ghost" data-trelclear="1">Fra morgenen</button>' : '') + '</div>' +
+        '<div class="note">' + (d.release ? 'Børnene ser den først kl. ' + esc(d.release) + ' og får en besked.' : 'Tomt: børnene ser den fra morgenen.') + '</div>' : '') +
       (d.active ? '' : '<div class="note">Børnene ser den aldrig af sig selv. Giv den med hurtigknapperne eller + Tilføj.</div>') + '</div>' +
       '<div class="fld"><div class="lbl">Hvem?</div>' + seg('each', 'Hver sin', '1', 'Én af børnene', '', d.each ? '1' : '') + '</div>' +
+      '<div class="fld"><div class="howhead"><div class="lbl">Sådan gør du</div>' +
+      '<button type="button" class="btn small ghost" data-thow="1"' + (d.howBusy ? ' disabled' : '') + '>' + (d.howBusy ? 'Skriver…' : (d.how ? 'Skriv ny med AI' : 'Lav med AI')) + '</button></div>' +
+      '<textarea id="ts-h" class="how" aria-label="Sådan gør du" maxlength="800" placeholder="Fx Tøm skraldespanden&#10;Sæt en ny pose i&#10;Bær posen ud i containeren">' + esc(d.how) + '</textarea>' +
+      '<div class="note">Barnet ser det under opgaven. Én ting pr. linje.</div></div>' +
       '<button class="btn big" data-tsave="1">Gem</button>' +
       '<button class="more" data-tmore="1" aria-expanded="' + d.more + '">Flere valg ' + (d.more ? '▴' : '▾') + '</button>';
     if (d.more) {
@@ -853,6 +874,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         '<label class="check"><input type="checkbox" id="ts-ph"' + (d.photo ? ' checked' : '') + '> Barnet skal tage et billede som bevis</label>' +
         '<label class="check"><input type="checkbox" id="ts-su"' + (d.surprise ? ' checked' : '') + '> Overraskelse: dukker af og til op med dobbelt pris</label>' +
         '<label class="check"><input type="checkbox" id="ts-qk"' + (d.quick ? ' checked' : '') + '> Vis som hurtigknap</label>' +
+        '<label class="check"><input type="checkbox" id="ts-sc"' + (d.school ? ' checked' : '') + '> Skoledag: forsvinder, når barnet er syg</label>' +
         '<div><label>Billede</label>' + iconPicker('ts-ic', d.icon, '') + '</div>' + kidBoxes('edit', editKids) +
         (d.id ? '<div class="acts"><button class="btn small ghost" data-duptask="' + d.id + '">Kopiér</button><button class="btn small danger" data-deltask="' + d.id + '">Slet</button></div>' : '') +
         '</div>';
@@ -948,7 +970,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           : '<div class="empty">Appen kan ikke se Home Assistants adresse derhjemme. Skriv den i indstillingen public_url, fx http://192.168.1.50:8099, så kommer linket frem.</div>') +
         '<div class="note">' + (outsideLink() ? 'Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren. Linket virker både hjemme og ude.'
           : 'Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren. Linket virker på jeres wifi derhjemme.') + '</div>' +
-        '<div class="row"><div class="grow t"><b>På pause</b><span>Ferie eller syg: ingen opgaver, og ugen tæller ikke som misset</span></div>' +
+        '<div class="row"><div class="grow t"><b>Syg i dag</b><span>Skoleopgaver som madpakke og skoletaske forsvinder i dag. I morgen er alt normalt igen.</span></div>' +
+        '<button class="sw" role="switch" aria-checked="' + (k.sick ? 'true' : 'false') + '" aria-label="' + esc(k.name) + ' er syg i dag" data-sick="' + k.id + '"><span></span></button></div>' +
+        '<div class="row"><div class="grow t"><b>På pause</b><span>Ferie eller længere tid syg: ingen opgaver, og ugen tæller ikke som misset</span></div>' +
         '<button class="sw" role="switch" aria-checked="' + (k.paused ? 'true' : 'false') + '" aria-label="' + esc(k.name) + ' er på pause" data-pause="' + k.id + '"><span></span></button></div>' +
         '<div><label for="b-' + k.id + '-d">Fødselsdato</label>' + dateSelects('b-' + k.id, k.birthday) + '</div>' +
         '<div><label for="lg-' + k.id + '">Sprog</label><select id="lg-' + k.id + '"><option value="">Samme som huset</option>' + s.langs.map(function (l) { return '<option value="' + l[0] + '"' + (k.lang === l[0] ? ' selected' : '') + '>' + esc(l[1]) + '</option>'; }).join('') + '</select></div>' +
@@ -1006,6 +1030,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<div><label for="s-remind">Påmind børnene kl.</label><input id="s-remind" type="time" value="' + esc(cfg.reminder_time || '') + '"></div>' +
       '<div><label for="s-light">Lampe, der blinker grønt ved godkendelse</label><input id="s-light" type="text" list="lights" placeholder="Fx light.stue" value="' + esc(cfg.celebrate_light || '') + '">' +
       '<datalist id="lights">' + lights.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[1]) + '</option>'; }).join('') + '</datalist></div>' +
+      '<div><label for="s-ai">AI til "Sådan gør du"</label><select id="s-ai"><option value="">Automatisk</option>' +
+      entityList.filter(function (e) { return e[0].indexOf('ai_task.') === 0 || e[0] === cfg.ai_entity; }).map(function (e) {
+        return '<option value="' + esc(e[0]) + '"' + (e[0] === cfg.ai_entity ? ' selected' : '') + '>' + esc(e[1]) + '</option>'; }).join('') + '</select></div>' +
       '<div class="two"><div><label for="s-minage">Krav til lommepenge fra alder (år)</label><input id="s-minage" type="number" min="0" max="25" value="' + (cfg.min_tasks_age || 0) + '"></div>' +
       '<div><label for="s-minweek">Godkendte opgaver pr. uge</label><input id="s-minweek" type="number" min="0" max="50" value="' + (cfg.min_tasks_week == null ? 5 : cfg.min_tasks_week) + '"></div></div>' +
       '<div class="note">0 betyder slået fra. Børn på eller over alderen får kun ugens lommepenge, hvis de har nok godkendte opgaver i ugen. Ellers holdes de tilbage, og barnet får besked.</div>' +
@@ -1224,15 +1251,28 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       sheetRender();
       return;
     }
+    if (d.trelclear) { readSheet(); tSheet.release = ''; sheetRender(); return; }
+    if (d.thow) {
+      readSheet();
+      var hs = tSheet;
+      if (!String(hs.title || '').trim()) { say('Skriv først et navn på opgaven'); return; }
+      hs.howBusy = true; sheetRender();
+      call('api/how', { title: hs.title, room: hs.src.room || '', age_min: hs.age_min, kids: editKids.slice() })
+        .then(function (r) { hs.how = r.how; })
+        .catch(function (e) { say(e.message); })
+        .then(function () { hs.howBusy = false; if (tSheet === hs) { sheetRender(); } });
+      return;
+    }
     if (d.tsave) {
       readSheet();
       post(tSheet.id ? 'api/tasks/' + tSheet.id : 'api/tasks', sheetBody(), tSheet.id ? 'Gemt' : 'Opgaven er tilføjet')
         .then(function () { tSheet = null; render(); }).catch(function () {});
       return;
     }
-    if (d.quick) { var qq = quickById(d.quick); if (qq && qq.each) { giveEach(qq); } else { quickTask = d.quick; render(); } }
+    if (d.quick) { quickTask = d.quick; render(); }      // altid valget: ét barn eller alle
     else if (d.qgive) { give(d.qgive); }
     else if (d.qall) { give(null); }
+    else if (d.qeach) { var qe = quickById(quickTask); quickTask = ''; if (qe) { giveEach(qe); } }
     else if (d.qcancel) { quickTask = ''; render(); }
     else if (d.qadd) { quickTask = ''; quickAdd = true; render(); }
     else if (d.qpin) { togglePin(d.qpin); }
@@ -1378,6 +1418,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       } else { input.select(); input.setSelectionRange(0, 9999); say('Tryk og hold for at kopiere'); }
     }
     else if (d.newlink) { if (confirm('Det gamle link holder op med at virke. Fortsæt?')) { post('api/kids/' + d.newlink + '/newlink', {}, 'Nyt link er lavet'); } }
+    else if (d.sick) { var sk = kidById(d.sick); if (sk) { post('api/kids/' + d.sick + '/sick/' + (sk.sick ? 'off' : 'on'), {}, sk.sick ? sk.name + ' er rask igen' : 'God bedring, ' + sk.name).catch(function () {}); } }
+    else if (d.sickyes) { post('api/kids/' + d.sickyes + '/sick/yes', {}, 'Godkendt').catch(function () {}); }
+    else if (d.sickno) { post('api/kids/' + d.sickno + '/sick/no', {}, 'Afvist').catch(function () {}); }
     else if (d.delkid) { if (confirm('Fjerne barnet og alle dets opgaver og penge?')) { post('api/kids/' + d.delkid + '/delete', {}, 'Barnet er fjernet'); } }
     else if (d.savesettings) {
       var body = {
@@ -1387,7 +1430,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         lang: document.getElementById('s-lang').value, streak_bonus: document.getElementById('s-streak').value, boss_hp: document.getElementById('s-bosshp').value, boss_bonus: document.getElementById('s-bossbonus').value,
         trading: document.getElementById('s-trading').checked,
         min_tasks_age: document.getElementById('s-minage').value, min_tasks_week: document.getElementById('s-minweek').value,
-        meal_price: document.getElementById('s-meal').value,
+        meal_price: document.getElementById('s-meal').value, ai_entity: document.getElementById('s-ai').value,
           weekly_summary: document.getElementById('s-summary').checked
       };
       var ft = document.getElementById('s-ft').value, fa = document.getElementById('s-fa').value, fam = state.family;

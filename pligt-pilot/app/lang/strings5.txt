@@ -172,3 +172,50 @@ Ingen sensor passer til søgningen || No sensor matches the search || Kein Senso
 =Svarer ikke || Not responding || Antwortet nicht || Svarar inte || Svarer ikke
 Dørsensor valgt || Door sensor chosen || Türsensor gewählt || Dörrsensor vald || Dørsensor valgt
 Dørsensor fjernet || Door sensor removed || Türsensor entfernt || Dörrsensor borttagen || Dørsensor fjernet
+Sådan gør du || How to do it || So geht's || Så här gör du || Slik gjør du
+Sådan || How || Wie || Hur || Hvordan
+Skjul || Hide || Ausblenden || Dölj || Skjul
+Lav med AI || Write with AI || Mit KI schreiben || Skriv med AI || Skriv med AI
+Skriv ny med AI || New text with AI || Neu mit KI || Ny text med AI || Ny tekst med AI
+Skriver… || Writing… || Schreibt… || Skriver… || Skriver…
+Barnet ser det under opgaven. Én ting pr. linje. || The child sees it under the task. One step per line. || Das Kind sieht es unter der Aufgabe. Ein Schritt pro Zeile. || Barnet ser det under uppgiften. Ett steg per rad. || Barnet ser det under oppgaven. Ett steg per linje.
+AI til "Sådan gør du" || AI for "How to do it" || KI für "So geht's" || AI för "Så här gör du" || AI for "Slik gjør du"
+Automatisk || Automatic || Automatisch || Automatiskt || Automatisk
+Skriv først et navn på opgaven || Write a name for the task first || Gib der Aufgabe zuerst einen Namen || Skriv först ett namn på uppgiften || Skriv først et navn på oppgaven
+Kræver Home Assistant || Needs Home Assistant || Benötigt Home Assistant || Kräver Home Assistant || Krever Home Assistant
+AI'en svarede ikke. Prøv igen senere, eller skriv selv. || The AI did not answer. Try again later, or write it yourself. || Die KI hat nicht geantwortet. Versuche es später oder schreibe selbst. || AI:n svarade inte. Försök igen senare eller skriv själv. || AI-en svarte ikke. Prøv igjen senere, eller skriv selv.
+Tøm vaskemaskinen helt || Empty the washing machine completely || Leere die Waschmaschine ganz || Töm tvättmaskinen helt || Tøm vaskemaskinen helt
+Ryst tøjet, og hæng det op || Shake the clothes and hang them up || Schüttle die Wäsche aus und häng sie auf || Skaka tvätten och häng upp den || Rist klærne og heng dem opp
+Læg det, der må tørretumbles, i tørretumbleren || Put what may be tumble-dried in the dryer || Leg, was in den Trockner darf, in den Trockner || Lägg det som får torktumlas i torktumlaren || Legg det som tåler tørketrommel, i tørketrommelen
+Lad lågen stå på klem || Leave the door ajar || Lass die Tür einen Spalt offen || Låt luckan stå på glänt || La døren stå på gløtt
+Tøm tørretumbleren helt || Empty the dryer completely || Leere den Trockner ganz || Töm torktumlaren helt || Tøm tørketrommelen helt
+Fold tøjet, eller læg det i kurven || Fold the clothes, or put them in the basket || Falte die Wäsche oder leg sie in den Korb || Vik tvätten eller lägg den i korgen || Brett klærne, eller legg dem i kurven
+Rens fnugfilteret || Clean the lint filter || Reinige das Flusensieb || Rengör luddfiltret || Rens lofilteret
+Tøm opvaskemaskinen || Empty the dishwasher || Räume die Spülmaschine aus || Töm diskmaskinen || Tøm oppvaskmaskinen
+Sæt tallerkener og glas på plads || Put plates and glasses away || Stell Teller und Gläser weg || Ställ tallrikar och glas på plats || Sett tallerkener og glass på plass
+Læg bestik i skuffen || Put the cutlery in the drawer || Leg das Besteck in die Schublade || Lägg besticken i lådan || Legg bestikket i skuffen
+Sig til, hvis noget ikke er rent || Say so if something is not clean || Sag Bescheid, wenn etwas nicht sauber ist || Säg till om något inte är rent || Si fra hvis noe ikke er rent
+Frigives kl. || Released at || Freigabe um || Släpps kl. || Frigis kl.
+Fra morgenen || From the morning || Ab morgens || Från morgonen || Fra morgenen
+Tomt: børnene ser den fra morgenen. || Empty: the children see it from the morning. || Leer: die Kinder sehen sie ab morgens. || Tomt: barnen ser den från morgonen. || Tomt: barna ser den fra morgenen.
+Børnene ser den først kl. || The children only see it at || Die Kinder sehen sie erst um || Barnen ser den först kl. || Barna ser den først kl.
+og får en besked. || and get a message. || und bekommen eine Nachricht. || och får ett meddelande. || og får en melding.
+Tidspunktet skal være som 15:00 || The time must look like 15:00 || Die Uhrzeit muss wie 15:00 aussehen || Tiden ska se ut som 15:00 || Tidspunktet må være som 15:00
+Jeg er syg i dag || I am sick today || Ich bin heute krank || Jag är sjuk idag || Jeg er syk i dag
+God bedring! || Get well soon! || Gute Besserung! || Krya på dig! || God bedring!
+Dine skoleopgaver er væk i dag. I morgen er alt som før. || Your school chores are gone today. Tomorrow everything is back to normal. || Deine Schulaufgaben sind heute weg. Morgen ist alles wie immer. || Dina skolsysslor är borta idag. I morgon är allt som vanligt. || Skoleoppgavene dine er borte i dag. I morgen er alt som før.
+Du har sagt, at du er syg || You said you are sick || Du hast gesagt, dass du krank bist || Du har sagt att du är sjuk || Du har sagt at du er syk
+Venter på, at en voksen siger ja. || Waiting for a grown-up to say yes. || Wartet darauf, dass ein Erwachsener ja sagt. || Väntar på att en vuxen säger ja. || Venter på at en voksen sier ja.
+Fortryd || Undo || Rückgängig || Ångra || Angre
+Syg i dag || Sick today || Heute krank || Sjuk idag || Syk i dag
+er syg i dag || is sick today || ist heute krank || är sjuk idag || er syk i dag
+Skoleopgaverne forsvinder i dag uden træk || The school chores disappear today without a deduction || Die Schulaufgaben fallen heute ohne Abzug weg || Skolsysslorna försvinner idag utan avdrag || Skoleoppgavene forsvinner i dag uten trekk
+Skoleopgaver som madpakke og skoletaske forsvinder i dag. I morgen er alt normalt igen. || School chores like the lunch box and school bag disappear today. Tomorrow everything is normal again. || Schulaufgaben wie Brotdose und Schultasche fallen heute weg. Morgen ist alles wieder normal. || Skolsysslor som matlåda och skolväska försvinner idag. I morgon är allt som vanligt igen. || Skoleoppgaver som matpakke og skolesekk forsvinner i dag. I morgen er alt normalt igjen.
+Ferie eller længere tid syg: ingen opgaver, og ugen tæller ikke som misset || Holiday or sick for longer: no chores, and the week does not count as missed || Urlaub oder länger krank: keine Aufgaben, und die Woche zählt nicht als verpasst || Semester eller sjuk länge: inga sysslor, och veckan räknas inte som missad || Ferie eller lenge syk: ingen oppgaver, og uken teller ikke som glemt
+Skoledag: forsvinder, når barnet er syg || School day: disappears when the child is sick || Schultag: fällt weg, wenn das Kind krank ist || Skoldag: försvinner när barnet är sjukt || Skoledag: forsvinner når barnet er sykt
+er rask igen || is well again || ist wieder gesund || är frisk igen || er frisk igjen
+God bedring, || Get well soon, || Gute Besserung, || Krya på dig, || God bedring,
+siger: Jeg er syg i dag. Åbn Pligter for at sige ja. || says: I am sick today. Open Pligter to say yes. || sagt: Ich bin heute krank. Öffne Pligter, um ja zu sagen. || säger: Jag är sjuk idag. Öppna Pligter för att säga ja. || sier: Jeg er syk i dag. Åpne Pligter for å si ja.
+God bedring! Dine skoleopgaver er væk i dag. || Get well soon! Your school chores are gone today. || Gute Besserung! Deine Schulaufgaben sind heute weg. || Krya på dig! Dina skolsysslor är borta idag. || God bedring! Skoleoppgavene dine er borte i dag.
+En voksen sagde nej til syg i dag. || A grown-up said no to sick today. || Ein Erwachsener hat zu heute krank nein gesagt. || En vuxen sa nej till sjuk idag. || En voksen sa nei til syk i dag.
+Alle får hver sin || Everyone gets their own || Jeder bekommt seine eigene || Alla får var sin || Alle får hver sin

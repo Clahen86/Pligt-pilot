@@ -426,6 +426,74 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(self.store.kid_view(self.emil['token'])['jobs'][0]['machine'], 'washer')
         self.assertTrue(task)
 
+    def test_sick_today_removes_school_chores_only(self):
+        lunch = self.store.add_task('Madpakke ud af tasken', 2)
+        self.store.add_task('Dæk bord', 3)
+        self.assertTrue(self.store.admin_state()['tasks'][0]['school'])            # gættet ud fra navnet
+        view = self.store.kid_view(self.emil['token'])
+        self.assertTrue(view['has_school'])
+        self.store.ask_sick(self.emil['token'])
+        self.assertTrue([k for k in self.store.admin_state()['kids'] if k['name'] == 'Emil'][0]['sick_ask'])
+        self.store.decide_sick(self.emil['id'], True)
+        self.assertEqual([i['title'] for i in self.kid_items(self.emil)], ['Dæk bord'])
+        self.assertTrue(self.store.kid_view(self.emil['token'])['sick'])
+        self.assertEqual(len(self.kid_items(self.maja)), 2)                        # søskende er ikke syge
+        self.clock.advance(days=1)
+        self.assertEqual(sorted(i['title'] for i in self.kid_items(self.emil)), ['Dæk bord', 'Madpakke ud af tasken'])
+        self.assertFalse(self.store.kid_view(self.emil['token'])['sick'])
+        self.store.update_task(lunch['id'], school=False)                          # forælderen bestemmer
+        self.store.set_sick(self.emil['id'], True)
+        self.assertEqual(len(self.kid_items(self.emil)), 2)
+        self.store.ask_sick(self.maja['token'])
+        self.store.decide_sick(self.maja['id'], False)
+        self.assertFalse(self.store.kid_view(self.maja['token'])['sick_ask'])
+
+    def test_task_released_at_a_time(self):
+        task = self.store.add_task('Tøm opvasken', 3)
+        self.store.update_task(task['id'], release='15:30', days=[0, 2])
+        with self.assertRaises(Problem):
+            self.store.update_task(task['id'], release='25:00')
+        self.assertEqual(self.kid_items(self.emil), [])                     # kl. 8: ikke endnu
+        self.assertEqual(self.store.due_releases(), [])
+        self.clock.advance(hours=7, minutes=30)
+        self.assertEqual([i['title'] for i in self.kid_items(self.emil)], ['Tøm opvasken'])
+        self.assertEqual(sorted(k['name'] for k, t in self.store.due_releases()), ['Emil', 'Maja'])
+        self.assertEqual(self.store.due_releases(), [])                     # kun én besked om dagen
+        job = self.store.add_task('Fej indkørslen', 10, open_job=True)
+        self.store.update_task(job['id'], release='18:00')
+        self.assertEqual(self.store.kid_view(self.emil['token'])['jobs'], [])
+        self.clock.advance(hours=3)
+        self.assertEqual([j['title'] for j in self.store.kid_view(self.emil['token'])['jobs']], ['Fej indkørslen'])
+        self.clock.advance(days=1)                                          # tirsdag: ikke en valgt dag
+        self.assertEqual(self.store.due_releases()[0][1]['title'], 'Fej indkørslen')
+
+    def test_how_to_do_a_task(self):
+        task = self.store.add_task('Skraldet ud', 5, 'Køkken', 'once', True)
+        self.store.update_task(task['id'], how='- Tøm spanden\n2. Ny pose i\n\n* Bær den ud *')
+        self.assertEqual(task['how'], 'Tøm spanden\nNy pose i\nBær den ud')
+        self.assertEqual(self.store.kid_view(self.emil['token'])['jobs'][0]['how'], 'Tøm spanden\nNy pose i\nBær den ud')
+        self.store.add_rule('Opvaskemaskine', 'sensor.opvask', 'Tøm opvasken', 3)
+        self.store.fire_rule(self.store.data['rules'][0]['id'])
+        job = [j for j in self.store.kid_view(self.emil['token'])['jobs'] if j['machine'] == 'dishwasher'][0]
+        self.assertTrue(job['how'].startswith('Tøm opvaskemaskinen'))       # fast tekst til maskiner
+        with self.assertRaises(Problem):
+            self.store.set_setting('ai_entity', 'light.stue')
+        self.store.set_setting('ai_entity', 'ai_task.gemini')
+
+        class AI:
+            asked = []
+
+            def describe(self, entity, title, room, age, language):
+                self.asked.append((entity, title, room, age, language))
+                return '1. Tøm spanden\n2. Ny pose i'
+        ai = AI()
+        self.assertEqual(self.store.write_how(ai, 'Skraldet ud', 'Køkken'), 'Tøm spanden\nNy pose i')
+        youngest = min(k['age'] for k in self.store.data['kids'])
+        self.assertEqual(ai.asked[0], ('ai_task.gemini', 'Skraldet ud', 'Køkken', youngest, 'Dansk'))
+        ai.describe = lambda *a: ''
+        with self.assertRaises(Problem):
+            self.store.write_how(ai, 'Skraldet ud')
+
     def test_child_suggests_a_chore_with_a_picture_and_gets_it(self):
         jpeg = b'\xff\xd8\xff' + b'0' * 50
         with self.assertRaises(Problem):
