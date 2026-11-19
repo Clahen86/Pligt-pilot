@@ -501,7 +501,7 @@ def make_handler(app, role, allow_from=None):
                 store.update_kid(m.group(1), body.get('name'), body.get('age'),
                                  body.get('color'), body.get('paused'), body.get('birthday'),
                                  body.get('notify'), body.get('allowance'), body.get('ntfy_on'),
-                                 body.get('lang'))
+                                 body.get('lang'), body.get('look'))
                 return self._json(store.admin_state())
             m = re.match(r'^/api/kids/' + ID + r'/test$', path)
             if m:

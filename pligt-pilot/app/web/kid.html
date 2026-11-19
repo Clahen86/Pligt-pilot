@@ -125,6 +125,98 @@ h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; disp
 .donewhen b { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); }
 .donewhen span { font-size: 15px; font-weight: 700; }
 button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+/* ---- tre udseender efter alder ---- */
+.swaplink { border: 0; background: none; padding: 2px 0 0; margin-left: 8px; color: var(--accent); font-size: 13px; font-weight: 900; text-decoration: underline; }
+.look-mid .list > .task { flex-wrap: nowrap; }
+.look-mid .task .t span { display: inline; }
+.look-mid .task .btn { min-width: 0; padding: 0 12px; }
+.look-mid .task .state { min-width: 0; }
+.look-teen { --ib: #171B24; }
+.look-teen .btn.sugcam { height: 64px; flex-direction: row; font-size: 16px; }
+.look-teen .btn.sugcam svg { width: 26px; height: 26px; }
+.look-small .btn.sugcam { height: 96px; }
+.look-small { --cream: #FFF3D6; font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, sans-serif; }
+.look-small .hello { font-size: 30px; }
+.look-small .avatar { width: 58px; height: 58px; font-size: 28px; border: 4px solid #fff; box-shadow: 0 4px 0 #E2C98F; }
+.look-small .hero { background: linear-gradient(160deg, #FFB937, #FF8A3D); box-shadow: 0 6px 0 #D96A22; border-radius: 30px; }
+.look-small .hero .label { font-size: 18px; }
+.look-small h2 { font-size: 24px; }
+.look-small .task { border-radius: 28px; padding: 14px; gap: 14px; flex-wrap: nowrap; box-shadow: 0 5px 0 #EAD9B0; }
+.look-small .task .ico { width: 72px; height: 72px; border-radius: 22px; }
+.look-small .task .ico svg { width: 42px; height: 42px; }
+.look-small .task .t b { font-size: 21px; }
+.look-small .task .t span { font-size: 16px; }
+.look-small .task .price { display: none; }
+.look-small .task .t span::after { content: ""; }
+.look-small .btn.tick { width: 64px; height: 64px; min-width: 64px; border-radius: 50%; background: #2EBD85; box-shadow: 0 5px 0 #1E8C61; display: grid; place-items: center; flex: none; }
+.look-small .task.gone { opacity: .6; }
+.look-small .state { height: 64px; border-radius: 22px; }
+.look-small .card, .look-small .empty { border-radius: 26px; box-shadow: 0 5px 0 #EAD9B0; }
+.look-small .jobs { border-radius: 26px; }
+.look-small .games { display: flex; flex-direction: column; gap: 14px; }
+
+.look-mid { --cream: #EEF4FF; }
+.look-mid .hero { background: linear-gradient(135deg, #3B5BDB, #7048E8); }
+.look-mid .list { background: #fff; border-radius: 22px; padding: 4px 12px; gap: 0; box-shadow: 0 4px 14px rgba(28,37,65,.07); }
+.look-mid .list > .task { border-radius: 0; padding: 12px 0; border-top: 1px solid #EEF1F7; background: transparent; }
+.look-mid .list > .task:first-child { border-top: 0; }
+.look-mid .list > .task.duty { border: 2px solid #C73A30; border-radius: 16px; padding: 10px; margin: 6px 0; }
+.look-mid .list > .card { margin: 4px 0 10px; background: #F6F8FD; }
+.look-mid .card, .look-mid .empty { box-shadow: 0 4px 14px rgba(28,37,65,.07); }
+.look-mid .btn { background: #2B8A3E; }
+.look-mid .btn.ghost { background: #fff; color: #2B8A3E; border-color: #2B8A3E; }
+.look-mid .btn.grab { background: #1C2541; }
+.look-mid .games { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.look-mid .pet .petart svg { width: 76px; height: 76px; }
+.look-mid .boss svg { width: 64px; height: 64px; }
+
+.look-teen { --cream: #0F1218; --ink: #E8ECF3; --muted: #8A93A6; color: var(--ink); font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.look-teen .avatar { border-radius: 12px; background: #1E2430 !important; color: #5EEAD4; width: 40px; height: 40px; font-size: 18px; }
+.look-teen .hello { font-size: 22px; font-weight: 800; }
+.look-teen .hero { background: #171B24; border: 1px solid #232937; border-radius: 20px; }
+.look-teen .hero .label { text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: #8A93A6; font-weight: 700; }
+.look-teen .hero .big { font-size: 42px; font-weight: 800; letter-spacing: -.02em; }
+.look-teen .hero .chip { background: rgba(94,234,212,.14); color: #5EEAD4; }
+.look-teen .ring circle:last-child { stroke: #5EEAD4; }
+.look-teen .ring circle:first-child { stroke: #232937; }
+.look-teen h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: #8A93A6; font-weight: 700; }
+.look-teen .card, .look-teen .empty { background: #171B24; border: 1px solid #232937; color: var(--ink); }
+.look-teen .list { background: #171B24; border: 1px solid #232937; border-radius: 18px; gap: 0; padding: 0 12px; }
+.look-teen .list > .task { background: transparent; border-radius: 0; padding: 12px 0; border-top: 1px solid #232937; flex-wrap: nowrap; }
+.look-teen .list > .task:first-child { border-top: 0; }
+.look-teen .list > .task.duty { border: 1px solid #7A2A22; border-radius: 12px; padding: 10px; margin: 6px 0; }
+.look-teen .list > .card { margin: 0 0 10px; background: #1E2430; }
+.look-teen .task .ico { display: none; }
+.look-teen .task .price { background: transparent; color: var(--ink); padding: 0 4px; font-weight: 700; order: 3; }
+.look-teen .btn.tick { order: -1; width: 28px; height: 28px; min-width: 28px; border-radius: 8px; background: transparent; border: 2px solid #3A4254; color: transparent; padding: 0; display: grid; place-items: center; flex: none; }
+.look-teen .btn.tick:active { background: #5EEAD4; color: #0F1218; }
+.look-teen .btn.tick svg { width: 16px; height: 16px; }
+.look-teen .task.gone .t b { color: #6B7385; text-decoration: line-through; }
+.look-teen .state { order: -1; height: 28px; min-width: 28px; width: 28px; padding: 0; border-radius: 8px; font-size: 0; }
+.look-teen .state.done { background: #5EEAD4; color: #0F1218; }
+.look-teen .state.wait { background: #2A2F3B; color: #FCC419; }
+.look-teen .state svg { width: 16px; height: 16px; }
+.look-teen .btn { background: #38BDF8; color: #0F1218; }
+.look-teen .btn.ghost { background: transparent; color: #5EEAD4; border: 1px solid #2E3A4A; }
+.look-teen .btn.grab { background: #38BDF8; color: #0F1218; }
+.look-teen .jobs { background: linear-gradient(135deg, #1B2A3A, #162231); border: 1px solid #24435A; box-shadow: none; }
+.look-teen .jobshead b { color: #E8ECF3; font-size: 16px; }
+.look-teen .jobshead span { color: #8A93A6; }
+.look-teen .job { background: #171B24; }
+.look-teen .job .price { background: transparent; color: var(--ink); }
+.look-teen .job .ico { display: none; }
+.look-teen .job .price { margin-left: 0; }
+.look-teen .meter { background: #232937; }
+.look-teen .meter i { background: linear-gradient(90deg, #5EEAD4, #38BDF8); }
+.look-teen .bar i { background: #232937 !important; }
+.look-teen .bar.today i { background: #5EEAD4 !important; }
+.look-teen .shop { border-color: #232937; }
+.look-teen .tradeform select, .look-teen .tradeform input, .look-teen input, .look-teen textarea { background: #0F1218; color: var(--ink); border-color: #2E3A4A; }
+.look-teen .sickbtn { border-color: #2E3A4A; color: #8A93A6; }
+.look-teen .donewhen { background: #10302B; }
+.look-teen .chip { background: #232937; color: #E8ECF3; }
+.look-teen .err { background: #3A1C1A; color: #FFB4AA; }
+
 </style>
 </head>
 <body>
@@ -135,6 +227,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 </main>
 <script>
 (function () {
+  var LOOK = 'mid';
   var state = null, busy = false, tradeOpen = '', wishOpen = false, recipeOpen = '', sugPhoto = '', sugText = '';
   var app = document.getElementById('app'), errBox = document.getElementById('err');
   // ---- sprog: udskifter kendte danske tekststykker (samme metode som serverens i18n.py) ----
@@ -264,13 +357,16 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   }
 
   var CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"></path></svg>';
+  var BIGCHECK = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4.5 4.5L19 7"></path></svg>';
   var CLOCK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>';
 
   function render() {
     if (!state) { return; }
     if (state.lang && state.lang !== I18N.lang) { loadLang(); if (!I18N.rx) { return; } }
-    var s = state, k = s.kid;
+    var s = state, k = s.kid, look = s.look || 'mid';
     document.documentElement.style.setProperty('--accent', k.color);
+    document.body.className = 'look-' + look;
+    LOOK = look;
     document.title = T(k.name + ' – pligter');
     var circ = 238.76, frac = Math.min(1, s.completed / s.goal);
     var bars = s.bars.map(function (b) {
@@ -287,18 +383,20 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       var right = i.status === 'todo' && i.need_photo
         ? '<button class="btn" data-pick="' + i.id + '" aria-label="Tag foto af: ' + esc(i.title) + '">Tag foto</button>'
         : i.status === 'todo'
-        ? '<button class="btn" data-done="' + i.id + '" aria-label="Færdig: ' + esc(i.title) + '">Færdig</button>'
+        ? (LOOK === 'mid' ? '<button class="btn" data-done="' + i.id + '" aria-label="Færdig: ' + esc(i.title) + '">Færdig</button>'
+          : '<button class="btn tick" data-done="' + i.id + '" aria-label="Færdig: ' + esc(i.title) + '">' + BIGCHECK + '</button>')
         : i.status === 'wait'
           ? '<div class="state wait">' + CLOCK + 'Venter</div>'
           : '<div class="state done">' + CHECK + 'Godkendt</div>';
       var swap = i.status === 'todo' && s.trading && s.siblings.length && !i.need_photo
-        ? '<button class="btn ghost small" data-trade="' + i.id + '" aria-label="Byt: ' + esc(i.title) + '">Byt</button>' : '';
+        ? '<button class="' + (LOOK === 'teen' ? 'btn ghost small' : 'swaplink') + '" data-trade="' + i.id + '" aria-label="Byt: ' + esc(i.title) + '">Byt</button>' : '';
       var tag = i.duty ? '<span class="new">Pligt</span>' : '<div class="price">' + i.price + ' kr</div>';
       var more = i.meal && (i.meal.recipe || i.meal.ingredients.length || i.meal.url)
         ? '<button class="btn ghost small" data-recipe="' + i.id + '" aria-expanded="' + (recipeOpen === i.id) + '">' + (recipeOpen === i.id ? 'Skjul opskrift' : 'Opskrift') + '</button>'
         : i.how && i.status === 'todo' ? howBtn(i.id) : '';
-      return '<div class="task' + (i.duty ? ' duty' : '') + '">' + icoSpan(i.icon) + '<div class="t"><b>' + esc(i.title) + '</b><span>' + esc(sub) +
-        '</span></div>' + tag + more + swap + right + '</div>' +
+      var inT = LOOK === 'teen' ? '' : swap;
+      return '<div class="task' + (i.duty ? ' duty' : '') + (i.status !== 'todo' ? ' gone' : '') + '">' + icoSpan(i.icon) + '<div class="t"><b>' + esc(i.title) + '</b><span>' + esc(sub) +
+        '</span>' + inT + '</div>' + tag + more + (LOOK === 'teen' ? swap : '') + right + '</div>' +
         (recipeOpen === i.id ? (i.meal ? recipeCard(i.meal) : howCard(i.how)) : '') +
         (tradeOpen === i.id ? tradeForm(i, s) : '');
     }).join('');
@@ -315,7 +413,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     app.innerHTML =
       '<div class="top"><div class="avatar" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' +
       '<div><div class="hello">Hej ' + esc(k.name) + '</div><div class="sub">' + esc(s.week_label) + '</div></div></div>' +
-      '<div class="hero"><div><div class="label">Du har tjent</div><div class="big">' + s.balance + ' kr</div>' +
+      '<div class="hero"><div><div class="label">' + (look === 'small' ? 'I sparegrisen' : look === 'teen' ? 'Saldo' : 'Du har tjent') + '</div><div class="big">' + s.balance + ' kr</div>' +
       (s.waiting > 0 ? '<span class="chip">+' + s.waiting + ' kr venter</span>' : '') + '</div>' +
       '<div class="ring"><svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">' +
       '<circle cx="48" cy="48" r="38" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="10"></circle>' +
@@ -324,21 +422,21 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       '<div class="mid"><b>' + s.completed + '/' + s.goal + '</b><span>i ugen</span></div></div></div>' +
       (s.birthday_today ? '<div class="card"><b>Tillykke med fødselsdagen, ' + esc(k.name) + '!</b><div class="sub">Du er ' + k.age + ' år i dag.</div></div>' : '') +
       jobsCard +
-      suggestCard(s) +
       (s.paused ? '<div class="card"><b>Du har pause</b><div class="sub">Ingen opgaver lige nu. God fornøjelse!</div></div>' : '') +
-      pushCard() +
-      characterCard(s) +
-      bossCard(s.boss) +
       tradeCards(s) +
+      '<h2>' + (look === 'small' ? 'Dine opgaver i dag' : look === 'teen' ? 'I dag' : 'Dine opgaver') + '</h2><div class="list">' +
+      (items || '<div class="empty">Ingen opgaver lige nu. Godt gået!</div>') + '</div>' +
       saving(s) +
       allowanceCard(s.allowance_rule) +
+      (look === 'teen' ? '' : '<div class="games">' + characterCard(s) + bossCard(s.boss) + '</div>') +
+      (look === 'teen' && s.boss ? bossLine(s.boss) : '') +
+      (look === 'small' ? '' : '<div class="card week"><div class="row"><b>Din uge</b><span>Mål: ' + s.goal + ' opgaver</span></div>' +
+      '<div class="bars">' + bars + '</div></div>') +
       spendCard(s) +
       goalCard(s.family, 'Familiens mål') +
       (s.badges && s.badges.length ? '<div class="chips">' + s.badges.map(function (b) { return '<span class="chip">' + esc(b.title) + '</span>'; }).join('') + '</div>' : '') +
-      '<div class="card"><div class="row"><b>Din uge</b><span>Mål: ' + s.goal + ' opgaver</span></div>' +
-      '<div class="bars">' + bars + '</div></div>' +
-      '<h2>Dine opgaver</h2><div class="list">' +
-      (items || '<div class="empty">Ingen opgaver lige nu. Godt gået!</div>') + '</div>' +
+      suggestCard(s) +
+      pushCard() +
       sickCard(s) +
       '';
     i18nApply(document.body);
@@ -436,6 +534,12 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       '<div class="sub">' + (l.next ? l.left + (l.left === 1 ? ' opgave' : ' opgaver') + ' til næste niveau' : 'Du er på det højeste niveau!') + '</div></div></div>';
   }
   function prevNeed(l) { var steps = [0, 3, 10, 25, 50, 100, 200]; return steps[l.n - 1] || 0; }
+  function bossLine(b) {
+    var left = Math.max(0, b.hp - b.hits);
+    return '<div class="card"><div class="row"><b>Ugens boss: ' + esc(b.name) + '</b><span>' + b.hits + ' af ' + b.hp + '</span></div>' +
+      '<div class="meter"><i style="width:' + Math.round(100 * b.hits / b.hp) + '%"></i></div>' +
+      '<div class="sub" style="margin-top:6px">' + (b.defeated ? 'Besejret!' : left + ' opgaver mere, så er den væk.') + '</div></div>';
+  }
   function bossCard(b) {
     if (!b) { return ''; }
     var left = Math.max(0, b.hp - b.hits), pct = Math.round(100 * left / b.hp), dead = b.defeated;

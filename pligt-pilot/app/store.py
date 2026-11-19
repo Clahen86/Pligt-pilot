@@ -204,6 +204,17 @@ def age_factor(age):
     return max(1.0, 1.0 + (12 - int(age)) * 0.1)
 
 
+LOOKS = ('small', 'mid', 'teen')
+
+
+def look_for(kid):
+    """Børnesidens udseende: forælderens valg, ellers efter alder (0-8 små, 9-12 mellem, 13+ store)."""
+    if kid.get('look') in LOOKS:
+        return kid['look']
+    age = int(kid.get('age') or 0)
+    return 'small' if age <= 8 else 'mid' if age <= 12 else 'teen'
+
+
 class Store:
     def __init__(self, path=None, clock=None):
         self.path = path
@@ -568,9 +579,11 @@ class Store:
             return kid
 
     def update_kid(self, kid_id, name=None, age=None, color=None, paused=None,
-                   birthday=None, notify=None, allowance=None, ntfy_on=None, lang=None):
+                   birthday=None, notify=None, allowance=None, ntfy_on=None, lang=None, look=None):
         with self.lock:
             kid = self._kid(kid_id)
+            if look is not None:
+                kid['look'] = look if look in LOOKS else ''
             if name is not None:
                 kid['name'] = self._clean_text(name, 'Navn', 30)
             if birthday is not None:
@@ -1490,6 +1503,7 @@ class Store:
             return {
                 'kid': {'id': kid['id'], 'name': kid['name'], 'age': kid['age'],
                         'color': kid['color']},
+                'look': look_for(kid),
                 'paused': bool(kid.get('paused')),
                 **self._sick_view(kid),
                 'has_school': any(t['active'] and is_school(t) and self._in_scope(t, kid) for t in self.data['tasks']),
@@ -1717,6 +1731,7 @@ class Store:
                 kids.append({
                     'id': k['id'], 'name': k['name'], 'age': k['age'],
                     'color': k['color'], 'token': k['token'], 'lang': k.get('lang', ''),
+                    'look': k.get('look', ''), 'look_auto': look_for(dict(k, look='')),
                     'balance': self.balance(k['id']),
                     'tasks_week': len(done),
                     'bars': self._bars(k['id'], self.lang_of()),

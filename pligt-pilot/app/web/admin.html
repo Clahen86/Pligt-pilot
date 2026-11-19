@@ -616,6 +616,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     return { svg: svg };
   })();
 
+  var LOOKNAME = { small: 'Lille (4–8 år)', mid: 'Mellem (9–12 år)', teen: 'Stor (13+ år)' };
   function kidById(id) { return state.kids.filter(function (k) { return k.id === id; })[0]; }
   function privateHost(h) {
     return h === 'localhost' || /\.local$/.test(h) || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
@@ -1073,6 +1074,10 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
         '<div class="row"><div class="grow t"><b>På pause</b><span>Ferie eller længere tid syg: ingen opgaver, og ugen tæller ikke som misset</span></div>' +
         '<button class="sw" role="switch" aria-checked="' + (k.paused ? 'true' : 'false') + '" aria-label="' + esc(k.name) + ' er på pause" data-pause="' + k.id + '"><span></span></button></div>' +
         '<div><label for="b-' + k.id + '-d">Fødselsdato</label>' + dateSelects('b-' + k.id, k.birthday) + '</div>' +
+        '<div><label for="lk-' + k.id + '">Udseende på børnesiden</label><select id="lk-' + k.id + '">' +
+          [['', 'Efter alder: ' + LOOKNAME[k.look_auto]], ['small', LOOKNAME.small], ['mid', LOOKNAME.mid], ['teen', LOOKNAME.teen]].map(function (o) {
+            return '<option value="' + o[0] + '"' + ((k.look || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+          }).join('') + '</select></div>' +
         '<div><label for="lg-' + k.id + '">Sprog</label><select id="lg-' + k.id + '"><option value="">Samme som huset</option>' + s.langs.map(function (l) { return '<option value="' + l[0] + '"' + (k.lang === l[0] ? ' selected' : '') + '>' + esc(l[1]) + '</option>'; }).join('') + '</select></div>' +
         '<div><label for="al-' + k.id + '">Lommepenge pr. uge (kr.)</label><input id="al-' + k.id + '" type="number" inputmode="numeric" min="0" max="1000" value="' + k.allowance + '"></div>' +
         '<div class="row"><div class="grow t"><b>Beskeder til barnets telefon</b><span>Gratis med appen ntfy. Virker uden HA-app og uden https.</span></div>' +
@@ -1492,6 +1497,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
       post('api/kids/' + d.savekid, {
         birthday: validDate(readDate('b-' + d.savekid)),
         lang: document.getElementById('lg-' + d.savekid).value,
+        look: document.getElementById('lk-' + d.savekid).value,
         notify: document.getElementById('n-' + d.savekid).value,
         allowance: document.getElementById('al-' + d.savekid).value
       }, 'Gemt');

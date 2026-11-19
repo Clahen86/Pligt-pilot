@@ -18,7 +18,7 @@
     box = document.createElement('div');
     box.setAttribute('role', 'dialog');
     box.style.cssText = 'position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:50;max-width:440px;margin:0 auto;' +
-      'background:#fff;color:var(--ink,#22304A);border-radius:20px;padding:14px 16px;box-shadow:0 10px 30px rgba(34,48,74,.18);' +
+      'background:var(--ib,#fff);color:var(--ink,#22304A);border-radius:20px;padding:14px 16px;box-shadow:0 10px 30px rgba(34,48,74,.18);' +
       'display:flex;gap:12px;align-items:center;font-family:inherit';
     var how = asked ? T('Så åbner den som en app med ét tryk.')
       : T('Tryk på Del-knappen og vælg »Føj til hjemmeskærm«.').replace(/(Del|Share|Teilen|Dela)/, '$1 ' + SHARE);

@@ -17,7 +17,7 @@ from ha import HomeAssistant  # noqa: E402
 from server import App, make_tls, serve  # noqa: E402
 import push  # noqa: E402
 from house import power_sensors, Automation, find_sensors, step  # noqa: E402
-from store import Problem, Store  # noqa: E402
+from store import Problem, Store, look_for  # noqa: E402
 
 
 class Clock:
@@ -447,6 +447,19 @@ class StoreTests(unittest.TestCase):
         self.store.ask_sick(self.maja['token'])
         self.store.decide_sick(self.maja['id'], False)
         self.assertFalse(self.store.kid_view(self.maja['token'])['sick_ask'])
+
+    def test_kid_page_look_follows_age(self):
+        self.assertEqual(self.store.kid_view(self.emil['token'])['look'], look_for(self.emil))
+        self.store.update_kid(self.emil['id'], age=6)
+        self.assertEqual(self.store.kid_view(self.emil['token'])['look'], 'small')
+        self.store.update_kid(self.emil['id'], age=10)
+        self.assertEqual(self.store.kid_view(self.emil['token'])['look'], 'mid')
+        self.store.update_kid(self.emil['id'], age=15)
+        self.assertEqual(self.store.kid_view(self.emil['token'])['look'], 'teen')
+        self.store.update_kid(self.emil['id'], look='small')                      # forælderen bestemmer
+        self.assertEqual(self.store.kid_view(self.emil['token'])['look'], 'small')
+        self.store.update_kid(self.emil['id'], look='')
+        self.assertEqual(self.store.kid_view(self.emil['token'])['look'], 'teen')
 
     def test_parent_moves_or_frees_a_taken_job(self):
         job = self.store.add_task('Fej indkørslen', 10, open_job=True)

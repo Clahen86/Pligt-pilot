@@ -239,3 +239,16 @@ Opgaven er givet til || The task was given to || Die Aufgabe wurde gegeben an ||
 Fjerne opgaven fra barnet? Den bliver ledig igen, og der gives ingen penge. || Take the task from the child? It becomes free again, and no money is given. || Die Aufgabe dem Kind wegnehmen? Sie wird wieder frei, und es gibt kein Geld. || Ta uppgiften från barnet? Den blir ledig igen, och inga pengar ges. || Ta oppgaven fra barnet? Den blir ledig igjen, og det gis ingen penger.
 Godkend alt fra || Approve all from || Alles genehmigen von || Godkänn allt från || Godkjenn alt fra
 Mere for || More for || Mehr für || Mer för || Mer for
+# Børnesiden efter alder
+I sparegrisen || In the piggy bank || Im Sparschwein || I spargrisen || I sparegrisen
+Saldo || Balance || Kontostand || Saldo || Saldo
+Dine opgaver i dag || Your tasks today || Deine Aufgaben heute || Dina uppgifter i dag || Oppgavene dine i dag
+I dag || Today || Heute || I dag || I dag
+Byt || Swap || Tauschen || Byt || Bytt
+Besejret! || Defeated! || Besiegt! || Besegrad! || Beseiret!
+opgaver mere, så er den væk. || more tasks and it's gone. || Aufgaben mehr, dann ist es weg. || uppgifter till, så är den borta. || oppgaver til, så er den borte.
+Udseende på børnesiden || Look of the child's page || Aussehen der Kinderseite || Utseende på barnsidan || Utseende på barnesiden
+Efter alder || By age || Nach Alter || Efter ålder || Etter alder
+Lille (4–8 år) || Small (4–8) || Klein (4–8) || Liten (4–8 år) || Liten (4–8 år)
+Mellem (9–12 år) || Middle (9–12) || Mittel (9–12) || Mellan (9–12 år) || Mellom (9–12 år)
+Stor (13+ år) || Big (13+) || Groß (13+) || Stor (13+ år) || Stor (13+ år)

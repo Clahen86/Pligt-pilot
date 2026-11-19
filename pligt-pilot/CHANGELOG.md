@@ -2,6 +2,12 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.21.0 – 2026-11-19
+
+- The child's page grows with the child: a playful look for 0-8 (big pictures and a big tick button), a tidy one for 9-12 and a dark, plain checklist for 13+
+- Chosen by age, or set per child under Children ("Look of the child's page")
+- Tasks come right after the top card; suggesting a task and messages moved to the bottom
+
 ## 0.20.1 – 2026-11-19
 
 - House: the long list of every meter is gone - "Use another meter" opens a sheet with search, and meters that are unavailable or don't show watts are left out
