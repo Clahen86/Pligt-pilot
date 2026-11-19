@@ -370,7 +370,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
   function typing() {
     var a = document.activeElement;
     // en åben redigering eller et åbent ark må ikke tegnes om under fingrene på en (fx valgte dage)
-    return (a && (a.tagName === 'INPUT' || a.tagName === 'SELECT')) || sugEdit >= 0 || !!quickTask || quickAdd || !!tSheet || !!ruleEdit || !!doorPick;
+    return (a && (a.tagName === 'INPUT' || a.tagName === 'SELECT')) || sugEdit >= 0 || !!quickTask || quickAdd || !!tSheet || !!ruleEdit || !!doorPick || powOpen;
   }
   var SEASON = { '': 'Hele året', 'forår': 'Forår (mar–maj)', 'sommer': 'Sommer (jun–aug)', 'efterår': 'Efterår (sep–nov)', 'vinter': 'Vinter (dec–feb)' };
   var SEASON_SHORT = { 'forår': 'om foråret', 'sommer': 'om sommeren', 'efterår': 'om efteråret', 'vinter': 'om vinteren' };
@@ -1212,6 +1212,29 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
   function doorList(id, preset) {
     return '<datalist id="' + id + '">' + doorCandidates(preset).map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[1]) + '</option>'; }).join('') + '</datalist>';
   }
+  var powOpen = false, powQ = '';  // arket "Brug en anden måler"
+  function powRows() {
+    var have = (state.rules || []).map(function (r) { return r.entity; }), q = powQ.trim().toLowerCase();
+    var rows = powerList.map(function (p, i) { return [p, i]; }).filter(function (x) {
+      var p = x[0];
+      return have.indexOf(p.entity) < 0 && (!q || (p.name + ' ' + (p.area || '') + ' ' + p.entity).toLowerCase().indexOf(q) >= 0);
+    });
+    if (!rows.length) { return '<div class="note">Ingen målere passer.</div>'; }
+    return rows.slice(0, 120).map(function (x) {
+      var p = x[0];
+      return '<button class="qrow" data-usepower="' + x[1] + '"><span class="grow"><b>' + esc(p.name) + '</b>' +
+        '<span class="qp">' + esc([p.area, 'nu: ' + (p.value || '?') + ' ' + p.unit].filter(Boolean).join(' · ')) + '</span></span></button>';
+    }).join('');
+  }
+  function powPaint() { var box = document.querySelector('.powlist'); if (box) { box.innerHTML = powRows(); } }
+  function powSheet() {
+    return '<div class="qsheet" data-qclose="1"><div class="in" role="dialog" aria-modal="true" aria-label="Vælg måler">' +
+      '<div><b style="font-size:19px;font-weight:900">Vælg måler</b><div class="sub">Tænd maskinen, og se hvilken måler der stiger. Tryk så på den.</div></div>' +
+      '<div><label for="pw-machine">Hvilken maskine?</label><select id="pw-machine">' + Object.keys(PRESETS).map(function (k) { return '<option>' + k + '</option>'; }).join('') + '</select></div>' +
+      '<input id="pw-q" type="search" placeholder="Søg, fx vaskemaskine eller stik" value="' + esc(powQ) + '" autocomplete="off">' +
+      '<div class="qlist powlist">' + powRows() + '</div>' +
+      '<button class="btn ghost" data-powclose="1">Luk</button></div></div>';
+  }
   function house() {
     var s = state, d = draft.rule;
     var out = '<div class="head"><div><h1>Huset</h1><div class="sub">Opgaver, der opstår af sig selv</div></div></div>';
@@ -1231,16 +1254,9 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
       out += '<div class="note">Jeg fandt ingen maskiner med navne som vaskemaskine, tørretumbler eller opvaskemaskine. Vælg dem selv herunder.</div>';
     }
     if (powerList.length) {
-      var have = (s.rules || []).map(function (r) { return r.entity; });
-      out += '<h2>Alle målere i dit hjem</h2><div class="note">Finder jeg ikke din vaskemaskine eller tørretumbler, så peg på den her. Tænd maskinen, og se hvilken måler der stiger.</div><div class="list">';
-      powerList.forEach(function (p, i) {
-        if (have.indexOf(p.entity) >= 0) { return; }
-        out += '<div class="card"><div class="t"><b>' + esc(p.name) + '</b><span>' + (p.area ? esc(p.area) + ' · ' : '') + 'nu: ' + esc(p.value || '?') + ' ' + esc(p.unit) + '</span></div>' +
-          '<div class="row"><select id="pw-' + i + '" aria-label="Hvilken maskine er ' + esc(p.name) + '?">' +
-          Object.keys(PRESETS).map(function (k) { return '<option>' + k + '</option>'; }).join('') + '</select>' +
-          '<button class="btn small" data-usepower="' + i + '">Brug den</button></div></div>';
-      });
-      out += '</div>';
+      var setUp = (s.rules || []).length > 0 || (found && found.length > 0);
+      out += (setUp ? '' : '<div class="note">Finder jeg ikke din vaskemaskine eller tørretumbler, så peg selv på dens måler.</div>') +
+        '<button class="btn' + (setUp ? ' ghost' : '') + '" data-powopen="1">' + (setUp ? 'Brug en anden måler …' : 'Vælg måler') + '</button>';
     }
     if (s.rules && s.rules.length) {
       out += '<div class="list">';
@@ -1287,7 +1303,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
   function render() {
     if (state && state.lang && state.lang !== I18N.lang) { loadLang(); if (!I18N.rx) { return; } }
     if (!state) { return; }
-    app.innerHTML = (tab === 'home' ? home() + (quickTask ? quickSheet() : quickAdd ? addSheet() : '') : tab === 'tasks' ? tasks() + (tSheet ? taskSheet() : '') : tab === 'house' ? house() + (doorPick ? doorSheet() : '') : kids());
+    app.innerHTML = (tab === 'home' ? home() + (quickTask ? quickSheet() : quickAdd ? addSheet() : '') : tab === 'tasks' ? tasks() + (tSheet ? taskSheet() : '') : tab === 'house' ? house() + (doorPick ? doorSheet() : powOpen ? powSheet() : '') : kids());
     var pend = state.pending.length + (state.suggestions || []).length;
     nav.innerHTML =
       '<button data-tab="home"' + (tab === 'home' ? ' aria-current="page"' : '') + '>Oversigt' + (pend ? '<span class="dot">' + pend + '</span>' : '') + '</button>' +
@@ -1305,6 +1321,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     var t = e.target;
     if (t.id && t.id.indexOf('sg-') === 0) { sugVals[t.id] = t.value; }
     if (t.id === 'door-q') { doorQ = t.value; doorPaint(); }
+    if (t.id === 'pw-q') { powQ = t.value; powPaint(); }
     if (t.dataset && t.dataset.draft) {
       setDraft(t.dataset.draft, t.type === 'checkbox' ? t.checked : t.value);
     }
@@ -1326,7 +1343,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     }
   });
   document.addEventListener('click', function (e) {
-    if (e.target.classList && e.target.classList.contains('qsheet')) { if (doorPick) { doorClose(); return; } quickTask = ''; quickAdd = false; tSheet = null; render(); return; }
+    if (e.target.classList && e.target.classList.contains('qsheet')) { if (doorPick) { doorClose(); return; } powOpen = false; quickTask = ''; quickAdd = false; tSheet = null; render(); return; }
     var b = e.target.closest('button');
     if (!b) { return; }
     var d = b.dataset;
@@ -1429,8 +1446,11 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
       post('api/rules', { name: f.preset, entity: pick.entity, title: f.title, price: f.price }, f.preset + ' er sat op')
         .then(loadFound).catch(function () {});
     }
+    else if (d.powopen) { powOpen = true; powQ = ''; render(); }
+    else if (d.powclose) { powOpen = false; render(); }
     else if (d.usepower) {
-      var pw = powerList[+d.usepower], pn = document.getElementById('pw-' + d.usepower).value, pp = PRESETS[pn];
+      var pw = powerList[+d.usepower], pn = document.getElementById('pw-machine').value, pp = PRESETS[pn];
+      powOpen = false;
       post('api/rules', { name: pn, entity: pw.entity, title: pp.title || ('Opgave efter ' + pw.name), price: pp.price }, pn + ' er sat op')
         .then(loadFound).catch(function () {});
     }

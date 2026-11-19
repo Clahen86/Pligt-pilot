@@ -463,6 +463,9 @@ def make_handler(app, role, allow_from=None):
                     vals = app.ha.states([p['entity'] for p in power])
                     for p in power:
                         p['value'] = vals.get(p['entity'], '')
+                    # kun dem, der kan bruges: viser watt og har et tal lige nu (ikke utilgængelig)
+                    power = [p for p in power if str(p.get('unit') or '').lower() in ('w', 'kw', '')
+                             and str(p['value']).lower() not in ('', 'unavailable', 'unknown', 'none')]
                     return self._json({'found': find_sensors(ents, names), 'power': power,
                                        'on': app.ha.enabled and bool(ents)})
                 if path == '/api/fairness':

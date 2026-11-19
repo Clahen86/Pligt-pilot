@@ -2,6 +2,10 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.20.1 – 2026-11-19
+
+- House: the long list of every meter is gone - "Use another meter" opens a sheet with search, and meters that are unavailable or don't show watts are left out
+
 ## 0.20.0 – 2026-11-19
 
 - New overview: header with what waits, what's in progress and what to pay out; approve everything from one child with one tap
