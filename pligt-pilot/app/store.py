@@ -122,14 +122,42 @@ def is_school(task):
     return bool(task['school']) if 'school' in task else bool(SCHOOL.search(task.get('title') or ''))
 
 
+# "Færdig når:" på husets sprog (sidste linje i "Sådan gør du")
+DONE_WHEN = {'da': 'Færdig når:', 'en': 'Done when:', 'de': 'Fertig, wenn:', 'sv': 'Klart när:', 'nb': 'Ferdig når:'}
+AGE_LINE = re.compile(r'^(\d{1,2})\s*\+\s*[:.\-]?\s*(.+)$')
+
+
 def clean_how(text):
-    """Beskrivelsen af en opgave: højst 8 korte linjer, uden punkttegn og numre."""
+    """Beskrivelsen af en opgave: højst 14 linjer uden punkttegn og numre. "10+: ..." er kun til børn fra 10 år."""
     lines = []
     for line in str(text or '').replace('\r', '').split('\n'):
-        line = re.sub(r'^\s*(?:[-*•·]|\d+[.)])\s*', '', line).strip().strip('*').strip()
-        if line:
-            lines.append(line[:100])
-    return '\n'.join(lines[:8])
+        line = re.sub(r'^\s*(?:[-*•·]|\d+[.)](?!\d))\s*', '', line).strip().strip('*').strip()
+        m = AGE_LINE.match(line)
+        if m:
+            line = '%d+: %s' % (int(m.group(1)), m.group(2).strip())
+        if not line:
+            continue
+        if lines and re.match(r'^[^:]{3,20}:$', lines[-1]) and lines[-1] in DONE_WHEN.values():
+            lines[-1] += ' ' + line         # "Færdig når:" på sin egen linje: saml det, der følger
+        elif lines and lines[-1].split(':')[0] + ':' in DONE_WHEN.values():
+            lines[-1] = lines[-1].rstrip('.') + ', ' + line[0].lower() + line[1:]
+        else:
+            lines.append(line)
+    lines = [x[:200] if x.split(':')[0] + ':' in DONE_WHEN.values() else x[:140] for x in lines]
+    return '\n'.join(lines[:14])
+
+
+def how_for_age(text, age):
+    """Linjerne til et barn: "12+: ..." kun fra 12 år (uden mærket)."""
+    out = []
+    for line in (text or '').split('\n'):
+        m = AGE_LINE.match(line)
+        if m:
+            if age is None or age >= int(m.group(1)):
+                out.append(m.group(2))
+        elif line:
+            out.append(line)
+    return '\n'.join(out)
 
 
 def age_on(birth, today):
@@ -1285,7 +1313,8 @@ class Store:
                 and isinstance(k.get('age'), int) and k['age'] >= lo]
         lang = self.lang_of()
         text = clean_how(ha.describe(self.data['settings'].get('ai_entity', ''), title, room,
-                                     min(ages) if ages else lo, i18n.NAMES.get(lang, 'Dansk')))
+                                     min(ages) if ages else lo, max(ages) if ages else lo,
+                                     i18n.NAMES.get(lang, 'Dansk'), DONE_WHEN.get(lang, DONE_WHEN['da'])))
         if not text:
             raise Problem('AI\'en svarede ikke. Prøv igen senere, eller skriv selv.')
         return text
@@ -1499,14 +1528,14 @@ class Store:
                            'need_photo': i['status'] == 'todo' and self._needs_photo(i),
                            'icon': self._icon_for(i['task_id'], i['title'], i['room']),
                            'streak': self._item_streak(kid['id'], i),
-                           'how': self._how(i['task_id'], self.lang_of(kid)),
+                           'how': how_for_age(self._how(i['task_id'], self.lang_of(kid)), kid.get('age')),
                            **self._extra_for(i)} for i in items],
                 'suggestions': [{'id': x['id'], 'text': x['text'], 'photo': x['photo']}
                                 for x in self.data['suggestions'] if x['kid_id'] == kid['id']],
                 'jobs': [{'task_id': t['id'], 'title': t['title'], 'room': t['room'],
                           'icon': t.get('icon') or icons.guess(t['title'], t['room']),
                           'price': t['price'], 'expires': t.get('expires', ''), 'machine': self._job_machine(t),
-                          'how': self._how(t['id'], self.lang_of(kid))}
+                          'how': how_for_age(self._how(t['id'], self.lang_of(kid)), kid.get('age'))}
                          for t in self._open_jobs_for(kid)],
             }
 

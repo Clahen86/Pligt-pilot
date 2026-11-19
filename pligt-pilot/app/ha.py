@@ -286,22 +286,36 @@ class HomeAssistant:
         """AI-opgaverne i Home Assistant: [[entity_id, navn], ...]."""
         return [[r[0], r[1]] for r in self.entities() if r[0].startswith('ai_task.')]
 
-    def describe(self, entity, title, room='', age=0, language='dansk'):
-        """Kort "Sådan gør du" til et barn fra husets AI (ai_task.generate_data). '' hvis det ikke lykkes."""
+    def describe(self, entity, title, room='', young=0, old=0, language='dansk', done='Færdig når:'):
+        """"Sådan gør du" fra husets AI (ai_task.generate_data): trin til alle, ekstra trin til de store
+        ("12+: ..."), og til sidst "Færdig når: ...". '' hvis det ikke lykkes."""
         if not self.enabled:
             return ''
         # det valgte først (eller en med "pligt" i navnet), så de andre: Google kan være travl et øjeblik
         tasks = sorted((t[0] for t in self.ai_tasks()), key=lambda e: 'pligt' not in e)
         if entity and entity.startswith('ai_task.') and ENTITY.match(entity):
             tasks = [entity] + [t for t in tasks if t != entity]
-        who = 'et barn på %d år' % age if age else 'et barn'
-        where = ' (rum: %s)' % room if room else ''
-        prompt = ('Skriv en kort vejledning til %s om husopgaven "%s"%s, så barnet ved, hvad der skal gøres, '
-                  'og hvornår den er færdig. Forstå navnet, som en familie i hverdagen gør (fx "Skraldet ud" betyder: '
-                  'tag posen op af skraldespanden, bind den, bær den ud i containeren, sæt en ny pose i). '
-                  '3 til 5 korte punkter, ét pr. linje, højst 8 ord hvert. '
-                  'Ingen overskrift, ingen numre, ingen emojis, ingen farlige opgaver. Skriv på %s. '
-                  'Svar kun med punkterne.') % (who, title, where, language)
+        where = ' i rummet "%s"' % room if room else ''
+        if young and old and old > young:
+            who = 'børn fra %d til %d år' % (young, old)
+            extra = ('Tilføj 2-4 ekstra trin, som kun de større børn skal gøre (grundigere ting, fx afkalke, tørre fliser '
+                     'eller paneler af, tømme og rense under og bag ting). Start hver af dem med alderen og "+:", fx "%d+: '
+                     'Afkalk vandhanen med kalkfjerner". Vælg en alder mellem %d og %d. ') % (
+                         max(young + 1, min(old, 10)), young + 1, old)
+        else:
+            who = 'et barn på %d år' % (young or old) if (young or old) else 'et barn'
+            extra = ''
+        prompt = ('Skriv en grundig, konkret vejledning til %s om husopgaven "%s"%s, så barnet ved præcis, hvad der skal '
+                  'gøres. Forstå navnet, som en familie i hverdagen gør (fx "Skraldet ud": tag posen op, bind den, bær den '
+                  'ud i containeren, sæt en ny pose i; "Ryd op på værelset": også skrivebordet, gulvet, under sengen, '
+                  'hylderne, tøj i kurv eller skab, red sengen, luft ud; "Badeværelset": også toilettet - sæde, låg, kant og '
+                  'under kanten med toiletbørsten - håndvask, spejl, gulv, og for de store afkalke vandhane og bruser). '
+                  '5 til 8 trin i den rækkefølge, man gør dem. Hvert trin siger, hvad man gør med hvad og hvor, '
+                  'højst 12 ord, simple ord. %s'
+                  'Sidste linje, på én linje: "%s" og hvad man kan se, når det er gjort ordentligt. '
+                  'Én ting pr. linje. Ingen overskrift, ingen numre, ingen punkttegn, ingen emojis, '
+                  'ingen farlige ting (ingen stærke kemikalier blandet, ingen stiger). Skriv på %s. '
+                  'Svar kun med linjerne.') % (who, title, where, extra, done, language)
         for entity in tasks[:3]:
             try:
                 raw = self._post('/services/ai_task/generate_data?return_response',

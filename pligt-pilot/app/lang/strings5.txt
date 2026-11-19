@@ -219,3 +219,6 @@ siger: Jeg er syg i dag. Åbn Pligter for at sige ja. || says: I am sick today. 
 God bedring! Dine skoleopgaver er væk i dag. || Get well soon! Your school chores are gone today. || Gute Besserung! Deine Schulaufgaben sind heute weg. || Krya på dig! Dina skolsysslor är borta idag. || God bedring! Skoleoppgavene dine er borte i dag.
 En voksen sagde nej til syg i dag. || A grown-up said no to sick today. || Ein Erwachsener hat zu heute krank nein gesagt. || En vuxen sa nej till sjuk idag. || En voksen sa nei til syk i dag.
 Alle får hver sin || Everyone gets their own || Jeder bekommt seine eigene || Alla får var sin || Alle får hver sin
+Færdig når || Done when || Fertig, wenn || Klart när || Ferdig når
+Barnet ser det under opgaven. Én ting pr. linje. Skriv fx || The child sees it under the task. One step per line. Write e.g. || Das Kind sieht es unter der Aufgabe. Ein Schritt pro Zeile. Schreib z. B. || Barnet ser det under uppgiften. Ett steg per rad. Skriv t.ex. || Barnet ser det under oppgaven. Ett steg per linje. Skriv f.eks.
+foran en linje, så ser kun børn fra 10 år den. || in front of a line, and only children from 10 see it. || vor eine Zeile, dann sehen sie nur Kinder ab 10. || framför en rad, så ser bara barn från 10 år den. || foran en linje, så ser bare barn fra 10 år den.

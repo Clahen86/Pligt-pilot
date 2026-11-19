@@ -2,6 +2,12 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.19.1 – 2026-11-19
+
+- "Write with AI" is more thorough: 5-8 concrete steps in order (toilet, room desk, under the bed and so on)
+- Extra steps for older children ("11+: Descale the tap"), shown only to children of that age
+- "Done when" at the end, shown in its own box in the child's app
+
 ## 0.19.0 – 2026-11-19
 
 - "How to do it" on each task: a short step list the child sees under the task

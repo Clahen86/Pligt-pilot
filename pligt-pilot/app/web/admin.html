@@ -72,7 +72,7 @@ input[type=text], input[type=search], input[type=number], input[type=date], inpu
 .relrow { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 .relrow label { margin: 0; white-space: nowrap; font-weight: 800; }
 .relrow input[type=time] { width: 130px; flex: none; }
-textarea.how { width: 100%; min-height: 104px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 10px 12px; font: inherit; font-size: 15px; font-weight: 600; line-height: 1.45; color: var(--ink); background: #fff; resize: vertical; }
+textarea.how { width: 100%; min-height: 180px; border-radius: 12px; border: 2px solid #D9CFBE; padding: 10px 12px; font: inherit; font-size: 15px; font-weight: 600; line-height: 1.45; color: var(--ink); background: #fff; resize: vertical; }
 .howhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .howhead .btn[disabled] { opacity: .6; }
 .dates { display: grid; grid-template-columns: 1fr 1.6fr 1.2fr; gap: 6px; }
@@ -862,7 +862,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       '<div class="fld"><div class="howhead"><div class="lbl">Sådan gør du</div>' +
       '<button type="button" class="btn small ghost" data-thow="1"' + (d.howBusy ? ' disabled' : '') + '>' + (d.howBusy ? 'Skriver…' : (d.how ? 'Skriv ny med AI' : 'Lav med AI')) + '</button></div>' +
       '<textarea id="ts-h" class="how" aria-label="Sådan gør du" maxlength="800" placeholder="Fx Tøm skraldespanden&#10;Sæt en ny pose i&#10;Bær posen ud i containeren">' + esc(d.how) + '</textarea>' +
-      '<div class="note">Barnet ser det under opgaven. Én ting pr. linje.</div></div>' +
+      '<div class="note">Barnet ser det under opgaven. Én ting pr. linje. Skriv fx <b>10+:</b> foran en linje, så ser kun børn fra 10 år den.</div></div>' +
       '<button class="btn big" data-tsave="1">Gem</button>' +
       '<button class="more" data-tmore="1" aria-expanded="' + d.more + '">Flere valg ' + (d.more ? '▴' : '▾') + '</button>';
     if (d.more) {

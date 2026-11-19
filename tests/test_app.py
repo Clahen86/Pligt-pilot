@@ -483,13 +483,17 @@ class StoreTests(unittest.TestCase):
         class AI:
             asked = []
 
-            def describe(self, entity, title, room, age, language):
-                self.asked.append((entity, title, room, age, language))
-                return '1. Tøm spanden\n2. Ny pose i'
+            def describe(self, entity, title, room, young, old, language, done):
+                self.asked.append((entity, title, room, young, old, language, done))
+                return '1. Tøm spanden\n2. Ny pose i\n- 10 +: Vask spanden\nFærdig når: spanden er tom'
         ai = AI()
-        self.assertEqual(self.store.write_how(ai, 'Skraldet ud', 'Køkken'), 'Tøm spanden\nNy pose i')
-        youngest = min(k['age'] for k in self.store.data['kids'])
-        self.assertEqual(ai.asked[0], ('ai_task.gemini', 'Skraldet ud', 'Køkken', youngest, 'Dansk'))
+        text = self.store.write_how(ai, 'Skraldet ud', 'Køkken')
+        self.assertEqual(text, 'Tøm spanden\nNy pose i\n10+: Vask spanden\nFærdig når: spanden er tom')
+        ages = [k['age'] for k in self.store.data['kids']]
+        self.assertEqual(ai.asked[0], ('ai_task.gemini', 'Skraldet ud', 'Køkken', min(ages), max(ages), 'Dansk', 'Færdig når:'))
+        self.store.update_task(task['id'], how=text)
+        self.assertNotIn('Vask spanden', self.store.kid_view(self.emil['token'])['jobs'][0]['how'])     # Emil er 8
+        self.assertIn('\nVask spanden\n', self.store.kid_view(self.maja['token'])['jobs'][0]['how'])  # Maja er 12
         ai.describe = lambda *a: ''
         with self.assertRaises(Problem):
             self.store.write_how(ai, 'Skraldet ud')

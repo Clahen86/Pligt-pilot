@@ -13,7 +13,7 @@ Fanen **Opgaver** viser dine opgaver i to grupper: **Faste** og **Når jeg giver
 
 Arket har **Navn**, **Pris**, **Hvornår?**, **Hvem?** (*Hver sin* eller *Én af børnene*), **Sådan gør du** og **Gem**. Under **Flere valg** finder du alder, hvor tit, antal gange, årstid, foto, overraskelse, hurtigknap, skoledag, billede og bestemte børn, og nederst **Kopiér** og **Slet**. Slet spørger først.
 
-**Sådan gør du** er en kort vejledning, én ting pr. linje. Barnet ser den med knappen **Sådan** ved opgaven. Tryk **Lav med AI**, så skriver husets AI (en `ai_task` i Home Assistant, fx Google Gemini) 3-5 punkter, der passer til det yngste barn. Du kan rette teksten, før du gemmer. AI'en bruges kun, når du trykker. Vælg hvilken AI under **Indstillinger**. Står den på *Automatisk*, og en AI ikke svarer, prøves de næste. Maskineopgaver (vask, tørretumbler, opvask) har en fast tekst.
+**Sådan gør du** er en kort vejledning, én ting pr. linje. Barnet ser den med knappen **Sådan** ved opgaven. Tryk **Lav med AI**, så skriver husets AI (en `ai_task` i Home Assistant, fx Google Gemini) 5-8 konkrete trin, ekstra trin til de store og til sidst **Færdig når**. En linje med fx **10+:** foran ser kun børn fra 10 år. Du kan rette teksten, før du gemmer. AI'en bruges kun, når du trykker. Vælg hvilken AI under **Indstillinger**. Står den på *Automatisk*, og en AI ikke svarer, prøves de næste. Maskineopgaver (vask, tørretumbler, opvask) har en fast tekst.
 
 ## Syg i dag
 
