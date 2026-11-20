@@ -2284,6 +2284,21 @@ class Store:
                 return t
             return None
 
+    def drop_free_task(self, task_id):
+        """Forælderen sletter en LEDIG husopgave fra "I gang nu". Reglen bliver, så næste maskine giver en ny."""
+        with self.lock:
+            t = next((t for t in self.data['tasks'] if t['id'] == task_id), None)
+            if t is None:
+                raise Problem('Opgaven findes ikke', 404)
+            if not t.get('auto_rule'):
+                raise Problem('Kun ledige husopgaver kan slettes her')
+            if self._taken(t):
+                raise Problem('Et barn har taget opgaven')
+            self.data['tasks'].remove(t)
+            self._save()
+            self._emit('removed', t)
+            return t
+
     def delete_rule(self, rule_id):
         with self.lock:
             self._rule(rule_id)

@@ -825,10 +825,14 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     return '<h2>I gang nu</h2><div class="nowc">' + list.map(function (n) {
       var kid = n.kid_id && kidById(n.kid_id), col = kid ? kid.color : '#B8AE9C';
       var who = n.status === 'free' ? 'Ledig' : n.status === 'wait' ? n.kid + ' er færdig' : n.status === 'done' ? n.kid + ' er færdig' : n.kid;
-      var can = n.status === 'todo' && n.item_id, out = '<div class="nrow">' + icoSpan(n.icon) +
+      var can = n.status === 'todo' && n.item_id, free = n.status === 'free' && n.task_id, key = can ? n.item_id : 'f' + n.task_id;
+      var out = '<div class="nrow">' + icoSpan(n.icon) +
         '<div class="grow t"><b>' + esc(n.title) + '</b><span class="who"><i style="background:' + esc(col) + '"></i>' + esc(who) +
         (n.machine ? ' · ' + esc(n.machine) : '') + ' · ' + n.price + ' kr</span></div>' +
-        (can ? '<button class="more" data-move="' + n.item_id + '" aria-label="Mere for ' + esc(n.title) + '" aria-expanded="' + (moveOpen === n.item_id) + '">' + DOTS + '</button>' : '') + '</div>';
+        (can || free ? '<button class="more" data-move="' + key + '" aria-label="Mere for ' + esc(n.title) + '" aria-expanded="' + (moveOpen === key) + '">' + DOTS + '</button>' : '') + '</div>';
+      if (free && moveOpen === key) {
+        out += '<div class="nmenu"><button class="btn small danger" data-drop="' + n.task_id + '">Slet opgaven</button></div>';
+      }
       if (can && moveOpen === n.item_id) {
         out += '<div class="nmenu"><span class="sub">Giv til</span><div class="chips nowpick">' + state.kids.filter(function (k) { return k.id !== n.kid_id; }).map(function (k) {
           return '<button class="chip" data-moveto="' + n.item_id + ':' + k.id + '"><i style="background:' + esc(k.color) + '"></i>' + esc(k.name) + '</button>';
@@ -1572,6 +1576,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
       moveOpen = '';
       post('api/items/' + mv[0] + '/move/' + mv[1], {}, 'Opgaven er givet til ' + (mk ? mk.name : ''));
     }
+    else if (d.drop) { if (confirm('Slette den ledige opgave? Maskinereglen bliver, så næste gang kommer der en ny.')) { moveOpen = ''; post('api/tasks/' + d.drop + '/drop', {}, 'Opgaven er slettet'); } }
     else if (d.free) { if (confirm('Fjerne opgaven fra barnet? Den bliver ledig igen, og der gives ingen penge.')) { post('api/items/' + d.free + '/free', {}, 'Opgaven er ledig igen'); } }
     else if (d.undo) { if (confirm('Fortryd godkendelsen? Pengene trækkes tilbage.')) { post('api/items/' + d.undo + '/undo', {}, 'Fortrudt. Opgaven venter igen.'); } }
     else if (d.addparent) {

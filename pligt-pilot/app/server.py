@@ -583,6 +583,10 @@ def make_handler(app, role, allow_from=None):
             if m:
                 store.delete_task(m.group(1))
                 return self._json(store.admin_state())
+            m = re.match(r'^/api/tasks/' + ID + r'/drop$', path)
+            if m:
+                store.drop_free_task(m.group(1))
+                return self._json(store.admin_state())
             m = re.match(r'^/api/tasks/' + ID + r'/give$', path)
             if m:
                 kid_id = body.get('kid_id')

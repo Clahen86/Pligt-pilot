@@ -403,6 +403,23 @@ class StoreTests(unittest.TestCase):
         with self.assertRaises(Problem):
             self.store.add_rule('X', 'ikke et id', 'T', 1)
 
+    def test_parent_deletes_a_free_house_job(self):
+        rule = self.store.add_rule('Opvaskemaskine', 'sensor.opvask', 'Tøm opvasken', 2)
+        task = self.store.fire_rule(rule['id'])
+        free = [n for n in self.store.admin_state()['house_now'] if n['task_id'] == task['id']]
+        self.assertEqual(free[0]['status'], 'free')
+        self.store.drop_free_task(task['id'])
+        self.assertEqual([n for n in self.store.admin_state()['house_now'] if n['task_id'] == task['id']], [])
+        self.assertEqual(self.store.kid_view(self.emil['token'])['jobs'], [])
+        self.assertIn(rule['id'], [r['id'] for r in self.store.data['rules']])   # reglen bliver
+        task = self.store.fire_rule(rule['id'])                                  # næste opvask
+        self.store.claim(self.emil['token'], task['id'])
+        with self.assertRaises(Problem):
+            self.store.drop_free_task(task['id'])                                # taget: brug Fjern fra
+        plain = self.store.add_task('Støvsug', 5)
+        with self.assertRaises(Problem):
+            self.store.drop_free_task(plain['id'])                               # kun husopgaver
+
     def test_machine_rule_can_be_edited_and_the_open_job_follows(self):
         rule = self.store.add_rule('Vaskemaskine', 'sensor.vask', 'Flyt tøj', 2)
         task = self.store.fire_rule(rule['id'])

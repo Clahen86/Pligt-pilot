@@ -2,6 +2,10 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## Unreleased
+
+- Overview, "Right now": a free house job (nobody has taken it) can now be deleted from the ⋯ menu. The machine rule stays, so the next run gives a new one
+
 ## 0.22.1 – 2026-11-20
 
 - Home Assistant now downloads the ready-made app (amd64/aarch64) instead of building it on your machine: faster updates and no build leftovers on the disk
