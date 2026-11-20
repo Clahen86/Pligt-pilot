@@ -252,3 +252,11 @@ Efter alder || By age || Nach Alter || Efter ålder || Etter alder
 Lille (4–8 år) || Small (4–8) || Klein (4–8) || Liten (4–8 år) || Liten (4–8 år)
 Mellem (9–12 år) || Middle (9–12) || Mittel (9–12) || Mellan (9–12 år) || Mellom (9–12 år)
 Stor (13+ år) || Big (13+) || Groß (13+) || Stor (13+ år) || Stor (13+ år)
+Engangsopgave || One-off task || Einmalige Aufgabe || Engångsuppgift || Engangsoppgave
++ Skriv en engangsopgave || + Write a one-off task || + Einmalige Aufgabe schreiben || + Skriv en engångsuppgift || + Skriv en engangsoppgave
+Kun til dem du vælger, kun i dag. Den gemmes ikke under Opgaver. || Only for the ones you pick, only today. It is not saved under Tasks. || Nur für die Ausgewählten, nur heute. Sie wird nicht unter Aufgaben gespeichert. || Bara till dem du väljer, bara i dag. Den sparas inte under Uppgifter. || Bare til dem du velger, bare i dag. Den lagres ikke under Oppgaver.
+Hvad skal laves || What needs doing || Was ist zu tun || Vad ska göras || Hva skal gjøres
+Skriv hvad der skal laves || Write what needs doing || Schreib, was zu tun ist || Skriv vad som ska göras || Skriv hva som skal gjøres
+Ingen børn kan få opgaver lige nu || No child can get tasks right now || Kein Kind kann gerade Aufgaben bekommen || Inget barn kan få uppgifter just nu || Ingen barn kan få oppgaver nå
+Send || Send || Senden || Skicka || Send
+Annuller || Cancel || Abbrechen || Avbryt || Avbryt

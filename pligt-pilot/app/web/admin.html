@@ -238,7 +238,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
 <script>
 (function () {
   var state = null, found = null, powerList = [], entityList = [], entitiesOn = null, editKids = [], sugEdit = -1, tSheet = null, tab = 'home', suggestions = null, sugOn = {};
-  var qrKid = '', qrParent = '', quickTask = '', quickAdd = false, pressTimer = null, pressAt = null, pressed = false;
+  var qrKid = '', qrParent = '', quickTask = '', quickAdd = false, oneOff = null, pressTimer = null, pressAt = null, pressed = false;
   var draft = { duty: { title: '', kids: [], date: '', time: '', fine: '10' }, rule: { preset: 'Vaskemaskine', entity: '', door: '', title: 'Flyt tøj fra vaskemaskinen til tørretumbleren', price: '5' }, kid: { name: '', age: '', birthday: '' }, reward: { title: '', price: '10' } };
   var app = document.getElementById('app'), nav = document.getElementById('nav'), toast = document.getElementById('toast');
   // ---- sprog: udskifter kendte danske tekststykker (samme metode som serverens i18n.py) ----
@@ -376,7 +376,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
   function typing() {
     var a = document.activeElement;
     // en åben redigering eller et åbent ark må ikke tegnes om under fingrene på en (fx valgte dage)
-    return (a && (a.tagName === 'INPUT' || a.tagName === 'SELECT')) || sugEdit >= 0 || !!quickTask || quickAdd || !!tSheet || !!ruleEdit || !!doorPick || powOpen;
+    return (a && (a.tagName === 'INPUT' || a.tagName === 'SELECT')) || sugEdit >= 0 || !!quickTask || quickAdd || !!oneOff || !!tSheet || !!ruleEdit || !!doorPick || powOpen;
   }
   var SEASON = { '': 'Hele året', 'forår': 'Forår (mar–maj)', 'sommer': 'Sommer (jun–aug)', 'efterår': 'Efterår (sep–nov)', 'vinter': 'Vinter (dec–feb)' };
   var SEASON_SHORT = { 'forår': 'om foråret', 'sommer': 'om sommeren', 'efterår': 'om efteråret', 'vinter': 'om vinteren' };
@@ -841,7 +841,28 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     var pick = (state.quick || []).slice(0, 7);  // to rækker med "Flere" til sidst
     return '<h2>Giv en opgave</h2><div class="qgrid">' + pick.map(function (t) {
       return '<button class="qt2" data-quick="' + t.id + '">' + icoSpan(t.icon_shown) + '<b>' + esc(t.title) + '</b><span>' + t.price + ' kr</span></button>';
-    }).join('') + '<button class="qt2 add" data-qadd="1"><span class="plus" aria-hidden="true">+</span><b>Flere</b><span>&nbsp;</span></button></div>';
+    }).join('') + '<button class="qt2 add" data-qadd="1"><span class="plus" aria-hidden="true">+</span><b>Flere</b><span>&nbsp;</span></button></div>' +
+      '<button class="btn ghost" style="width:100%;margin-top:10px" data-oneoff="1">+ Skriv en engangsopgave</button>';
+  }
+  // engangsopgave: skrives her, sendes kun til de valgte børn i dag og gemmes ikke under Opgaver
+  function oneOffSheet() {
+    var o = oneOff, kids = state.kids.filter(function (k) { return !k.paused; });
+    return '<div class="qsheet" data-qclose="1"><div class="in" role="dialog" aria-modal="true" aria-label="Engangsopgave">' +
+      '<div><b style="font-size:19px;font-weight:900">Engangsopgave</b><div class="sub">Kun til dem du vælger, kun i dag. Den gemmes ikke under Opgaver.</div></div>' +
+      '<div class="two"><div><label for="oo-t">Hvad skal laves</label><input id="oo-t" type="text" maxlength="60" value="' + esc(o.title) + '"></div>' +
+      '<div><label for="oo-p">Pris (kr.)</label><input id="oo-p" type="number" inputmode="numeric" min="0" max="1000" value="' + esc(o.price) + '"></div></div>' +
+      '<div class="sub" style="font-weight:800">Hvem skal have den?</div>' +
+      (kids.length ? '<div class="qkids">' + kids.map(function (k) {
+        var on = o.kids.indexOf(k.id) >= 0;
+        return '<button class="qkid" data-ookid="' + k.id + '" aria-pressed="' + on + '"' + (on ? ' style="box-shadow:inset 0 0 0 3px var(--accent)"' : '') +
+          '><div class="avatar" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' + esc(k.name) + '</button>';
+      }).join('') + '</div>' : '<div class="empty">Ingen børn kan få opgaver lige nu</div>') +
+      '<button class="btn sun" style="width:100%" data-oosend="1">Send</button>' +
+      '<button class="btn ghost" style="width:100%" data-oocancel="1">Annuller</button></div></div>';
+  }
+  function oneOffRead() {
+    var t = document.getElementById('oo-t'), p = document.getElementById('oo-p');
+    if (oneOff && t) { oneOff.title = t.value; oneOff.price = p.value; }
   }
   // arket "Tilføj": slå hurtigknap til eller fra på de opgaver, der kan gives
   function addSheet() {
@@ -1322,7 +1343,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
   function render() {
     if (state && state.lang && state.lang !== I18N.lang) { loadLang(); if (!I18N.rx) { return; } }
     if (!state) { return; }
-    app.innerHTML = (tab === 'home' ? home() + (quickTask ? quickSheet() : quickAdd ? addSheet() : '') : tab === 'tasks' ? tasks() + (tSheet ? taskSheet() : '') : tab === 'house' ? house() + (doorPick ? doorSheet() : powOpen ? powSheet() : '') : kids());
+    app.innerHTML = (tab === 'home' ? home() + (quickTask ? quickSheet() : quickAdd ? addSheet() : oneOff ? oneOffSheet() : '') : tab === 'tasks' ? tasks() + (tSheet ? taskSheet() : '') : tab === 'house' ? house() + (doorPick ? doorSheet() : powOpen ? powSheet() : '') : kids());
     var pend = state.pending.length + (state.suggestions || []).length;
     nav.innerHTML =
       '<button data-tab="home"' + (tab === 'home' ? ' aria-current="page"' : '') + '>Oversigt' + (pend ? '<span class="dot">' + pend + '</span>' : '') + '</button>' +
@@ -1362,7 +1383,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     }
   });
   document.addEventListener('click', function (e) {
-    if (e.target.classList && e.target.classList.contains('qsheet')) { if (doorPick) { doorClose(); return; } powOpen = false; quickTask = ''; quickAdd = false; tSheet = null; render(); return; }
+    if (e.target.classList && e.target.classList.contains('qsheet')) { if (doorPick) { doorClose(); return; } powOpen = false; quickTask = ''; quickAdd = false; oneOff = null; tSheet = null; render(); return; }
     var b = e.target.closest('button');
     if (!b) { return; }
     var d = b.dataset;
@@ -1408,6 +1429,18 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     else if (d.qall) { give(null); }
     else if (d.qeach) { var qe = quickById(quickTask); quickTask = ''; if (qe) { giveEach(qe); } }
     else if (d.qcancel) { quickTask = ''; render(); }
+    else if (d.oneoff) { oneOff = { title: '', price: '', kids: [] }; render(); var ot = document.getElementById('oo-t'); if (ot) { ot.focus(); } }
+    else if (d.ookid) { oneOffRead(); var oi = oneOff.kids.indexOf(d.ookid); if (oi >= 0) { oneOff.kids.splice(oi, 1); } else { oneOff.kids.push(d.ookid); } render(); }
+    else if (d.oocancel) { oneOff = null; render(); }
+    else if (d.oosend) {
+      oneOffRead();
+      if (!String(oneOff.title).trim()) { say('Skriv hvad der skal laves'); return; }
+      if (!oneOff.kids.length) { say('Vælg mindst ét barn'); return; }
+      var on = oneOff.kids.map(function (id) { var k = kidById(id); return k ? k.name : ''; });
+      var ow = on.length > 1 ? on.slice(0, -1).join(', ') + ' ' + T('og') + ' ' + on[on.length - 1] : on[0];
+      var ob = { title: oneOff.title, price: Number(oneOff.price) || 0, kids: oneOff.kids };
+      post('api/one_off', ob, 'Sendt til ' + ow).then(function () { oneOff = null; render(); }).catch(function () {});
+    }
     else if (d.qadd) { quickTask = ''; quickAdd = true; render(); }
     else if (d.qpin) { togglePin(d.qpin); }
     else if (d.qdone) { quickAdd = false; render(); }

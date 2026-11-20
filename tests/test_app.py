@@ -545,6 +545,19 @@ class StoreTests(unittest.TestCase):
         self.assertIsNone(self.store.photo(sug['id']))
         self.assertEqual(self.store.data['suggestions'], [])
 
+    def test_one_off_goes_only_to_chosen_kids_and_is_not_a_task(self):
+        with self.assertRaises(Problem):
+            self.store.one_off('Bær brænde ind', 15, [])              # intet barn valgt
+        with self.assertRaises(Problem):
+            self.store.one_off('', 15, [self.emil['id']])             # ingen tekst
+        task, kids = self.store.one_off('Bær brænde ind', 15, [self.maja['id']])
+        self.assertEqual([k['name'] for k in kids], ['Maja'])
+        self.assertEqual([(i['title'], i['price']) for i in self.kid_items(self.maja)], [('Bær brænde ind', 15)])
+        self.assertEqual(self.kid_items(self.emil), [])
+        self.assertEqual(task['auto_rule'], 'given')                  # ikke en almindelig opgave under Opgaver
+        self.assertFalse(task['active'])
+        self.assertNotIn(task['id'], [q['id'] for q in self.store.admin_state().get('quick_choices', [])])
+
     def test_suggestions_can_be_withdrawn_refused_and_are_limited(self):
         for n in range(3):
             self.store.suggest(self.emil['token'], 'Forslag %d' % n)

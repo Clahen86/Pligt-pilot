@@ -1040,6 +1040,27 @@ class Store:
             self._drop_suggestion(sug)
             return kid, task
 
+    def one_off(self, title, price, kid_ids):
+        """En engangsopgave skrevet her og nu: kun til de valgte børn, kun i dag, og ikke gemt under Opgaver
+        (ryddes væk, når den er lavet og godkendt). Returnerer (opgave, børn)."""
+        with self.lock:
+            self._refresh()
+            kids = []
+            for k in dict.fromkeys(str(x) for x in (kid_ids or [])):
+                kid = self._kid(k)
+                if kid.get('paused'):
+                    raise Problem('%s er på pause' % kid['name'])
+                kids.append(kid)
+            if not kids:
+                raise Problem('Vælg mindst ét barn')
+            task = self.add_task(title, price, '', 'once', False, [k['id'] for k in kids], auto_rule='given', active=False)
+            now = self._now()
+            for kid in kids:
+                item = self._new_item(task, kid, now)
+                item.update(period=now.strftime('%Y-%m-%d'), given=True, slot=1, of=1)
+            self._save()
+            return task, kids
+
     def decide_wish(self, kid_id, accept):
         with self.lock:
             kid = self._kid(kid_id)
