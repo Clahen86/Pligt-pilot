@@ -2,6 +2,10 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.22.1 – 2026-11-20
+
+- Home Assistant now downloads the ready-made app (amd64/aarch64) instead of building it on your machine: faster updates and no build leftovers on the disk
+
 ## 0.22.0 – 2026-11-20
 
 - One-off task: write a task and a price on the overview and send it only to the children you pick, for today - it is not saved under Tasks and is cleared when done
