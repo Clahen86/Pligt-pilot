@@ -2,7 +2,7 @@
 
 Newest first. Each version lists what changed since the one before.
 
-## Unreleased
+## 0.23.0 – 2026-11-20
 
 - Overview, "Right now": a free house job (nobody has taken it) can now be deleted from the ⋯ menu. The machine rule stays, so the next run gives a new one
 
