@@ -29,3 +29,21 @@ Installer || Install || Installieren || Installera || Installer
 Ikke nu || Not now || Nicht jetzt || Inte nu || Ikke nå
 Send linket til barnet og vælg "Føj til hjemmeskærm" i browseren. Linket virker både hjemme og ude. || Send the link to the child and choose "Add to Home Screen" in the browser. The link works at home and away. || Sende den Link an das Kind und wähle im Browser „Zum Home-Bildschirm“. Der Link funktioniert zu Hause und unterwegs. || Skicka länken till barnet och välj "Lägg till på hemskärmen" i webbläsaren. Länken fungerar både hemma och borta. || Send lenken til barnet og velg "Legg til på Hjem-skjermen" i nettleseren. Lenken virker både hjemme og ute.
 Gør din opgave færdig, før du tager en ny. || Finish your chore before you take a new one. || Mach deine Aufgabe fertig, bevor du eine neue nimmst. || Gör klart din uppgift innan du tar en ny. || Gjør ferdig oppgaven din før du tar en ny.
+Hjælp || Help || Hilfe || Hjälp || Hjelp
+vil lave den sammen med dig: || wants to do it together with you: || möchte es mit dir zusammen machen: || vill göra den tillsammans med dig: || vil gjøre den sammen med deg:
+hjælper dig med: || is helping you with: || hilft dir bei: || hjälper dig med: || hjelper deg med:
+vil lave den sammen med dig || wants to do it together with you || möchte es mit dir zusammen machen || vill göra den tillsammans med dig || vil gjøre den sammen med deg
+Sammen med || Together with || Zusammen mit || Tillsammans med || Sammen med
+I deler || You share || Ihr teilt || Ni delar på || Dere deler
+Få hjælp || Get help || Hilfe holen || Få hjälp || Få hjelp
+Lav den alene || Do it alone || Allein machen || Gör den själv || Gjør den alene
+Hvem skal hjælpe? || Who should help? || Wer soll helfen? || Vem ska hjälpa? || Hvem skal hjelpe?
+I deler pengene lige, når opgaven er godkendt. || You share the money equally when the chore is approved. || Ihr teilt das Geld gleich, wenn die Aufgabe genehmigt ist. || Ni delar pengarna lika när uppgiften är godkänd. || Dere deler pengene likt når oppgaven er godkjent.
+Spørg || Ask || Fragen || Fråga || Spør
+Ja, jeg hjælper || Yes, I'll help || Ja, ich helfe || Ja, jag hjälper till || Ja, jeg hjelper
+Lav den sammen || Do it together || Zusammen machen || Gör den tillsammans || Gjør den sammen
+I laver den sammen. Den kan ikke byttes || You are doing it together. It can't be swapped || Ihr macht sie zusammen. Sie kann nicht getauscht werden || Ni gör den tillsammans. Den kan inte bytas || Dere gjør den sammen. Den kan ikke byttes
+Du har allerede spurgt om hjælp || You have already asked for help || Du hast schon um Hilfe gebeten || Du har redan bett om hjälp || Du har allerede spurt om hjelp
+Det barn kan ikke hjælpe || That child can't help || Dieses Kind kann nicht helfen || Det barnet kan inte hjälpa || Det barnet kan ikke hjelpe
+Den opgave kan du ikke få hjælp til || You can't get help with that chore || Bei dieser Aufgabe kannst du keine Hilfe bekommen || Du kan inte få hjälp med den uppgiften || Du kan ikke få hjelp med den oppgaven
+Du har tilbudt at bytte den opgave || You have offered to swap that chore || Du hast angeboten, diese Aufgabe zu tauschen || Du har erbjudit dig att byta den uppgiften || Du har tilbudt å bytte den oppgaven

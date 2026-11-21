@@ -229,7 +229,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 <script>
 (function () {
   var LOOK = 'mid';
-  var state = null, busy = false, tradeOpen = '', wishOpen = false, recipeOpen = '', sugPhoto = '', sugText = '';
+  var state = null, busy = false, tradeOpen = '', helpOpen = '', wishOpen = false, recipeOpen = '', sugPhoto = '', sugText = '';
   var app = document.getElementById('app'), errBox = document.getElementById('err');
   // ---- sprog: udskifter kendte danske tekststykker (samme metode som serverens i18n.py) ----
   var I18N = { lang: 'da', locale: 'da-DK', rx: null, map: {}, exact: {}, loading: false };
@@ -381,6 +381,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       if (i.streak > 0 && i.status === 'todo') { sub = (sub ? sub + ' · ' : '') + i.streak + ' i træk'; }
       if (i.duty) { sub = 'Frist: ' + fmtDue(i.duty.due) + (i.duty.fine ? ' · ellers -' + i.duty.fine + ' kr' : ''); }
       if (i.meal) { sub = i.meal.time ? 'Klar kl. ' + i.meal.time : 'Maddag'; }
+      if (i.with) { sub = (i.with_ok ? 'Sammen med ' : 'Venter på svar fra ') + i.with + (i.with_ok ? ' · I deler ' + i.price + ' kr' : ''); }
       var right = i.status === 'todo' && i.need_photo
         ? '<button class="btn" data-pick="' + i.id + '" aria-label="Tag foto af: ' + esc(i.title) + '">Tag foto</button>'
         : i.status === 'todo'
@@ -389,9 +390,17 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
         : i.status === 'wait'
           ? '<div class="state wait">' + CLOCK + 'Venter</div>'
           : '<div class="state done">' + CHECK + 'Godkendt</div>';
-      var swap = i.status === 'todo' && s.trading && s.siblings.length && !i.need_photo
-        ? '<button class="' + (LOOK === 'teen' ? 'btn ghost small' : 'swaplink') + '" data-trade="' + i.id + '" aria-label="Byt: ' + esc(i.title) + '">Byt</button>' : '';
-      var tag = i.duty ? '<span class="new">Pligt</span>' : '<div class="price">' + i.price + ' kr</div>';
+      var lk = LOOK === 'teen' ? 'btn ghost small' : 'swaplink';
+      var swap = i.status === 'todo' && s.trading && s.siblings.length && !i.need_photo && !i.with
+        ? '<button class="' + lk + '" data-trade="' + i.id + '" aria-label="Byt: ' + esc(i.title) + '">Byt</button>' : '';
+      if (i.status === 'todo' && s.siblings.length && !i.with && !i.duty && !i.meal) {
+        swap += '<button class="' + lk + '" data-help="' + i.id + '" aria-label="Få hjælp: ' + esc(i.title) + '">Få hjælp</button>';
+      }
+      if (i.status === 'todo' && i.with && i.mine) {
+        swap += '<button class="' + lk + '" data-helpno="' + i.id + '">' + (i.with_ok ? 'Lav den alene' : 'Træk tilbage') + '</button>';
+      }
+      var share = i.with && i.with_ok ? (i.mine ? i.price - Math.floor(i.price / 2) : Math.floor(i.price / 2)) : i.price;
+      var tag = i.duty ? '<span class="new">Pligt</span>' : '<div class="price">' + share + ' kr</div>';
       var more = i.meal && (i.meal.recipe || i.meal.ingredients.length || i.meal.url)
         ? '<button class="btn ghost small" data-recipe="' + i.id + '" aria-expanded="' + (recipeOpen === i.id) + '">' + (recipeOpen === i.id ? 'Skjul opskrift' : 'Opskrift') + '</button>'
         : i.how && i.status === 'todo' ? howBtn(i.id) : '';
@@ -399,7 +408,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       return '<div class="task' + (i.duty ? ' duty' : '') + (i.status !== 'todo' ? ' gone' : '') + '">' + icoSpan(i.icon) + '<div class="t"><b>' + esc(i.title) + '</b><span>' + esc(sub) +
         '</span>' + inT + '</div>' + tag + more + (LOOK === 'teen' ? swap : '') + right + '</div>' +
         (recipeOpen === i.id ? (i.meal ? recipeCard(i.meal) : howCard(i.how)) : '') +
-        (tradeOpen === i.id ? tradeForm(i, s) : '');
+        (tradeOpen === i.id ? tradeForm(i, s) : '') + (helpOpen === i.id ? helpForm(i, s) : '');
     }).join('');
     var jobs = s.jobs.map(function (j) {
       return '<div class="job' + (j.expires ? ' surprise' : '') + (WANT && j.machine === WANT ? ' hl' : '') + '">' + icoSpan(j.icon) + '<div class="t"><b>' + esc(j.title) + '</b><span>' +
@@ -588,8 +597,18 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
       '<label for="tr-amt">Du betaler (0 til ' + maxAmt + ' kr.)</label><input id="tr-amt" type="number" inputmode="numeric" min="0" max="' + maxAmt + '" value="0">' +
       '<div class="row2"><button class="btn" data-tradesend="' + i.id + '">Send tilbud</button><button class="btn ghost" data-tradecancel="1">Annullér</button></div></div>';
   }
+  function helpForm(i, s) {
+    return '<div class="card tradeform"><b>Lav den sammen</b><div class="sub">"' + esc(i.title) + '"</div>' +
+      '<label for="hl-to">Hvem skal hjælpe?</label><select id="hl-to">' + s.siblings.map(function (x) { return '<option value="' + x.id + '">' + esc(x.name) + '</option>'; }).join('') + '</select>' +
+      '<div class="sub">I deler pengene lige, når opgaven er godkendt.</div>' +
+      '<div class="row2"><button class="btn" data-helpsend="' + i.id + '">Spørg</button><button class="btn ghost" data-helpcancel="1">Annullér</button></div></div>';
+  }
   function tradeCards(s) {
     var out = '';
+    (s.help_in || []).forEach(function (h) {
+      out += '<div class="card"><b>' + esc(h.from) + ' vil lave den sammen med dig</b><div class="sub" style="margin:4px 0 10px">"' + esc(h.title) + '" · I deler ' + h.price + ' kr</div>' +
+        '<div class="row2"><button class="btn" data-helpyes="' + h.item_id + '">Ja, jeg hjælper</button><button class="btn ghost" data-helpno="' + h.item_id + '">Nej tak</button></div></div>';
+    });
     s.trades_in.forEach(function (t) {
       out += '<div class="card"><b>' + esc(t.from) + ' vil bytte</b><div class="sub" style="margin:4px 0 10px">Tag "' + esc(t.title) + '" (' + t.price + ' kr)' + (t.amount ? ' og få ' + t.amount + ' kr af ' + esc(t.from) : '') + '.</div>' +
         '<div class="row2"><button class="btn" data-tradeyes="' + t.id + '">Tag imod</button><button class="btn ghost" data-tradeno="' + t.id + '">Nej tak</button></div></div>';
@@ -719,8 +738,13 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     }
     if (b.dataset.sick) { act('api/sick', { on: b.dataset.sick === 'on' }); }
     if (b.dataset.recipe) { recipeOpen = recipeOpen === b.dataset.recipe ? '' : b.dataset.recipe; render(); }
-    if (b.dataset.trade) { tradeOpen = b.dataset.trade; render(); }
+    if (b.dataset.trade) { tradeOpen = b.dataset.trade; helpOpen = ''; render(); }
     if (b.dataset.tradecancel) { tradeOpen = ''; render(); }
+    if (b.dataset.help) { helpOpen = b.dataset.help; tradeOpen = ''; render(); }
+    if (b.dataset.helpcancel) { helpOpen = ''; render(); }
+    if (b.dataset.helpsend) { var hid = b.dataset.helpsend; helpOpen = ''; act('api/items/' + hid + '/help', { to: document.getElementById('hl-to').value }); }
+    if (b.dataset.helpyes) { act('api/items/' + b.dataset.helpyes + '/help/yes'); }
+    if (b.dataset.helpno) { act('api/items/' + b.dataset.helpno + '/help/no'); }
     if (b.dataset.tradesend) {
       var to = document.getElementById('tr-to').value, amt = document.getElementById('tr-amt').value, id = b.dataset.tradesend;
       tradeOpen = '';
@@ -741,7 +765,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   });
   app.addEventListener('input', function (e) { if (e.target.id === 'sug-text') { sugText = e.target.value; } });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { load(); } });
-  setInterval(function () { if (!tradeOpen && !wishOpen && !sugPhoto && !(document.activeElement && document.activeElement.id === 'sug-text')) { load(); } }, 15000);
+  setInterval(function () { if (!tradeOpen && !helpOpen && !wishOpen && !sugPhoto && !(document.activeElement && document.activeElement.id === 'sug-text')) { load(); } }, 15000);
   load().then(detectPush).then(render);
 })();
 </script>

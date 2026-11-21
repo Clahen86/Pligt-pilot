@@ -701,11 +701,12 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
       out += '<div class="appr"><button class="apprtop" data-apprsee="' + k.id + '" aria-expanded="' + open + '">' +
         '<span class="sq" style="background:' + esc(k.color) + '" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</span>' +
         '<span class="grow t"><b>' + esc(k.name) + (list.length > 1 ? ' · ' + list.length + ' opgaver' : '') + '</b><span>' +
-        esc(list.map(function (p) { return p.title; }).join(' · ')) + '</span></span></button>' +
+        esc(list.map(function (p) { return p.title + (p.with ? ' (med ' + p.with + ')' : ''); }).join(' · ')) + '</span></span></button>' +
         '<button class="okbtn" data-approvekid="' + k.id + '" aria-label="Godkend alt fra ' + esc(k.name) + '">' + CHECK + sum + ' kr</button>';
       if (open) {
         out += '<div class="apprlist">' + list.map(function (p) {
-          return '<div class="row"><div class="grow t"><b>' + esc(p.title) + '</b><span>' + p.price + ' kr</span></div>' +
+          return '<div class="row"><div class="grow t"><b>' + esc(p.title) + '</b><span>' + p.price + ' kr' +
+            (p.with ? ' · lavet sammen med ' + esc(p.with) + ', deles lige' : '') + '</span></div>' +
             '<button class="icon no" data-reject="' + p.id + '" aria-label="Afvis ' + esc(p.title) + '">' + CROSS + '</button>' +
             '<button class="icon yes" data-approve="' + p.id + '" aria-label="Godkend ' + esc(p.title) + '">' + CHECK + '</button></div>';
         }).join('') + '</div>';
@@ -715,7 +716,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     s.pending.forEach(function (p) {
       if (!p.has_photo) { return; }
       out += '<div class="card"><div class="row"><div class="avatar" style="background:' + esc(p.color) + '" aria-hidden="true">' + esc(p.name.charAt(0).toUpperCase()) + '</div>' +
-        '<div class="grow t"><b>' + esc(p.title) + '</b><span>' + esc(p.name) + ' · ' + p.price + ' kr · med billede</span></div>' +
+        '<div class="grow t"><b>' + esc(p.title) + '</b><span>' + esc(p.name) + (p.with ? ' og ' + esc(p.with) : '') + ' · ' + p.price + ' kr · med billede</span></div>' +
         '<button class="icon no" data-reject="' + p.id + '" aria-label="Afvis ' + esc(p.title) + '">' + CROSS + '</button>' +
         '<button class="icon yes" data-approve="' + p.id + '" aria-label="Godkend ' + esc(p.title) + '">' + CHECK + '</button></div>' +
         '<img class="shot" src="photo/' + p.id + '" alt="Billede af ' + esc(p.title) + '"></div>';
@@ -825,13 +826,18 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
   function nowBox() {
     var list = state.house_now || [];
     if (!list.length) { return ''; }
-    return '<h2>I gang nu</h2><div class="nowc">' + list.map(function (n) {
+    var free = list.filter(function (n) { return n.status === 'free'; }), busy = list.filter(function (n) { return n.status !== 'free'; });
+    return (free.length ? '<h2>Ledige</h2><div class="nowc">' + free.map(nowRow).join('') + '</div>' : '') +
+      (busy.length ? '<h2>I gang nu</h2><div class="nowc">' + busy.map(nowRow).join('') + '</div>' : '');
+  }
+  function nowRow(n) {
+    {
       var kid = n.kid_id && kidById(n.kid_id), col = kid ? kid.color : '#B8AE9C';
-      var who = n.status === 'given' ? andList(n.given.map(function (g) { return g.kid; })) : n.status === 'free' ? (n.among ? (n.among.length ? 'Ledig · ' + andList(n.among) : 'Ledig for alle') : 'Ledig') : n.status === 'wait' ? n.kid + ' er færdig' : n.status === 'done' ? n.kid + ' er færdig' : n.kid;
+      var who = n.status === 'given' ? andList(n.given.map(function (g) { return g.kid; })) : n.status === 'free' ? (n.among ? (n.among.length ? andList(n.among) : 'Alle kan tage den') : 'Ingen har taget den') : n.status === 'wait' ? n.kid + ' er færdig' : n.status === 'done' ? n.kid + ' er færdig' : n.kid;
       var can = n.status === 'todo' && n.item_id, free = n.status === 'free' && n.task_id, many = n.status === 'given';
       var key = can ? n.item_id : (many ? 'g' : 'f') + n.task_id;
       var out = '<div class="nrow">' + icoSpan(n.icon) +
-        '<div class="grow t"><b>' + esc(n.title) + '</b><span class="who"><i style="background:' + esc(col) + '"></i>' + esc(who) +
+        '<div class="grow t"><b>' + esc(n.title) + '</b><span class="who">' + (free ? '' : '<i style="background:' + esc(col) + '"></i>') + esc(who) +
         (n.machine ? ' · ' + esc(n.machine) : '') + ' · ' + n.price + ' kr</span></div>' +
         (can || free || many ? '<button class="more" data-move="' + key + '" aria-label="Mere for ' + esc(n.title) + '" aria-expanded="' + (moveOpen === key) + '">' + DOTS + '</button>' : '') + '</div>';
       if (many && moveOpen === key) {
@@ -848,7 +854,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
         }).join('') + '</div><button class="btn small danger" data-free="' + n.item_id + '">Fjern fra ' + esc(n.kid) + '</button></div>';
       }
       return out;
-    }).join('') + '</div>';
+    }
   }
   function andList(a) { return a.length > 1 ? a.slice(0, -1).join(', ') + ' ' + T('og') + ' ' + a[a.length - 1] : (a[0] || ''); }
   function quickBox() {

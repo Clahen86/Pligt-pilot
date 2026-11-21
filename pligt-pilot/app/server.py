@@ -42,6 +42,7 @@ KID_WISH = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/wish$')
 KID_SUGGEST = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/suggest$')
 KID_SUGGEST_END = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/suggest/([a-f0-9]{10})/cancel$')
 KID_SICK = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/sick$')
+KID_HELP = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/items/([a-f0-9]{10})/help(?:/(yes|no))?$')
 KID_CLAIM = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/api/tasks/([a-f0-9]{10})/claim$')
 
 KID_FILE = re.compile(r'^/k/([A-Za-z0-9_-]{8,64})/(sw\.js|manifest\.json|icon\.png|icon-512\.png)$')
@@ -395,6 +396,17 @@ def make_handler(app, role, allow_from=None):
                 kid = store.ask_sick(m.group(1), on)
                 if on and kid.get('sick_ask'):
                     app.ha.notify('Pligt-pilot', '%s siger: Jeg er syg i dag. Åbn Pligter for at sige ja.' % kid['name'])
+                return self._json(store.kid_view(m.group(1)))
+            m = KID_HELP.match(path)
+            if m and method == 'POST':
+                body = self._body()
+                if m.group(3) is None:
+                    kid, helper, item = store.ask_help(m.group(1), m.group(2), body.get('to'))
+                    app.ha.notify_kid(helper, 'Hjælp', '%s vil lave den sammen med dig: %s' % (kid['name'], item['title']))
+                else:
+                    kid, owner, item = store.answer_help(m.group(1), m.group(2), m.group(3) == 'yes')
+                    if m.group(3) == 'yes' and kid['id'] != owner['id']:
+                        app.ha.notify_kid(owner, 'Hjælp', '%s hjælper dig med: %s' % (kid['name'], item['title']))
                 return self._json(store.kid_view(m.group(1)))
             m = KID_CLAIM.match(path)
             if m and method == 'POST':

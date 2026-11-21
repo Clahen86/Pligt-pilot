@@ -1486,7 +1486,8 @@ class Store:
         wk = week_key(self._now())
         out = []
         for i in self.data['items']:
-            if i['kid_id'] != kid_id or i['status'] not in statuses or not i['done_at']:
+            mine = i['kid_id'] == kid_id or (i.get('help_ok') and i.get('helper') == kid_id)
+            if not mine or i['status'] not in statuses or not i['done_at']:
                 continue
             when = dt.datetime.fromisoformat(i['done_at'])
             if week_key(when) == wk:
@@ -1526,7 +1527,7 @@ class Store:
             today = self._now().strftime('%Y-%m-%d')
             items = []
             for i in self.data['items']:
-                if i['kid_id'] != kid['id']:
+                if i['kid_id'] != kid['id'] and not self._helps(i, kid):
                     continue
                 if i['status'] in ('todo', 'wait'):
                     items.append(i)
@@ -1534,6 +1535,7 @@ class Store:
                     items.append(i)
             order = {'todo': 0, 'wait': 1, 'done': 2}
             items.sort(key=lambda i: (order[i['status']], i['created']))
+            names_ = {k['id']: k['name'] for k in self.data['kids']}
             week = self._week_items(kid['id'], ('wait', 'done'))
             return {
                 'kid': {'id': kid['id'], 'name': kid['name'], 'age': kid['age'],
@@ -1579,7 +1581,12 @@ class Store:
                            'icon': self._icon_for(i['task_id'], i['title'], i['room']),
                            'streak': self._item_streak(kid['id'], i),
                            'how': how_for_age(self._how(i['task_id'], self.lang_of(kid)), kid.get('age')),
+                           **self._together(i, kid),
                            **self._extra_for(i)} for i in items],
+                'help_in': [{'item_id': i['id'], 'title': i['title'], 'price': i['price'],
+                             'from': names_.get(i['kid_id'], '')}
+                            for i in self.data['items'] if i.get('helper') == kid['id'] and not i.get('help_ok')
+                            and i['status'] == 'todo'],
                 'suggestions': [{'id': x['id'], 'text': x['text'], 'photo': x['photo']}
                                 for x in self.data['suggestions'] if x['kid_id'] == kid['id']],
                 'jobs': [{'task_id': t['id'], 'title': t['title'], 'room': t['room'],
@@ -1632,7 +1639,7 @@ class Store:
                 raise Problem('Linket passer ikke', 404)
             self._refresh()
             item = self._item(item_id)
-            if item['kid_id'] != kid['id']:
+            if item['kid_id'] != kid['id'] and not self._helps(item, kid):
                 raise Problem('Det er ikke din opgave', 403)
             if item['status'] != 'todo':
                 raise Problem('Opgaven er allerede meldt færdig')
@@ -1810,7 +1817,9 @@ class Store:
                     pending.append({'id': i['id'], 'title': i['title'], 'price': i['price'],
                                     'kid_id': kid['id'], 'name': kid['name'],
                                     'color': kid['color'], 'done_at': i['done_at'],
-                                    'has_photo': bool(i.get('photo'))})
+                                    'has_photo': bool(i.get('photo')),
+                                    'with': kid_names[i['helper']]['name']
+                                    if i.get('help_ok') and i.get('helper') in kid_names else ''})
             pending.sort(key=lambda p: p['done_at'] or '')
             settings = self.data['settings']
             return {
@@ -2085,6 +2094,8 @@ class Store:
             raise Problem('Bytte er slået fra')
         if item['kid_id'] != sender['id'] or item['status'] != 'todo':
             raise Problem('Den opgave kan ikke byttes')
+        if item.get('helper'):
+            raise Problem('I laver den sammen. Den kan ikke byttes')
         if receiver['id'] == sender['id'] or receiver.get('paused'):
             raise Problem('Det barn kan ikke tage den')
         if task and not self._in_scope(task, receiver):
@@ -2093,6 +2104,65 @@ class Store:
             raise Problem('Beløbet skal være mellem 0 og %d kr.' % item['price'])
         if amount > self.balance(sender['id']):
             raise Problem('Du har ikke penge nok til at betale for et bytte')
+
+    # ---- lav den sammen ------------------------------------------------
+    @staticmethod
+    def _helps(item, kid):
+        return bool(item.get('help_ok')) and item.get('helper') == kid['id']
+
+    def _together(self, item, kid):
+        """Til barnets side: hvem opgaven laves sammen med, og om svaret mangler."""
+        helper = item.get('helper')
+        if not helper:
+            return {}
+        names = {k['id']: k['name'] for k in self.data['kids']}
+        if item['kid_id'] == kid['id']:
+            return {'with': names.get(helper, ''), 'with_ok': bool(item.get('help_ok')), 'mine': True}
+        return {'with': names.get(item['kid_id'], ''), 'with_ok': True, 'mine': False}
+
+    def ask_help(self, token, item_id, to_kid_id):
+        """Barnet beder en søskende om hjælp. Pengene deles lige, når opgaven er godkendt."""
+        with self.lock:
+            kid = self.kid_by_token(token)
+            if not kid:
+                raise Problem('Linket passer ikke', 404)
+            self._refresh()
+            item = self._item(item_id)
+            if item['kid_id'] != kid['id'] or item['status'] != 'todo':
+                raise Problem('Den opgave kan du ikke få hjælp til')
+            if item.get('helper'):
+                raise Problem('Du har allerede spurgt om hjælp')
+            if any(t['item_id'] == item_id for t in self.data['trades']):
+                raise Problem('Du har tilbudt at bytte den opgave')
+            helper = self._kid(to_kid_id)
+            if helper['id'] == kid['id'] or helper.get('paused'):
+                raise Problem('Det barn kan ikke hjælpe')
+            task = next((t for t in self.data['tasks'] if t['id'] == item['task_id']), None)
+            if task and not task.get('age_min', 0) <= helper['age'] <= task.get('age_max', 99):  # kun alderen tæller her
+                raise Problem('%s er ikke gammel nok til den opgave' % helper['name'])
+            item['helper'], item['help_ok'] = helper['id'], False
+            self._save()
+            return kid, helper, item
+
+    def answer_help(self, token, item_id, yes):
+        """Svar på en invitation (hjælperen), eller træk den tilbage / stop (begge)."""
+        with self.lock:
+            kid = self.kid_by_token(token)
+            if not kid:
+                raise Problem('Linket passer ikke', 404)
+            item = self._item(item_id)
+            if kid['id'] not in (item['kid_id'], item.get('helper')):
+                raise Problem('Det er ikke din opgave', 403)
+            if item['status'] != 'todo':
+                raise Problem('Opgaven er allerede meldt færdig')
+            owner = self._kid(item['kid_id'])
+            if yes and kid['id'] == item.get('helper'):
+                item['help_ok'] = True
+            else:
+                item.pop('helper', None)
+                item.pop('help_ok', None)
+            self._save()
+            return kid, owner, item
 
     def offer_trade(self, token, item_id, to_kid_id, amount):
         with self.lock:
@@ -2274,15 +2344,17 @@ class Store:
                     free['among'] = [] if len(can) == len(live) else [k['name'] for k in can]
                 out.append(free)
             for i in items[:1] if machine else items:
-                out.append(dict(base, kid=names.get(i['kid_id'], ''), kid_id=i['kid_id'], item_id=i['id'], status=i['status']))
-        # opgaver forælderen har givet direkte i dag (ét barn, hver sin, engangsopgave): én linje pr. opgave
+                out.append(dict(base, kid=self._pair(i, names), kid_id=i['kid_id'], item_id=i['id'], status=i['status']))
+        # opgaver forælderen har givet direkte i dag (ét barn, hver sin, engangsopgave) og opgaver, børnene laver
+        # sammen: én linje pr. opgave
         today = d.strftime('%Y-%m-%d')
         tasks = {t['id']: t for t in self.data['tasks']}
         rows = {}
         for i in self.data['items']:
             t = tasks.get(i['task_id'])
-            if not i.get('given') or i['status'] != 'todo' or i.get('period') != today or not t or t.get('open') \
-                    or t.get('auto_rule') in rules:
+            shared = bool(i.get('help_ok'))   # laves sammen: altid med, så forælderen kan se det
+            if not (i.get('given') or shared) or i['status'] != 'todo' or (not shared and i.get('period') != today) \
+                    or not t or t.get('open') or t.get('auto_rule') in rules:
                 continue
             row = rows.get(t['id'])
             if row is None:
@@ -2290,12 +2362,20 @@ class Store:
                                        'icon': t.get('icon') or icons.guess(t['title'], t['room']),
                                        'status': 'given', 'given': []}
                 out.append(row)
-            row['given'].append({'kid': names.get(i['kid_id'], ''), 'kid_id': i['kid_id'], 'item_id': i['id']})
+            row['given'].append({'kid': self._pair(i, names), 'kid_id': i['kid_id'], 'item_id': i['id']})
         for row in rows.values():
             if len(row['given']) == 1:     # ét barn: som en taget opgave, kan flyttes eller fjernes
                 g = row.pop('given')[0]
                 row.update(g, status='todo')
         return out
+
+    @staticmethod
+    def _pair(item, names):
+        """Barnets navn, og hjælperens, når de laver den sammen."""
+        name = names.get(item['kid_id'], '')
+        if item.get('help_ok') and item.get('helper') in names:
+            return name + ' og ' + names[item['helper']]
+        return name
 
     def _open_given(self, d):
         """Forælderens først til mølle-opgaver, som stadig ligger ledige i dag."""
@@ -2556,7 +2636,13 @@ class Store:
             if approve:
                 item['status'] = 'done'
                 item['decided_at'] = self._now().isoformat(timespec='seconds')
-                self._credit(item['kid_id'], item['price'], 'task', item['title'], item['id'])
+                helper = item.get('helper') if item.get('help_ok') else None
+                if helper and any(k['id'] == helper for k in self.data['kids']):
+                    half = item['price'] // 2      # lige deling; en ulige krone går til den, der havde opgaven
+                    self._credit(item['kid_id'], item['price'] - half, 'task', item['title'], item['id'])
+                    self._credit(helper, half, 'task', item['title'] + ' (hjalp)', item['id'])
+                else:
+                    self._credit(item['kid_id'], item['price'], 'task', item['title'], item['id'])
                 self._streak_bonus(item['kid_id'])
             else:
                 item['status'] = 'todo'

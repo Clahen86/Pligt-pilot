@@ -575,6 +575,43 @@ class StoreTests(unittest.TestCase):
         self.assertFalse(task['active'])
         self.assertNotIn(task['id'], [q['id'] for q in self.store.admin_state().get('quick_choices', [])])
 
+    def test_doing_a_task_together_splits_the_money_and_counts_for_both(self):
+        self.store.add_task('Støvsug stuen', 11, kids=[self.emil['id']])
+        item = self.kid_items(self.emil)[0]
+        with self.assertRaises(Problem):
+            self.store.ask_help(self.maja['token'], item['id'], self.emil['id'])   # ikke hendes opgave
+        self.store.ask_help(self.emil['token'], item['id'], self.maja['id'])
+        mine = self.kid_items(self.emil)[0]
+        self.assertEqual((mine['with'], mine['with_ok']), ('Maja', False))
+        view = self.store.kid_view(self.maja['token'])
+        self.assertEqual([(h['from'], h['title']) for h in view['help_in']], [('Emil', 'Støvsug stuen')])
+        self.assertEqual(view['items'], [])                                   # ikke før hun siger ja
+        with self.assertRaises(Problem):
+            self.store.offer_trade(self.emil['token'], item['id'], self.maja['id'], 0)
+        self.store.answer_help(self.maja['token'], item['id'], True)
+        hers = self.kid_items(self.maja)
+        self.assertEqual([(i['title'], i['with'], i['mine']) for i in hers], [('Støvsug stuen', 'Emil', False)])
+        now = [n for n in self.store.admin_state()['house_now'] if n['title'] == 'Støvsug stuen']
+        self.assertEqual([n['kid'] for n in now], ['Emil og Maja'])             # forælderen kan se det
+        self.store.mark_done(self.maja['token'], item['id'])                  # hjælperen kan melde den færdig
+        pend = self.store.admin_state()['pending']
+        self.assertEqual([(p['name'], p['with']) for p in pend], [('Emil', 'Maja')])
+        self.store.decide(item['id'], True)
+        self.assertEqual((self.store.balance(self.emil['id']), self.store.balance(self.maja['id'])), (6, 5))
+        self.assertEqual(self.store.kid_view(self.maja['token'])['completed'], 1)  # tæller i ugens mål for begge
+        self.assertEqual(self.store.kid_view(self.emil['token'])['completed'], 1)
+
+    def test_help_can_be_refused_or_withdrawn(self):
+        self.store.add_task('Fej trappen', 4, kids=[self.emil['id']])
+        item = self.kid_items(self.emil)[0]
+        self.store.ask_help(self.emil['token'], item['id'], self.maja['id'])
+        self.store.answer_help(self.maja['token'], item['id'], False)        # nej tak
+        self.assertNotIn('with', self.kid_items(self.emil)[0])
+        self.store.ask_help(self.emil['token'], item['id'], self.maja['id'])
+        self.store.answer_help(self.emil['token'], item['id'], True)         # Emil kan ikke selv sige ja: trækkes tilbage
+        self.assertNotIn('with', self.kid_items(self.emil)[0])
+        self.assertEqual(self.store.kid_view(self.maja['token'])['help_in'], [])
+
     def test_suggestions_can_be_withdrawn_refused_and_are_limited(self):
         for n in range(3):
             self.store.suggest(self.emil['token'], 'Forslag %d' % n)

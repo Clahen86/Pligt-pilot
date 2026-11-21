@@ -2,6 +2,12 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.26.0 – 2026-11-21
+
+- Do it together: a child can tap "Get help" on a task and pick a brother or sister. When they say yes, the task shows for both, either can report it done, and the money is split equally when you approve it. It counts for both in the weekly goal
+- You can see it: "Right now" shows "Emil and Maja", and the approval says the task was done together
+- Overview: free tasks nobody has taken are now under their own heading, "Free", and "Right now" only shows tasks a child has
+
 ## 0.25.1 – 2026-11-21
 
 - Free tasks you give now keep their "How to" text, so children can read what to do before they take it
