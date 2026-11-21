@@ -590,15 +590,16 @@ def make_handler(app, role, allow_from=None):
             m = re.match(r'^/api/tasks/' + ID + r'/give$', path)
             if m:
                 kid_id = body.get('kid_id')
-                task, kids, item = store.give_task(m.group(1), str(kid_id) if kid_id else None)
+                task, kids, item = store.give_task(m.group(1), str(kid_id) if kid_id else None, body.get('among') or None)
                 for kid in kids:
                     app.ha.notify_kid(kid, 'Ny opgave', '%s (%d kr.)%s' % (
                         task['title'], task['price'], '' if item else '. Først til mølle!'))
                 return self._json(store.admin_state())
             if path == '/api/one_off':
-                task, kids = store.one_off(body.get('title'), body.get('price'), body.get('kids') or [])
+                task, kids = store.one_off(body.get('title'), body.get('price'), body.get('kids') or [], bool(body.get('race')))
                 for kid in kids:
-                    app.ha.notify_kid(kid, 'Ny opgave', '%s (%d kr.)' % (task['title'], task['price']))
+                    app.ha.notify_kid(kid, 'Ny opgave', '%s (%d kr.)%s' % (
+                        task['title'], task['price'], '. Først til mølle!' if task.get('open') else ''))
                 return self._json(store.admin_state())
             if path == '/api/pay_all':
                 store.pay_all()

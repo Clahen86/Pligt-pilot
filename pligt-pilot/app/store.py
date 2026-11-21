@@ -1040,9 +1040,10 @@ class Store:
             self._drop_suggestion(sug)
             return kid, task
 
-    def one_off(self, title, price, kid_ids):
+    def one_off(self, title, price, kid_ids, race=False):
         """En engangsopgave skrevet her og nu: kun til de valgte børn, kun i dag, og ikke gemt under Opgaver
-        (ryddes væk, når den er lavet og godkendt). Returnerer (opgave, børn)."""
+        (ryddes væk, når den er lavet og godkendt). race: én ledig opgave, først til mølle blandt de valgte -
+        den forsvinder for de andre, når én tager den. Returnerer (opgave, børn)."""
         with self.lock:
             self._refresh()
             kids = []
@@ -1053,8 +1054,13 @@ class Store:
                 kids.append(kid)
             if not kids:
                 raise Problem('Vælg mindst ét barn')
-            task = self.add_task(title, price, '', 'once', False, [k['id'] for k in kids], auto_rule='given', active=False)
             now = self._now()
+            if race and len(kids) > 1:
+                task = self.add_task(title, price, '', 'once', True, [k['id'] for k in kids], auto_rule='given')
+                task['until'] = now.date().isoformat() + 'T23:59:59'
+                self._save()
+                return task, kids
+            task = self.add_task(title, price, '', 'once', False, [k['id'] for k in kids], auto_rule='given', active=False)
             for kid in kids:
                 item = self._new_item(task, kid, now)
                 item.update(period=now.strftime('%Y-%m-%d'), given=True, slot=1, of=1)
@@ -1666,8 +1672,9 @@ class Store:
     def _kids_for(self, task):
         return [k for k in self.data['kids'] if not k.get('paused') and self._in_scope(task, k)]
 
-    def give_task(self, task_id, kid_id=None):
-        """Forælderen giver en opgave for i dag: til ét barn, til hvert barn ('all'), eller som ledig opgave til alle.
+    def give_task(self, task_id, kid_id=None, among=None):
+        """Forælderen giver en opgave for i dag: til ét barn, til hvert barn ('all'), eller som ledig opgave til alle
+        (among: kun blandt de valgte børn, først til mølle).
 
         Returnerer (opgave, børn der skal have besked, item / liste af items eller None for en ledig opgave).
         """
@@ -1701,9 +1708,14 @@ class Store:
                 self._save()
                 return task, [kid], item
             kids = self._kids_for(task)
+            scope = task.get('kids')
+            if among:
+                chosen = {str(x) for x in among}
+                kids = [k for k in kids if k['id'] in chosen]
+                scope = [k['id'] for k in kids]
             if not kids:
                 raise Problem('Intet barn kan tage den opgave')
-            job = self.add_task(task['title'], task['price'], task['room'], 'once', True, task.get('kids'),
+            job = self.add_task(task['title'], task['price'], task['room'], 'once', True, scope,
                                 task.get('age_min', 0), task.get('age_max', 99), photo=task.get('photo', False),
                                 auto_rule='given', icon=task.get('icon', ''))
             job.update(given_from=task['id'], until=now.date().isoformat() + 'T23:59:59')

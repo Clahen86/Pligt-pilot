@@ -2,6 +2,11 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.24.0 – 2026-11-21
+
+- Give a task: "Pick several – first come, first served" lets you choose which children may take it. Only they see it, and it disappears for the others as soon as one takes it
+- One-off task: with two or more children picked, choose "Each their own" or "First come, first served"
+
 ## 0.23.0 – 2026-11-20
 
 - Overview, "Right now": a free house job (nobody has taken it) can now be deleted from the ⋯ menu. The machine rule stays, so the next run gives a new one

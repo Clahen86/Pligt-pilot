@@ -1845,6 +1845,40 @@ class QuickTests(unittest.TestCase):
         self.clock.advance(hours=11)
         self.assertFalse(any(t['id'] == job2['id'] for t in self.store.admin_state()['tasks']))
 
+    def test_open_only_among_the_chosen_first_come_first_served(self):
+        sofie = self.store.add_kid('Sofie', 10)
+        task = self.store.add_task('Støvsug stuen', 10, age_min=0)
+        job, kids, item = self.store.give_task(task['id'], None, [self.emil['id'], sofie['id']])
+        self.assertIsNone(item)
+        self.assertEqual(sorted(k['name'] for k in kids), ['Emil', 'Sofie'])
+        self.assertEqual(self.view(self.maja)['jobs'], [])                   # ikke valgt: ser den ikke
+        jobs = self.view(sofie)['jobs']
+        self.assertEqual([j['title'] for j in jobs], ['Støvsug stuen'])
+        self.store.claim(sofie['token'], jobs[0]['task_id'])
+        self.assertEqual(self.view(self.emil)['jobs'], [])                   # taget: væk hos de andre
+        with self.assertRaises(Problem):
+            self.store.give_task(task['id'], None, ['abcdef1234'])           # ingen af de valgte kan
+
+    def test_one_off_first_come_first_served_among_the_chosen(self):
+        sofie = self.store.add_kid('Sofie', 10)
+        task, kids = self.store.one_off('Bær brænde ind', 15, [self.emil['id'], sofie['id']], race=True)
+        self.assertTrue(task['open'])
+        self.assertEqual(self.view(self.emil)['items'], [])                 # ikke givet: ledig
+        self.assertEqual(self.view(self.maja)['jobs'], [])
+        jobs = self.view(self.emil)['jobs']
+        self.assertEqual([(j['title'], j['price']) for j in jobs], [('Bær brænde ind', 15)])
+        self.store.claim(self.emil['token'], jobs[0]['task_id'])
+        self.assertEqual(self.view(sofie)['jobs'], [])
+        self.assertEqual([i['title'] for i in self.view(self.emil)['items']], ['Bær brænde ind'])
+        self.assertNotIn(task['id'], [q['id'] for q in self.store.admin_state().get('quick_choices', [])])
+        # ét barn valgt: bare givet, som før
+        t2, _ = self.store.one_off('Hent post', 5, [self.maja['id']], race=True)
+        self.assertFalse(t2['open'])
+        # ingen tog den: væk ved dagens slutning
+        t3, _ = self.store.one_off('Fej trappen', 5, [self.emil['id'], sofie['id']], race=True)
+        self.clock.advance(hours=17)
+        self.assertFalse(any(t['id'] == t3['id'] for t in self.store.admin_state()['tasks']))
+
     def test_each_is_guessed_from_the_title_in_five_languages(self):
         from store import guess_each
         for title in ('Ryd dit værelse', 'Red din seng', 'Smør madpakke', 'Læg beskidt tøj til vask', 'Pak skoletaske',
