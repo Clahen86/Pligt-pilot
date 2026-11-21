@@ -1381,6 +1381,12 @@ class Store:
         rule = next((r for r in self.data['rules'] if r['id'] == task.get('auto_rule')), None)
         return machine_type(rule['name']) if rule else ''
 
+    def _given_today(self, task, d):
+        """Ledige kopier, forælderen har givet af opgaven i dag (først til mølle). Er opgaven selv ledig, er kopien
+        dagens udgave af den, så børnene ikke ser den samme opgave to gange."""
+        day = d.date().isoformat()
+        return sum(1 for t in self.data['tasks'] if t.get('given_from') == task['id'] and str(t.get('until') or '')[:10] == day)
+
     def _open_jobs_for(self, kid):
         d = self._now()
         jobs = []
@@ -1394,6 +1400,7 @@ class Store:
             period = self._period(t, d)
             taken = sum(1 for i in self.data['items'] if i['task_id'] == t['id']
                         and i['period'] == period and i['status'] != 'missed')
+            taken += self._given_today(t, d)
             if taken < t.get('times', 1):
                 jobs.append(t)
         return jobs

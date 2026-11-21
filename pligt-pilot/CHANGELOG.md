@@ -2,6 +2,10 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.26.1 – 2026-11-21
+
+- A fixed chore that is already free today is no longer shown twice when you also give it as first come, first served. Your copy is today's version, only for the children you chose. Take it back, and the normal one is there again
+
 ## 0.26.0 – 2026-11-21
 
 - Do it together: a child can tap "Get help" on a task and pick a brother or sister. When they say yes, the task shows for both, either can report it done, and the money is split equally when you approve it. It counts for both in the weekly goal

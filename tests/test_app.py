@@ -1896,6 +1896,19 @@ class QuickTests(unittest.TestCase):
         with self.assertRaises(Problem):
             self.store.give_task(task['id'], None, ['abcdef1234'])           # ingen af de valgte kan
 
+    def test_a_free_task_given_first_come_is_not_shown_twice(self):
+        sofie = self.store.add_kid('Sofie', 10)
+        task = self.store.add_task('Dæk bord', 5, open_job=True)              # en fast "Én"-opgave, ledig i dag
+        self.assertEqual([j['title'] for j in self.view(self.emil)['jobs']], ['Dæk bord'])
+        job, _, _ = self.store.give_task(task['id'], None, [self.emil['id'], sofie['id']])
+        self.assertEqual([j['task_id'] for j in self.view(self.emil)['jobs']], [job['id']])  # kun kopien
+        self.assertEqual(self.view(self.maja)['jobs'], [])                   # ikke valgt i dag
+        self.store.drop_free_task(job['id'])                                 # trukket tilbage: den faste er der igen
+        self.assertEqual([j['task_id'] for j in self.view(self.maja)['jobs']], [task['id']])
+        self.store.give_task(task['id'], None, [self.emil['id'], sofie['id']])
+        self.clock.advance(days=1)                                           # næste dag: den faste igen
+        self.assertEqual([j['task_id'] for j in self.view(self.maja)['jobs']], [task['id']])
+
     def test_parent_sees_a_free_given_job_at_once_and_can_take_it_back(self):
         sofie = self.store.add_kid('Sofie', 10)
         task = self.store.add_task('Støvsug stuen', 10, age_min=0)
