@@ -1899,6 +1899,19 @@ class QuickTests(unittest.TestCase):
         self.assertFalse(self.store.admin_state()['settings']['one_job'])
         self.store.claim(self.emil['token'], b['id'])                        # slået fra: må gerne
 
+    def test_kids_see_how_before_they_take_a_given_or_one_off_job(self):
+        task = self.store.add_task('Støvsug stuen', 10, age_min=0)
+        self.store.update_task(task['id'], how='Flyt stolene\nStøvsug under bordet')
+        self.store.give_task(task['id'], None)
+        job = self.view(self.emil)['jobs'][0]
+        self.assertIn('Flyt stolene', job['how'])                            # den givne kopi har teksten med
+        self.store.one_off('Bær brænde ind', 15, [self.emil['id'], self.maja['id']], race=True, how='Tag fra skuret')
+        jobs = {j['title']: j for j in self.view(self.maja)['jobs']}
+        self.assertIn('Tag fra skuret', jobs['Bær brænde ind']['how'])
+        self.store.one_off('Hent post', 5, [self.maja['id']], how='Postkassen ved vejen')
+        mine = {i['title']: i for i in self.view(self.maja)['items']}
+        self.assertIn('Postkassen', mine['Hent post']['how'])
+
     def test_one_off_first_come_first_served_among_the_chosen(self):
         sofie = self.store.add_kid('Sofie', 10)
         task, kids = self.store.one_off('Bær brænde ind', 15, [self.emil['id'], sofie['id']], race=True)

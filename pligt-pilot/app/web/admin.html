@@ -875,12 +875,15 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
         '<button class="chip' + (o.race ? '' : ' on') + '" data-oorace="0" aria-pressed="' + !o.race + '">Hver sin</button>' +
         '<button class="chip' + (o.race ? ' on' : '') + '" data-oorace="1" aria-pressed="' + !!o.race + '">Først til mølle</button></div>' +
         '<div class="sub">' + (o.race ? 'Den første, der tager den, får den. Så forsvinder den hos de andre.' : 'Alle de valgte får hver deres.') + '</div>' : '') +
+      '<div class="howhead"><div class="sub" style="font-weight:800">Sådan gør du <span style="font-weight:600">(valgfri)</span></div>' +
+      '<button type="button" class="btn small ghost" data-oohow="1"' + (o.howBusy ? ' disabled' : '') + '>' + (o.howBusy ? 'Skriver…' : (o.how ? 'Skriv ny med AI' : 'Lav med AI')) + '</button></div>' +
+      '<textarea id="oo-h" class="how" style="min-height:110px" aria-label="Sådan gør du" maxlength="800" placeholder="Fx Bær brændet fra skuret&#10;Stabl det ved brændeovnen">' + esc(o.how || '') + '</textarea>' +
       '<button class="btn sun" style="width:100%" data-oosend="1">Send</button>' +
       '<button class="btn ghost" style="width:100%" data-oocancel="1">Annuller</button></div></div>';
   }
   function oneOffRead() {
-    var t = document.getElementById('oo-t'), p = document.getElementById('oo-p');
-    if (oneOff && t) { oneOff.title = t.value; oneOff.price = p.value; }
+    var t = document.getElementById('oo-t'), p = document.getElementById('oo-p'), h = document.getElementById('oo-h');
+    if (oneOff && t) { oneOff.title = t.value; oneOff.price = p.value; if (h) { oneOff.how = h.value; } }
   }
   // arket "Tilføj": slå hurtigknap til eller fra på de opgaver, der kan gives
   function addSheet() {
@@ -1463,6 +1466,16 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     else if (d.oneoff) { oneOff = { title: '', price: '', kids: [] }; render(); var ot = document.getElementById('oo-t'); if (ot) { ot.focus(); } }
     else if (d.ookid) { oneOffRead(); var oi = oneOff.kids.indexOf(d.ookid); if (oi >= 0) { oneOff.kids.splice(oi, 1); } else { oneOff.kids.push(d.ookid); } render(); }
     else if (d.oocancel) { oneOff = null; render(); }
+    else if (d.oohow) {
+      oneOffRead();
+      var oh = oneOff;
+      if (!String(oh.title || '').trim()) { say('Skriv først hvad der skal laves'); return; }
+      oh.howBusy = true; render();
+      call('api/how', { title: oh.title, room: '', age_min: 0, kids: oh.kids.slice() })
+        .then(function (r) { oh.how = r.how; var hh = document.getElementById('oo-h'); if (hh) { hh.value = r.how; } })
+        .catch(function (e) { say(e.message); })
+        .then(function () { oh.howBusy = false; if (oneOff === oh) { var keep = oh.how; oneOffRead(); oh.how = keep; render(); } });
+    }
     else if (d.oorace) { oneOffRead(); oneOff.race = d.oorace === '1'; render(); }
     else if (d.qmulti) { quickPick = []; render(); }
     else if (d.qback) { quickPick = null; render(); }
@@ -1484,7 +1497,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
       var on = oneOff.kids.map(function (id) { var k = kidById(id); return k ? k.name : ''; });
       var ow = on.length > 1 ? on.slice(0, -1).join(', ') + ' ' + T('og') + ' ' + on[on.length - 1] : on[0];
       var race = !!oneOff.race && oneOff.kids.length > 1;
-      var ob = { title: oneOff.title, price: Number(oneOff.price) || 0, kids: oneOff.kids, race: race };
+      var ob = { title: oneOff.title, price: Number(oneOff.price) || 0, kids: oneOff.kids, race: race, how: oneOff.how || '' };
       post('api/one_off', ob, 'Sendt til ' + ow + (race ? ' – først til mølle' : '')).then(function () { oneOff = null; render(); }).catch(function () {});
     }
     else if (d.qadd) { quickTask = ''; quickAdd = true; render(); }

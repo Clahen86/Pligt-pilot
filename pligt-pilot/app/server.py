@@ -596,7 +596,8 @@ def make_handler(app, role, allow_from=None):
                         task['title'], task['price'], '' if item else '. Først til mølle!'))
                 return self._json(store.admin_state())
             if path == '/api/one_off':
-                task, kids = store.one_off(body.get('title'), body.get('price'), body.get('kids') or [], bool(body.get('race')))
+                task, kids = store.one_off(body.get('title'), body.get('price'), body.get('kids') or [], bool(body.get('race')),
+                                          str(body.get('how') or ''))
                 for kid in kids:
                     app.ha.notify_kid(kid, 'Ny opgave', '%s (%d kr.)%s' % (
                         task['title'], task['price'], '. Først til mølle!' if task.get('open') else ''))

@@ -2,6 +2,11 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.25.1 – 2026-11-21
+
+- Free tasks you give now keep their "How to" text, so children can read what to do before they take it
+- One-off task: an optional "How to" field - write it yourself or let the AI write it
+
 ## 0.25.0 – 2026-11-21
 
 - A child can only take one free task at a time: the others show "Finish your chore before you take a new one" until it is reported done. Tasks you give yourself don't count. Can be switched off in Settings

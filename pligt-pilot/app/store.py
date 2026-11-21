@@ -1040,7 +1040,7 @@ class Store:
             self._drop_suggestion(sug)
             return kid, task
 
-    def one_off(self, title, price, kid_ids, race=False):
+    def one_off(self, title, price, kid_ids, race=False, how=''):
         """En engangsopgave skrevet her og nu: kun til de valgte børn, kun i dag, og ikke gemt under Opgaver
         (ryddes væk, når den er lavet og godkendt). race: én ledig opgave, først til mølle blandt de valgte -
         den forsvinder for de andre, når én tager den. Returnerer (opgave, børn)."""
@@ -1058,9 +1058,13 @@ class Store:
             if race and len(kids) > 1:
                 task = self.add_task(title, price, '', 'once', True, [k['id'] for k in kids], auto_rule='given')
                 task['until'] = now.date().isoformat() + 'T23:59:59'
+                if clean_how(how):
+                    task['how'] = clean_how(how)
                 self._save()
                 return task, kids
             task = self.add_task(title, price, '', 'once', False, [k['id'] for k in kids], auto_rule='given', active=False)
+            if clean_how(how):
+                task['how'] = clean_how(how)
             for kid in kids:
                 item = self._new_item(task, kid, now)
                 item.update(period=now.strftime('%Y-%m-%d'), given=True, slot=1, of=1)
@@ -1365,6 +1369,10 @@ class Store:
         task = next((t for t in self.data['tasks'] if t['id'] == task_id), None) or {}
         if task.get('how'):
             return task['how']
+        if task.get('given_from'):      # en givet kopi: forælderens tekst fra den rigtige opgave
+            src = next((t for t in self.data['tasks'] if t['id'] == task['given_from']), None) or {}
+            if src.get('how'):
+                return src['how']
         fixed = MACHINE_HOW.get(self._job_machine(task)) if task else None
         return i18n.translate(lang, fixed) if fixed else ''
 
