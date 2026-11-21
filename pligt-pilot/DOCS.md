@@ -30,7 +30,11 @@ Under **Hvornår?** i arket vælger du, hvornår børnene får opgaven:
 
 ## Giv en opgave hurtigt
 
-Øverst på **Oversigt** står **Giv en opgave** med op til 8 knapper: dem, du har fastgjort, først, og derefter dem, I bruger mest. Tryk på en, og vælg barnet eller alle (**Først til mølle**, eller **Alle får hver sin**). Så er den sendt for i dag.
+Øverst på **Oversigt** står **Giv en opgave** med op til 8 knapper: dem, du har fastgjort, først, og derefter dem, I bruger mest. Tryk på en, og vælg barnet eller alle (**Først til mølle**, eller **Alle får hver sin**). Med **Vælg flere – først til mølle** vælger du de børn, der må tage den, og den første af dem får den. Så er den sendt for i dag.
+
+**+ Skriv en engangsopgave** sender en opgave, der ikke findes i listen: skriv navn og pris, vælg børnene og **Hver sin** eller **Først til mølle**. Du kan skrive **Sådan gør du** (eller trykke **Lav med AI**). Når den er lavet, forsvinder den igen.
+
+Opgaver, du har sendt ud, står på **Oversigt**: under **Ledige**, til nogen tager dem, og derefter under **I gang nu**. En ledig opgave kan du trække tilbage.
 
 Tryk på **+ Tilføj** for at vælge, hvilke opgaver der altid skal stå som knap. Et flueben betyder fastgjort. Tryk igen for at fjerne det, og tryk **Færdig**. Du fjerner også en fastgjort knap ved at holde den inde et øjeblik, eller med **Fjern fra hurtigknapperne**, når du har trykket på den. Det samme valg findes som **Vis som hurtigknap** på opgaven.
 
@@ -40,6 +44,14 @@ Hver knap har et lille mærke:
 - **Én**: én af børnene gør det (fx *Dæk bord*, *Tøm opvaskeren*). Tryk og vælg barnet eller **Først til mølle**.
 
 Appen gætter ud fra opgavens navn. Er gættet forkert, så ret **Hvem?** i opgavens ark. Dit valg vinder, også hvis du senere ændrer navnet.
+
+## Én ledig opgave ad gangen
+
+Et barn kan kun tage én ledig opgave ad gangen. Knappen **Tag den** er grå, til barnets opgave er meldt færdig, så ét barn ikke tager dem alle. Barnet kan stadig læse **Sådan gør du**, før det tager en opgave. Slå det fra under **Indstillinger → Børnene kan kun tage én ledig opgave ad gangen**.
+
+## Lav den sammen
+
+Har et barn en opgave, kan det trykke **Få hjælp** og vælge en søskende. Søskenden får spørgsmålet i sin app og svarer **Ja, jeg hjælper** eller nej. Siger søskenden ja, står opgaven hos dem begge med "Sammen med …", og du ser det på **Oversigt**. Når opgaven er godkendt, deles pengene lige. En ulige krone går til den, der havde opgaven. Opgaven tæller i ugen for dem begge og kan ikke byttes, mens de laver den sammen.
 
 ## Årstid, hyppighed og vejr
 
@@ -72,7 +84,7 @@ En ledig opgave, som ingen har taget, forsvinder igen, når
 
 En sensor, der er "unavailable" eller "unknown", fjerner aldrig noget. Har et barn taget opgaven, bliver den liggende.
 
-Tryk **Ret** på en regel for at ændre opgavens navn og pris. En ledig opgave fra reglen får det nye med det samme. Oversigt viser under **Lige nu** maskineopgaverne, og om de er ledige, eller hvem der har taget dem.
+Tryk **Ret** på en regel for at ændre opgavens navn og pris. En ledig opgave fra reglen får det nye med det samme. Oversigt viser maskineopgaverne under **Ledige**, til et barn tager dem, og derefter under **I gang nu**.
 
 ## Forslag fra børnene
 

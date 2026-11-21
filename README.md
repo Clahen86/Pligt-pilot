@@ -33,7 +33,8 @@ Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
 
 - **Personligt link:** ingen login. Barnet kan scanne en QR-kode og lægge siden på startskærmen som en app. Siden viser selv en **Installer**-knap, når telefonen kan.
 - **Tre tryk:** åbn, tryk på opgaven, tryk "Færdig". Hver opgave har et tydeligt ikon, så de mindste kan se, hvad den går ud på.
-- **Ledige opgaver** står øverst i gult. Den første, der tager dem, får dem.
+- **Ledige opgaver** står øverst i gult. Den første, der tager dem, får dem. Barnet kan læse **Sådan gør du**, før det tager opgaven, og tager én ledig opgave ad gangen (kan slås fra).
+- **Lav den sammen:** et barn kan bede en søskende om hjælp til en opgave fra sin egen app. Siger søskenden ja, laver de den sammen og deler pengene lige, når den er godkendt.
 - **Rigtige kroner:** saldo, ugegraf, sparemål og ønsker. Et ønske kan blive til barnets sparemål med ét tryk.
 - **Belønninger:** børnene kan bruge kroner på ting, du selv vælger, fx skærmtid eller fredagsfilm.
 - **Spil og leg:** en fugl, der vokser fra æg til Pligtlegende, ugens boss som hele familien slår sammen, bonus for dage i træk og en overraskelsesopgave med dobbelt pris.
@@ -52,6 +53,10 @@ Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
   <img src="docs/barn_stor.png" alt="Barnets side, 13+ år" width="200">
 </p>
 
+<p align="center">
+  <img src="docs/sammen.png" alt="Ledige opgaver med Sådan gør du, og en opgave, der laves sammen" width="260">
+</p>
+
 ### Til forældrene
 
 <p align="center">
@@ -61,8 +66,9 @@ Uden Nabu Casa og uden adresse udefra virker linkene som før: kun hjemme.
 
 - **Oversigt på ét blik:** hvad der venter på dig, hvad der er i gang, og hvad der skal udbetales. "Pr. måned" og "Seneste" er foldet væk, til du åbner dem.
 - **Godkend pr. barn med ét tryk**, eller godkend alt på én gang. Tryk på barnet for at se og afvise de enkelte. Opgaver kan kræve et foto som bevis.
-- **I gang nu** viser maskineopgaver og ledige opgaver, et barn har taget. Har et andet barn lavet den, giver du den videre med **Giv til**, eller du tager den tilbage med **Fjern**.
-- **Giv en opgave med ét tryk:** hurtigknapper øverst på Oversigt med de mest brugte opgaver (eller dem, du har fastgjort). Hver knap viser **Alle** eller **Én**: en "Alle"-opgave (fx red din seng) sendes med ét tryk til hvert barn som deres egen; en "Én"-opgave (fx dæk bord) giver du til ét barn eller gør ledig for alle. Appen gætter ud fra navnet på 5 sprog, og du kan rette det på opgaven.
+- **Ledige** viser de opgaver, du har sendt ud, som ingen har taget endnu, og hvem der må tage dem. Du kan trække dem tilbage.
+- **I gang nu** viser opgaver, et barn har taget eller fået, også opgaver I laver sammen. Har et andet barn lavet den, giver du den videre med **Giv til**, eller du tager den tilbage med **Fjern**.
+- **Giv en opgave med ét tryk:** hurtigknapper øverst på Oversigt med de mest brugte opgaver (eller dem, du har fastgjort). Hver knap viser **Alle** eller **Én**: en "Alle"-opgave (fx red din seng) sendes med ét tryk til hvert barn som deres egen; en "Én"-opgave (fx dæk bord) giver du til ét barn, gør ledig for alle, eller vælger flere børn, hvor den første tager den. Med **+ Skriv en engangsopgave** sender du en opgave, der kun skal laves én gang, til hvert barn eller som først til mølle. Appen gætter ud fra navnet på 5 sprog, og du kan rette det på opgaven.
 - **Fast eller kun når du giver den:** en fast opgave kommer af sig selv, evt. kun på faste ugedage (fx søndag) og først fra et bestemt klokkeslæt (**Frigives kl.**). En opgave, der står til "Kun når jeg giver den", ser børnene aldrig af sig selv, men den kan gives med hurtigknapperne.
 - **Opsætning på få minutter:** en startpakke opretter opgaver, der passer til børnenes alder. Appen kan også foreslå opgaver ud fra husets rum og enheder.
 - **Fleksible opgaver:** pris, gentagelse, flere gange om dagen, kun til bestemte børn, sæsonopgaver (fx løv om efteråret) og låsning efter alder, der åbner af sig selv, når barnet har fødselsdag.
