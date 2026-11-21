@@ -230,7 +230,7 @@ class Store:
                          'boss_hp': 20, 'boss_bonus': 0, 'boss_paid_week': '',
                          'trading': True, 'surprise_plan': {}, 'streak_bonus': 5,
                          'auto_task_hours': 4, 'min_tasks_age': 0, 'min_tasks_week': 5,
-                         'meal_price': 0},
+                         'meal_price': 0, 'one_job': True},
             'trades': [], 'rewards': [], 'claims': [], 'parents': [], 'suggestions': [],
         }
         self._photos = {}
@@ -1579,6 +1579,7 @@ class Store:
                           'price': t['price'], 'expires': t.get('expires', ''), 'machine': self._job_machine(t),
                           'how': how_for_age(self._how(t['id'], self.lang_of(kid)), kid.get('age'))}
                          for t in self._open_jobs_for(kid)],
+                'busy': self._busy(kid),
             }
 
     def _extra_for(self, item):
@@ -1648,6 +1649,8 @@ class Store:
             task = self._task(task_id)
             if task not in self._open_jobs_for(kid):
                 raise Problem('Opgaven er allerede taget')
+            if self._busy(kid):
+                raise Problem('Gør din opgave færdig, før du tager en ny.')
             period = self._period(task, self._now())
             taken = sum(1 for i in self.data['items'] if i['task_id'] == task['id']
                         and i['period'] == period and i['status'] != 'missed')
@@ -1655,6 +1658,14 @@ class Store:
             self._save()
             self._emit('taken', task, kid)
             return kid, item
+
+    def _busy(self, kid):
+        """Har barnet allerede en ledig opgave, det har taget og ikke er færdig med? (kun én ad gangen, når slået til)"""
+        if self.data['settings'].get('one_job', True) is False:
+            return False
+        open_ids = {t['id'] for t in self.data['tasks'] if t.get('open')}
+        return any(i['kid_id'] == kid['id'] and i['status'] == 'todo' and i['task_id'] in open_ids
+                   for i in self.data['items'])
 
     # ---- hurtigknapper: giv en opgave for i dag ----------------------------
     @staticmethod
@@ -1821,7 +1832,8 @@ class Store:
                                   ('penalty', 'perfect_bonus', 'reminder_time', 'celebrate_light',
                                    'boss_hp', 'boss_bonus', 'trading', 'streak_bonus', 'auto_task_hours',
                                    'min_tasks_age', 'min_tasks_week', 'meal_price', 'ai_entity')},
-                                 weekly_summary=bool(settings.get('weekly_summary', True))),
+                                 weekly_summary=bool(settings.get('weekly_summary', True)),
+                                 one_job=settings.get('one_job', True) is not False),
                 'pending': pending,
                 'duties': self._duty_views(),
                 'icons': icons.ICONS,
@@ -2582,7 +2594,7 @@ class Store:
                     raise Problem('Målet skal være mellem 1 og 50')
             elif key == 'lang':
                 value = i18n.valid(value)
-            elif key in ('trading', 'weekly_summary'):
+            elif key in ('trading', 'weekly_summary', 'one_job'):
                 value = bool(value)
             elif key == 'boss_hp':
                 value = int(value or 0)

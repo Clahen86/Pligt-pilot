@@ -90,6 +90,7 @@ h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; disp
 .job.hl { outline: 3px solid var(--accent); outline-offset: -3px; animation: nudge 1.2s ease-in-out 3; }
 .job .price { background: #FFF1CF; color: #22304A; border-radius: 999px; padding: 4px 10px; font-weight: 900; font-size: 14px; }
 .btn.grab { background: #22304A; min-height: 44px; }
+.btn.grab:disabled { opacity: .4; cursor: not-allowed; }
 @media (prefers-reduced-motion: no-preference) { .jobs { animation: nudge 2.4s ease-in-out 2; } }
 @keyframes nudge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.015); } }
 .new { background: #C73A30; color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 900; }
@@ -403,12 +404,12 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     var jobs = s.jobs.map(function (j) {
       return '<div class="job' + (j.expires ? ' surprise' : '') + (WANT && j.machine === WANT ? ' hl' : '') + '">' + icoSpan(j.icon) + '<div class="t"><b>' + esc(j.title) + '</b><span>' +
         esc(j.expires ? 'Overraskelse! Slutter kl. ' + j.expires.slice(11, 16) : (j.room || 'Først til mølle')) + '</span></div><div class="price">' + j.price +
-        ' kr</div>' + (j.how ? howBtn('j' + j.task_id) : '') + '<button class="btn grab" data-claim="' + j.task_id + '">Tag den</button></div>' +
+        ' kr</div>' + (j.how ? howBtn('j' + j.task_id) : '') + '<button class="btn grab" data-claim="' + j.task_id + '"' + (s.busy ? ' disabled' : '') + '>Tag den</button></div>' +
         (j.how && recipeOpen === 'j' + j.task_id ? howCard(j.how) : '');
     }).join('');
     var jobsCard = s.jobs.length && !s.paused
       ? '<section class="jobs" aria-label="Ledige opgaver"><div class="jobshead"><b>' + (s.jobs.length === 1 ? 'Der er en ledig opgave!' : 'Der er ' + s.jobs.length + ' ledige opgaver!') +
-        '</b><span>Først til mølle. Tag den, før en anden gør.</span></div>' + jobs + '</section>' : '';
+        '</b><span>' + (s.busy ? 'Gør din opgave færdig, før du tager en ny.' : 'Først til mølle. Tag den, før en anden gør.') + '</span></div>' + jobs + '</section>' : '';
     document.title = T((s.jobs.length ? '(' + s.jobs.length + ') ' : '') + k.name + ' – pligter');
     app.innerHTML =
       '<div class="top"><div class="avatar" aria-hidden="true">' + esc(k.name.charAt(0).toUpperCase()) + '</div>' +

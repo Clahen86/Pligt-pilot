@@ -678,7 +678,7 @@ def make_handler(app, role, allow_from=None):
                 return self._json(store.admin_state())
             if path == '/api/settings':
                 for key in ('goal', 'hero_bonus', 'penalty', 'perfect_bonus',
-                            'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading', 'weekly_summary', 'streak_bonus', 'lang',
+                            'reminder_time', 'celebrate_light', 'boss_hp', 'boss_bonus', 'trading', 'weekly_summary', 'one_job', 'streak_bonus', 'lang',
                             'auto_task_hours', 'min_tasks_age', 'min_tasks_week', 'meal_price', 'ai_entity'):
                     if key in body:
                         store.set_setting(key, body[key])

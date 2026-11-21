@@ -1194,6 +1194,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
       '<div><label for="s-lang">Sprog</label><select id="s-lang">' + s.langs.map(function (l) { return '<option value="' + l[0] + '"' + (s.lang === l[0] ? ' selected' : '') + '>' + esc(l[1]) + '</option>'; }).join('') + '</select></div>' +
       '<div><label for="s-streak">Bonus for 5 dage i træk (kr.)</label><input id="s-streak" type="number" min="0" max="1000" value="' + (cfg.streak_bonus == null ? 5 : cfg.streak_bonus) + '"></div>' +
       '<label class="check"><input type="checkbox" id="s-summary"' + (cfg.weekly_summary === false ? '' : ' checked') + '> Send mig en opsummering hver søndag kl. 18</label>' +
+      '<label class="check"><input type="checkbox" id="s-onejob"' + (cfg.one_job === false ? '' : ' checked') + '> Børnene kan kun tage én ledig opgave ad gangen</label>' +
       '<label class="check"><input type="checkbox" id="s-trading"' + (cfg.trading === false ? '' : ' checked') + '> Børnene må bytte opgaver med hinanden</label>' +
       '<div><label for="s-remind">Påmind børnene kl.</label><input id="s-remind" type="time" value="' + esc(cfg.reminder_time || '') + '"></div>' +
       '<div><label for="s-light">Lampe, der blinker grønt ved godkendelse</label><input id="s-light" type="text" list="lights" placeholder="Fx light.stue" value="' + esc(cfg.celebrate_light || '') + '">' +
@@ -1658,7 +1659,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
         perfect_bonus: document.getElementById('s-perfect').value, penalty: document.getElementById('s-penalty').value,
         reminder_time: document.getElementById('s-remind').value, celebrate_light: document.getElementById('s-light').value,
         lang: document.getElementById('s-lang').value, streak_bonus: document.getElementById('s-streak').value, boss_hp: document.getElementById('s-bosshp').value, boss_bonus: document.getElementById('s-bossbonus').value,
-        trading: document.getElementById('s-trading').checked,
+        trading: document.getElementById('s-trading').checked, one_job: document.getElementById('s-onejob').checked,
         min_tasks_age: document.getElementById('s-minage').value, min_tasks_week: document.getElementById('s-minweek').value,
         meal_price: document.getElementById('s-meal').value, ai_entity: document.getElementById('s-ai').value,
           weekly_summary: document.getElementById('s-summary').checked

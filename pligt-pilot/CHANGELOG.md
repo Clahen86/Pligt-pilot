@@ -2,6 +2,10 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.25.0 – 2026-11-21
+
+- A child can only take one free task at a time: the others show "Finish your chore before you take a new one" until it is reported done. Tasks you give yourself don't count. Can be switched off in Settings
+
 ## 0.24.2 – 2026-11-21
 
 - Overview, "Right now": tasks you gave straight to a child today (also one-off tasks, each their own) now show too - one line per task with the children's names. From the ⋯ menu you can take it from a child, or move it when only one has it

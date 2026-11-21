@@ -1886,6 +1886,19 @@ class QuickTests(unittest.TestCase):
         now = {n['title']: n for n in self.store.admin_state()['house_now']}
         self.assertEqual((now['Bær brænde ind']['status'], now['Bær brænde ind']['kid']), ('todo', 'Sofie'))
 
+    def test_only_one_free_job_at_a_time_unless_switched_off(self):
+        a = self.store.add_task('Støvsug stuen', 10, repeat='once', open_job=True)
+        b = self.store.add_task('Fej trappen', 5, repeat='once', open_job=True)
+        self.assertFalse(self.view(self.emil)['busy'])
+        self.store.claim(self.emil['token'], a['id'])
+        self.assertTrue(self.view(self.emil)['busy'])
+        with self.assertRaises(Problem):
+            self.store.claim(self.emil['token'], b['id'])                    # gør den første færdig først
+        self.assertFalse(self.view(self.maja)['busy'])
+        self.store.set_setting('one_job', False)
+        self.assertFalse(self.store.admin_state()['settings']['one_job'])
+        self.store.claim(self.emil['token'], b['id'])                        # slået fra: må gerne
+
     def test_one_off_first_come_first_served_among_the_chosen(self):
         sofie = self.store.add_kid('Sofie', 10)
         task, kids = self.store.one_off('Bær brænde ind', 15, [self.emil['id'], sofie['id']], race=True)
