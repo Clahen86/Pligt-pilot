@@ -827,7 +827,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     if (!list.length) { return ''; }
     return '<h2>I gang nu</h2><div class="nowc">' + list.map(function (n) {
       var kid = n.kid_id && kidById(n.kid_id), col = kid ? kid.color : '#B8AE9C';
-      var who = n.status === 'free' ? 'Ledig' : n.status === 'wait' ? n.kid + ' er færdig' : n.status === 'done' ? n.kid + ' er færdig' : n.kid;
+      var who = n.status === 'free' ? (n.among ? (n.among.length ? 'Ledig · ' + andList(n.among) : 'Ledig for alle') : 'Ledig') : n.status === 'wait' ? n.kid + ' er færdig' : n.status === 'done' ? n.kid + ' er færdig' : n.kid;
       var can = n.status === 'todo' && n.item_id, free = n.status === 'free' && n.task_id, key = can ? n.item_id : 'f' + n.task_id;
       var out = '<div class="nrow">' + icoSpan(n.icon) +
         '<div class="grow t"><b>' + esc(n.title) + '</b><span class="who"><i style="background:' + esc(col) + '"></i>' + esc(who) +
@@ -844,6 +844,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
       return out;
     }).join('') + '</div>';
   }
+  function andList(a) { return a.length > 1 ? a.slice(0, -1).join(', ') + ' ' + T('og') + ' ' + a[a.length - 1] : (a[0] || ''); }
   function quickBox() {
     var pick = (state.quick || []).slice(0, 7);  // to rækker med "Flere" til sidst
     return '<h2>Giv en opgave</h2><div class="qgrid">' + pick.map(function (t) {
@@ -1610,7 +1611,8 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
       moveOpen = '';
       post('api/items/' + mv[0] + '/move/' + mv[1], {}, 'Opgaven er givet til ' + (mk ? mk.name : ''));
     }
-    else if (d.drop) { if (confirm('Slette den ledige opgave? Maskinereglen bliver, så næste gang kommer der en ny.')) { moveOpen = ''; post('api/tasks/' + d.drop + '/drop', {}, 'Opgaven er slettet'); } }
+    else if (d.drop) { var dn = (state.house_now || []).filter(function (n) { return n.task_id === d.drop; })[0];
+      if (confirm(dn && !dn.machine ? 'Trække opgaven tilbage? Den forsvinder hos børnene.' : 'Slette den ledige opgave? Maskinereglen bliver, så næste gang kommer der en ny.')) { moveOpen = ''; post('api/tasks/' + d.drop + '/drop', {}, 'Opgaven er slettet'); } }
     else if (d.free) { if (confirm('Fjerne opgaven fra barnet? Den bliver ledig igen, og der gives ingen penge.')) { post('api/items/' + d.free + '/free', {}, 'Opgaven er ledig igen'); } }
     else if (d.undo) { if (confirm('Fortryd godkendelsen? Pengene trækkes tilbage.')) { post('api/items/' + d.undo + '/undo', {}, 'Fortrudt. Opgaven venter igen.'); } }
     else if (d.addparent) {

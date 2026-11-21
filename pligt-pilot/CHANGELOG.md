@@ -2,6 +2,10 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.24.1 – 2026-11-21
+
+- Overview, "Right now": a first-come task you sent out shows up at once, with who can take it ("Free · Emil and Sofie" or "Free for everyone"). It switches to the child's name when taken, and can be taken back from the ⋯ menu
+
 ## 0.24.0 – 2026-11-21
 
 - Give a task: "Pick several – first come, first served" lets you choose which children may take it. Only they see it, and it disappears for the others as soon as one takes it

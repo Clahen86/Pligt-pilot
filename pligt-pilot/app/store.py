@@ -2227,7 +2227,8 @@ class Store:
             return 'k/%s/?machine=%s' % (kid['token'], machine)
 
     def _house_now(self):
-        """Lige nu til forælderen: maskineopgaver (ledige eller taget) og ledige opgaver, et barn har taget og ikke er færdig med."""
+        """Lige nu til forælderen: maskineopgaver (ledige eller taget), opgaver forælderen har givet først til mølle
+        (også før nogen har taget dem - med hvem der kan tage dem) og ledige opgaver, et barn har taget og ikke er færdig med."""
         rules = {r['id']: r for r in self.data['rules']}
         names = {k['id']: k['name'] for k in self.data['kids']}
         d = self._now()
@@ -2239,16 +2240,27 @@ class Store:
             period = self._period(t, d)
             items = [i for i in self.data['items'] if i['task_id'] == t['id'] and i['status'] != 'missed'
                      and (machine or (i['period'] == period and i['status'] == 'todo'))]
-            if not machine and not items:
+            given = t.get('auto_rule') == 'given' and t.get('open') and t.get('active')
+            if not machine and not items and not (given and t in self._open_given(d)):
                 continue
             base = {'task_id': t['id'], 'title': t['title'], 'price': t['price'],
                     'machine': rules[t['auto_rule']]['name'] if machine else '',
                     'icon': t.get('icon') or icons.guess(t['title'], t['room'])}
-            if machine and not items:
-                out.append(dict(base, kid='', kid_id='', item_id='', status='free'))
+            if not items and (machine or given):
+                free = dict(base, kid='', kid_id='', item_id='', status='free')
+                if given:
+                    can = [k for k in self.data['kids'] if not k.get('paused') and self._in_scope(t, k)]
+                    live = [k for k in self.data['kids'] if not k.get('paused')]
+                    free['among'] = [] if len(can) == len(live) else [k['name'] for k in can]
+                out.append(free)
             for i in items[:1] if machine else items:
                 out.append(dict(base, kid=names.get(i['kid_id'], ''), kid_id=i['kid_id'], item_id=i['id'], status=i['status']))
         return out
+
+    def _open_given(self, d):
+        """Forælderens først til mølle-opgaver, som stadig ligger ledige i dag."""
+        return [t for t in self.data['tasks'] if t.get('auto_rule') == 'given' and t.get('open') and t.get('active')
+                and not (t.get('until') and d > dt.datetime.fromisoformat(t['until']))]
 
     def move_item(self, item_id, kid_id):
         """Forælderen flytter en taget opgave til det barn, der faktisk lavede den."""
@@ -2303,7 +2315,7 @@ class Store:
             if t is None:
                 raise Problem('Opgaven findes ikke', 404)
             if not t.get('auto_rule'):
-                raise Problem('Kun ledige husopgaver kan slettes her')
+                raise Problem('Kun ledige opgaver kan slettes her')
             if self._taken(t):
                 raise Problem('Et barn har taget opgaven')
             self.data['tasks'].remove(t)

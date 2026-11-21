@@ -1859,6 +1859,20 @@ class QuickTests(unittest.TestCase):
         with self.assertRaises(Problem):
             self.store.give_task(task['id'], None, ['abcdef1234'])           # ingen af de valgte kan
 
+    def test_parent_sees_a_free_given_job_at_once_and_can_take_it_back(self):
+        sofie = self.store.add_kid('Sofie', 10)
+        task = self.store.add_task('Støvsug stuen', 10, age_min=0)
+        job, _, _ = self.store.give_task(task['id'], None, [self.emil['id'], sofie['id']])
+        now = lambda: [n for n in self.store.admin_state()['house_now'] if n['task_id'] == job['id']]
+        self.assertEqual([(n['status'], n['among']) for n in now()], [('free', ['Emil', 'Sofie'])])
+        everyone, _, _ = self.store.give_task(task['id'], None)
+        self.assertEqual([n['among'] for n in self.store.admin_state()['house_now'] if n['task_id'] == everyone['id']], [[]])
+        self.store.claim(sofie['token'], job['id'])
+        self.assertEqual([(n['status'], n['kid']) for n in now()], [('todo', 'Sofie')])  # taget: hvem der har den
+        self.store.drop_free_task(everyone['id'])                            # trukket tilbage
+        self.assertEqual(self.view(self.maja)['jobs'], [])
+        self.assertNotIn('Støvsug stuen', [t['title'] for t in self.store.data['tasks'] if t.get('open')][1:])
+
     def test_one_off_first_come_first_served_among_the_chosen(self):
         sofie = self.store.add_kid('Sofie', 10)
         task, kids = self.store.one_off('Bær brænde ind', 15, [self.emil['id'], sofie['id']], race=True)
