@@ -2,6 +2,10 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.24.2 – 2026-11-21
+
+- Overview, "Right now": tasks you gave straight to a child today (also one-off tasks, each their own) now show too - one line per task with the children's names. From the ⋯ menu you can take it from a child, or move it when only one has it
+
 ## 0.24.1 – 2026-11-21
 
 - Overview, "Right now": a first-come task you sent out shows up at once, with who can take it ("Free · Emil and Sofie" or "Free for everyone"). It switches to the child's name when taken, and can be taken back from the ⋯ menu

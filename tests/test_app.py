@@ -1873,6 +1873,19 @@ class QuickTests(unittest.TestCase):
         self.assertEqual(self.view(self.maja)['jobs'], [])
         self.assertNotIn('Støvsug stuen', [t['title'] for t in self.store.data['tasks'] if t.get('open')][1:])
 
+    def test_parent_sees_tasks_given_straight_to_children_today(self):
+        sofie = self.store.add_kid('Sofie', 10)
+        task = self.store.add_task('Støvsug stuen', 10, age_min=0)
+        self.store.give_task(task['id'], self.emil['id'])
+        one, _ = self.store.one_off('Bær brænde ind', 15, [self.maja['id'], sofie['id']])
+        now = {n['title']: n for n in self.store.admin_state()['house_now']}
+        self.assertEqual((now['Støvsug stuen']['status'], now['Støvsug stuen']['kid']), ('todo', 'Emil'))
+        bring = now['Bær brænde ind']
+        self.assertEqual((bring['status'], [g['kid'] for g in bring['given']]), ('given', ['Maja', 'Sofie']))
+        self.store.free_item(bring['given'][0]['item_id'])                   # fjernet fra Maja
+        now = {n['title']: n for n in self.store.admin_state()['house_now']}
+        self.assertEqual((now['Bær brænde ind']['status'], now['Bær brænde ind']['kid']), ('todo', 'Sofie'))
+
     def test_one_off_first_come_first_served_among_the_chosen(self):
         sofie = self.store.add_kid('Sofie', 10)
         task, kids = self.store.one_off('Bær brænde ind', 15, [self.emil['id'], sofie['id']], race=True)

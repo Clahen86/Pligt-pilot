@@ -2243,7 +2243,7 @@ class Store:
             given = t.get('auto_rule') == 'given' and t.get('open') and t.get('active')
             if not machine and not items and not (given and t in self._open_given(d)):
                 continue
-            base = {'task_id': t['id'], 'title': t['title'], 'price': t['price'],
+            base = {'task_id': t['id'], 'title': t['title'], 'price': t['price'], 'open': True,
                     'machine': rules[t['auto_rule']]['name'] if machine else '',
                     'icon': t.get('icon') or icons.guess(t['title'], t['room'])}
             if not items and (machine or given):
@@ -2255,6 +2255,26 @@ class Store:
                 out.append(free)
             for i in items[:1] if machine else items:
                 out.append(dict(base, kid=names.get(i['kid_id'], ''), kid_id=i['kid_id'], item_id=i['id'], status=i['status']))
+        # opgaver forælderen har givet direkte i dag (ét barn, hver sin, engangsopgave): én linje pr. opgave
+        today = d.strftime('%Y-%m-%d')
+        tasks = {t['id']: t for t in self.data['tasks']}
+        rows = {}
+        for i in self.data['items']:
+            t = tasks.get(i['task_id'])
+            if not i.get('given') or i['status'] != 'todo' or i.get('period') != today or not t or t.get('open') \
+                    or t.get('auto_rule') in rules:
+                continue
+            row = rows.get(t['id'])
+            if row is None:
+                row = rows[t['id']] = {'task_id': t['id'], 'title': t['title'], 'price': t['price'], 'machine': '',
+                                       'icon': t.get('icon') or icons.guess(t['title'], t['room']),
+                                       'status': 'given', 'given': []}
+                out.append(row)
+            row['given'].append({'kid': names.get(i['kid_id'], ''), 'kid_id': i['kid_id'], 'item_id': i['id']})
+        for row in rows.values():
+            if len(row['given']) == 1:     # ét barn: som en taget opgave, kan flyttes eller fjernes
+                g = row.pop('given')[0]
+                row.update(g, status='todo')
         return out
 
     def _open_given(self, d):

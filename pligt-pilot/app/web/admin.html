@@ -827,12 +827,18 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     if (!list.length) { return ''; }
     return '<h2>I gang nu</h2><div class="nowc">' + list.map(function (n) {
       var kid = n.kid_id && kidById(n.kid_id), col = kid ? kid.color : '#B8AE9C';
-      var who = n.status === 'free' ? (n.among ? (n.among.length ? 'Ledig · ' + andList(n.among) : 'Ledig for alle') : 'Ledig') : n.status === 'wait' ? n.kid + ' er færdig' : n.status === 'done' ? n.kid + ' er færdig' : n.kid;
-      var can = n.status === 'todo' && n.item_id, free = n.status === 'free' && n.task_id, key = can ? n.item_id : 'f' + n.task_id;
+      var who = n.status === 'given' ? andList(n.given.map(function (g) { return g.kid; })) : n.status === 'free' ? (n.among ? (n.among.length ? 'Ledig · ' + andList(n.among) : 'Ledig for alle') : 'Ledig') : n.status === 'wait' ? n.kid + ' er færdig' : n.status === 'done' ? n.kid + ' er færdig' : n.kid;
+      var can = n.status === 'todo' && n.item_id, free = n.status === 'free' && n.task_id, many = n.status === 'given';
+      var key = can ? n.item_id : (many ? 'g' : 'f') + n.task_id;
       var out = '<div class="nrow">' + icoSpan(n.icon) +
         '<div class="grow t"><b>' + esc(n.title) + '</b><span class="who"><i style="background:' + esc(col) + '"></i>' + esc(who) +
         (n.machine ? ' · ' + esc(n.machine) : '') + ' · ' + n.price + ' kr</span></div>' +
-        (can || free ? '<button class="more" data-move="' + key + '" aria-label="Mere for ' + esc(n.title) + '" aria-expanded="' + (moveOpen === key) + '">' + DOTS + '</button>' : '') + '</div>';
+        (can || free || many ? '<button class="more" data-move="' + key + '" aria-label="Mere for ' + esc(n.title) + '" aria-expanded="' + (moveOpen === key) + '">' + DOTS + '</button>' : '') + '</div>';
+      if (many && moveOpen === key) {
+        out += '<div class="nmenu"><div class="chips nowpick">' + n.given.map(function (g) {
+          return '<button class="btn small danger" data-free="' + g.item_id + '">Fjern fra ' + esc(g.kid) + '</button>';
+        }).join('') + '</div></div>';
+      }
       if (free && moveOpen === key) {
         out += '<div class="nmenu"><button class="btn small danger" data-drop="' + n.task_id + '">Slet opgaven</button></div>';
       }
@@ -1613,7 +1619,8 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     }
     else if (d.drop) { var dn = (state.house_now || []).filter(function (n) { return n.task_id === d.drop; })[0];
       if (confirm(dn && !dn.machine ? 'Trække opgaven tilbage? Den forsvinder hos børnene.' : 'Slette den ledige opgave? Maskinereglen bliver, så næste gang kommer der en ny.')) { moveOpen = ''; post('api/tasks/' + d.drop + '/drop', {}, 'Opgaven er slettet'); } }
-    else if (d.free) { if (confirm('Fjerne opgaven fra barnet? Den bliver ledig igen, og der gives ingen penge.')) { post('api/items/' + d.free + '/free', {}, 'Opgaven er ledig igen'); } }
+    else if (d.free) { var fr = (state.house_now || []).filter(function (r) { return r.item_id === d.free || (r.given || []).some(function (g) { return g.item_id === d.free; }); })[0];
+      if (confirm(fr && !fr.machine && !fr.open ? 'Fjerne opgaven fra barnet? Der gives ingen penge for den.' : 'Fjerne opgaven fra barnet? Den bliver ledig igen, og der gives ingen penge.')) { post('api/items/' + d.free + '/free', {}, 'Opgaven er ledig igen'); } }
     else if (d.undo) { if (confirm('Fortryd godkendelsen? Pengene trækkes tilbage.')) { post('api/items/' + d.undo + '/undo', {}, 'Fortrudt. Opgaven venter igen.'); } }
     else if (d.addparent) {
       post('api/parents', { name: document.getElementById('pa-name').value }, 'Forælderen er tilføjet').catch(function () {});
