@@ -2,6 +2,10 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.27.1 – 2026-11-22
+
+- Approve with less: when a task is only partly done right, tap "kr." next to approve and enter the amount (1 kr. up to the full price). The child is told "You got 12 of 20 kr." Undo gives the task its full price back
+
 ## 0.27.0 – 2026-11-22
 
 - Hus-chat's good morning can tell how many chores each child has left today (needs the Pligt-pilot integration 0.14.0)

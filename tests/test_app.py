@@ -92,6 +92,22 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(again['rejected'], 1)
         self.assertEqual(self.store.balance(self.emil['id']), 0)
 
+    def test_approve_with_less_when_only_part_is_done(self):
+        self.store.add_task('Ryd op', 20)
+        item = self.kid_items(self.emil)[0]
+        self.store.mark_done(self.emil['token'], item['id'])
+        for bad in (0, 21, 'x'):
+            with self.assertRaises(Problem):
+                self.store.decide(item['id'], True, bad)
+        done = self.store.decide(item['id'], True, '12')
+        self.assertEqual((done['price'], done['full_price']), (12, 20))
+        self.assertEqual(self.store.balance(self.emil['id']), 12)
+        self.store.undo(item['id'])                       # fortryd: fuld pris igen
+        self.assertEqual(self.store.balance(self.emil['id']), 0)
+        self.assertEqual(self.store._item(item['id'])['price'], 20)
+        self.store.decide(item['id'], True)
+        self.assertEqual(self.store.balance(self.emil['id']), 20)
+
     def test_cannot_approve_twice(self):
         self.store.add_task('Dæk bord', 3)
         item = self.kid_items(self.emil)[0]

@@ -679,12 +679,17 @@ def make_handler(app, role, allow_from=None):
             m = re.match(r'^/api/items/' + ID + r'/(approve|reject)$', path)
             if m:
                 approve = m.group(2) == 'approve'
-                item = store.decide(m.group(1), approve)
+                item = store.decide(m.group(1), approve, body.get('price') if approve else None)
                 kid = next((k for k in store.data['kids'] if k['id'] == item['kid_id']), None)
                 if kid:
-                    app.ha.notify_kid(kid, 'Pligt-pilot',
-                                      'Godkendt: %s. Du fik %d kr.!' % (item['title'], item['price'])
-                                      if approve else 'Prøv igen: %s' % item['title'])
+                    if not approve:
+                        text = 'Prøv igen: %s' % item['title']
+                    elif item.get('full_price'):
+                        text = 'Godkendt: %s. Du fik %d af %d kr. Noget manglede lidt.' % (
+                            item['title'], item['price'], item['full_price'])
+                    else:
+                        text = 'Godkendt: %s. Du fik %d kr.!' % (item['title'], item['price'])
+                    app.ha.notify_kid(kid, 'Pligt-pilot', text)
                 if approve:
                     app.ha.celebrate(store.data['settings'].get('celebrate_light'))
                 return self._json(store.admin_state())

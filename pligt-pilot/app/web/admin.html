@@ -41,6 +41,7 @@ h2 { font-size: 17px; font-weight: 900; margin: 10px 0 0; line-height: 1.3; disp
 .icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; padding: 0; flex: none; }
 .icon.no { border: 2px solid var(--red); background: #fff; }
 .icon.yes { border: 0; background: var(--accent); }
+.icon.part { border: 2px solid var(--accent); background: #fff; color: var(--accent); font-weight: 700; font-size: 14px; }
 .btn { border: 0; background: var(--accent); color: #fff; font-size: 15px; font-weight: 800; min-height: 44px; padding: 0 16px; border-radius: 14px; }
 .btn.ghost { background: #fff; color: var(--accent); border: 2px solid var(--accent); }
 .btn.sun { background: var(--sun); color: var(--ink); }
@@ -708,6 +709,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
           return '<div class="row"><div class="grow t"><b>' + esc(p.title) + '</b><span>' + p.price + ' kr' +
             (p.with ? ' · lavet sammen med ' + esc(p.with) + ', deles lige' : '') + '</span></div>' +
             '<button class="icon no" data-reject="' + p.id + '" aria-label="Afvis ' + esc(p.title) + '">' + CROSS + '</button>' +
+            '<button class="icon part" data-partial="' + p.id + '" data-full="' + p.price + '" aria-label="Godkend ' + esc(p.title) + ' med et andet beløb">kr.</button>' +
             '<button class="icon yes" data-approve="' + p.id + '" aria-label="Godkend ' + esc(p.title) + '">' + CHECK + '</button></div>';
         }).join('') + '</div>';
       }
@@ -718,6 +720,7 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
       out += '<div class="card"><div class="row"><div class="avatar" style="background:' + esc(p.color) + '" aria-hidden="true">' + esc(p.name.charAt(0).toUpperCase()) + '</div>' +
         '<div class="grow t"><b>' + esc(p.title) + '</b><span>' + esc(p.name) + (p.with ? ' og ' + esc(p.with) : '') + ' · ' + p.price + ' kr · med billede</span></div>' +
         '<button class="icon no" data-reject="' + p.id + '" aria-label="Afvis ' + esc(p.title) + '">' + CROSS + '</button>' +
+        '<button class="icon part" data-partial="' + p.id + '" data-full="' + p.price + '" aria-label="Godkend ' + esc(p.title) + ' med et andet beløb">kr.</button>' +
         '<button class="icon yes" data-approve="' + p.id + '" aria-label="Godkend ' + esc(p.title) + '">' + CHECK + '</button></div>' +
         '<img class="shot" src="photo/' + p.id + '" alt="Billede af ' + esc(p.title) + '"></div>';
     });
@@ -1526,6 +1529,10 @@ nav button[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff
     else if (d.starter) { post('api/starter', {}, 'Startpakken er oprettet. Slet det, du ikke vil have.'); }
     else if (d.approveall) { post('api/approve_all', {}, 'Alt er godkendt'); }
     else if (d.approve) { post('api/items/' + d.approve + '/approve', {}, 'Godkendt'); }
+    else if (d.partial) {
+      var kr = window.prompt('Noget var ikke helt i orden? Hvor mange kr. skal der gives (højst ' + d.full + ')?', d.full);
+      if (kr !== null && kr.trim() !== '') { post('api/items/' + d.partial + '/approve', { price: kr.trim() }, 'Godkendt med ' + kr.trim() + ' kr.'); }
+    }
     else if (d.reject) { post('api/items/' + d.reject + '/reject', {}, 'Afvist. Barnet kan prøve igen.'); }
     else if (d.payout) { post('api/kids/' + d.payout + '/payout', {}, 'Udbetalt'); }
     else if (d.bonus) { post('api/hero_bonus', {}, 'Bonus givet'); }

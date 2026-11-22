@@ -1939,6 +1939,8 @@ class Store:
                 raise Problem('Pengene er allerede udbetalt, så det kan ikke fortrydes')
             if entry:
                 self.data['ledger'].remove(entry)
+            if 'full_price' in item:          # godkendt med et mindre beløb: fuld pris igen
+                item['price'] = item.pop('full_price')
             item['status'] = 'wait'
             item['decided_at'] = None
             self._save()
@@ -2642,11 +2644,22 @@ class Store:
                 self._save()
             return out
 
-    def decide(self, item_id, approve):
+    def decide(self, item_id, approve, price=None):
+        """price: godkend med et mindre beløb, når kun noget af opgaven er lavet rigtigt."""
         with self.lock:
             item = self._item(item_id)
             if item['status'] != 'wait':
                 raise Problem('Opgaven venter ikke på godkendelse')
+            if approve and price is not None:
+                try:
+                    price = int(price)
+                except (TypeError, ValueError):
+                    raise Problem('Skriv et beløb i hele kroner')
+                if price < 1 or price > item['price']:
+                    raise Problem('Beløbet skal være mellem 1 og %d kr.' % item['price'])
+                if price < item['price']:
+                    item['full_price'] = item['price']
+                    item['price'] = price
             if approve:
                 item['status'] = 'done'
                 item['decided_at'] = self._now().isoformat(timespec='seconds')
