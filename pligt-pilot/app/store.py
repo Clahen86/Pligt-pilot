@@ -1525,6 +1525,13 @@ class Store:
         return leaders[0]
 
     # ---- barnets visning ----------------------------------------------
+    def today_counts(self):
+        """For Hus-chat's good morning: chores still to do per child ({name: n}) - paused and sick children left out."""
+        with self.lock:
+            self._refresh()
+            return {k['name']: sum(1 for i in self.data['items'] if i['kid_id'] == k['id'] and i['status'] == 'todo')
+                    for k in self.data['kids'] if not k.get('paused') and not self._sick(k)}
+
     def kid_view(self, token):
         with self.lock:
             kid = self.kid_by_token(token)

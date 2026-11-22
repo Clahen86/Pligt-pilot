@@ -2,6 +2,10 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.27.0 – 2026-11-22
+
+- Hus-chat's good morning can tell how many chores each child has left today (needs the Pligt-pilot integration 0.14.0)
+
 ## 0.26.1 – 2026-11-21
 
 - A fixed chore that is already free today is no longer shown twice when you also give it as first come, first served. Your copy is today's version, only for the children you chose. Take it back, and the normal one is there again

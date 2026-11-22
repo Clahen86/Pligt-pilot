@@ -50,6 +50,13 @@ class StoreTests(unittest.TestCase):
         self.assertEqual([i['title'] for i in self.kid_items(self.emil)], ['Dæk bord'])
         self.assertEqual([i['title'] for i in self.kid_items(self.maja)], ['Dæk bord'])
 
+    def test_today_counts_for_hus_chat(self):
+        self.store.add_task('Dæk bord', 3)
+        self.store.add_task('Støvsug stuen', 15, age_min=11)
+        self.assertEqual(self.store.today_counts(), {'Emil': 1, 'Maja': 2})
+        self.store.decide_sick(self.emil['id'], True)
+        self.assertEqual(self.store.today_counts(), {'Maja': 2})              # syg i dag: ikke med
+
     def test_age_limit_hides_task_from_young_child(self):
         self.store.add_task('Støvsug stuen', 15, age_min=11)
         self.assertEqual(self.kid_items(self.emil), [])

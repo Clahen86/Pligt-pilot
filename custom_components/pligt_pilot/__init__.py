@@ -96,6 +96,21 @@ class Link:
             _LOGGER.debug("Could not pass %s on to Pligt-pilot", event_type, exc_info=True)
 
 
+    async def today(self) -> dict[str, int] | None:
+        """Chores still to do today per child ({name: n}) - for Hus-chat's good morning. None when Pligt-pilot doesn't answer."""
+        if not self.base:
+            await self.hello()
+        if not self.base:
+            return None
+        try:
+            async with async_get_clientsession(self.hass, verify_ssl=False).get(
+                    f"{self.base}/_ha/today", timeout=aiohttp.ClientTimeout(total=5)) as r:
+                data = await r.json() if r.status == 200 else {}
+        except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
+            return None
+        kids = data.get("kids") if isinstance(data, dict) else None
+        return {str(k): int(v) for k, v in kids.items() if isinstance(v, int)} if isinstance(kids, dict) else None
+
     async def kid_link(self, name: str, machine: str) -> str | None:
         """The child's link to a machine chore (for Hus-chat), or None when the name isn't a child in Pligt-pilot or
         no machine rule of that type is on. Outside address when there is one, else the path on Home Assistant."""

@@ -230,6 +230,8 @@ def make_handler(app, role, allow_from=None):
                         body = self._body()
                         return self._json({'link': app.store.machine_link(body.get('name'), body.get('machine')),
                                            'outside': app.outside_url().rstrip('/')})
+                    if path == '/_ha/today' and self.client_address[0] == HA_CORE:
+                        return self._json({'kids': app.store.today_counts()})
                     if path == '/_ha/event' and method == 'POST' and self.client_address[0] == HA_CORE:
                         body = self._body()
                         return self._json({'ok': True, 'done': app.ha_event(body.get('event'), body.get('data'))})
