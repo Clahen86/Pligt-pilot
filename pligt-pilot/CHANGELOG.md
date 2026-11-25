@@ -2,6 +2,10 @@
 
 Newest first. Each version lists what changed since the one before.
 
+## 0.27.2 – 2026-11-25
+
+- One-off task: the sheet scrolls, so "Send" can always be reached - with several children picked (Each their own / First come) it was pushed off the screen on a phone
+
 ## 0.27.1 – 2026-11-22
 
 - Approve with less: when a task is only partly done right, tap "kr." next to approve and enter the amount (1 kr. up to the full price). The child is told "You got 12 of 20 kr." Undo gives the task its full price back

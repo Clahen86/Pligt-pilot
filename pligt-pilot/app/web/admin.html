@@ -124,7 +124,8 @@ nav button { font-size: 13px; }
 .qbtn.more { background: transparent; border: 2px dashed #D9CDB6; justify-content: center; }
 .qbtn.more .qx { align-items: center; }
 .qsheet { position: fixed; inset: 0; background: rgba(34,48,74,.35); display: flex; align-items: flex-end; z-index: 60; }
-.qsheet .in { background: var(--cream); width: 100%; border-radius: 26px 26px 0 0; padding: 18px 18px 28px; display: flex; flex-direction: column; gap: 12px; max-height: 88vh; }
+.qsheet .in { background: var(--cream); width: 100%; border-radius: 26px 26px 0 0; padding: 18px 18px calc(28px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain; }
+.qsheet .in > * { flex-shrink: 0; }
 .qlist { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0; }
 .qrow { border: 0; background: #fff; border-radius: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; text-align: left; font: inherit; color: var(--ink); min-height: 56px; flex: none; }
 .qrow .grow { min-width: 0; }
